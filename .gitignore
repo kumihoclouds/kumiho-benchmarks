@@ -1,0 +1,15 @@
+# Cloned benchmark repositories (large, use git clone to obtain)
+locomo/
+LongMemEval/
+MemoryAgentBench/
+
+# Evaluation results (generated)
+results/
+kumiho_eval/__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.local
+kumiho_eval/.env
+kumiho_eval/.env.local
