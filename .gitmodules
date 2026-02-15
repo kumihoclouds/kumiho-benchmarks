@@ -1,0 +1,9 @@
+[submodule "locomo"]
+	path = locomo
+	url = https://github.com/snap-research/locomo.git
+[submodule "LongMemEval"]
+	path = LongMemEval
+	url = https://github.com/xiaowu0162/LongMemEval.git
+[submodule "MemoryAgentBench"]
+	path = MemoryAgentBench
+	url = https://github.com/HUST-AI-HYZ/MemoryAgentBench.git
