@@ -81,23 +81,44 @@ def load_longmemeval(
         with open(local_path, encoding="utf-8") as f:
             return json.load(f)
 
-    # Fall back to HuggingFace download
+    # Fall back to HuggingFace download (fetch single file to avoid mixed-type parse errors)
     logger.info("Local data not found, downloading from HuggingFace...")
-    try:
-        from datasets import load_dataset
 
-        ds = load_dataset("xiaowu0162/longmemeval-cleaned")
-        # The dataset has train split with all entries
-        entries = list(ds["train"])
-        # Filter by variant if needed (all variants are in the same dataset)
-        # Save locally for future runs
+    # Map variant to the actual filename in the HF repo
+    variant_files = {
+        "s": "longmemeval_s_cleaned.json",
+        "m": "longmemeval_m_cleaned.json",
+        "oracle": "longmemeval_oracle.json",
+    }
+    hf_filename = variant_files.get(variant)
+    if not hf_filename:
+        raise ValueError(f"Unknown LongMemEval variant: {variant!r} (expected: s, m, oracle)")
+
+    try:
+        from huggingface_hub import hf_hub_download
+
+        downloaded = hf_hub_download(
+            repo_id="xiaowu0162/longmemeval-cleaned",
+            filename=hf_filename,
+            repo_type="dataset",
+        )
+        with open(downloaded, encoding="utf-8") as f:
+            entries = json.load(f)
+
+        # Ensure all answers are strings (oracle split has mixed int/str)
+        for entry in entries:
+            if "answer" in entry and not isinstance(entry["answer"], str):
+                entry["answer"] = str(entry["answer"])
+
+        # Cache locally for future runs
         local_path.parent.mkdir(parents=True, exist_ok=True)
         with open(local_path, "w", encoding="utf-8") as f:
             json.dump(entries, f, ensure_ascii=False, indent=2)
+        logger.info("Cached %d entries to %s", len(entries), local_path)
         return entries
     except ImportError:
         raise ImportError(
-            "Install `datasets` package: pip install datasets\n"
+            "Install `huggingface_hub` package: pip install huggingface_hub\n"
             "Or manually download from https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned"
         )
 
