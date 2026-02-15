@@ -244,6 +244,7 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
                     "answer_model": config.answer_model,
                     "judge_model": config.judge_model,
                     "recall_limit": config.recall_limit,
+                    "recall_mode": config.recall_mode,
                     "max_samples": config.max_samples,
                 },
                 "metrics": all_metrics,
@@ -297,7 +298,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run all benchmarks (full)
+  # Run all benchmarks (full recall, default)
   python -m kumiho_eval.run_benchmarks --all
 
   # Quick smoke test
@@ -305,6 +306,12 @@ Examples:
 
   # Run LoCoMo only
   python -m kumiho_eval.run_benchmarks --locomo
+
+  # Run with summarized recall only
+  python -m kumiho_eval.run_benchmarks --all --recall-mode summarized
+
+  # Dual-mode: run full then summarized (overnight)
+  python -m kumiho_eval.run_benchmarks --all --dual-mode
 
   # Run with specific models
   python -m kumiho_eval.run_benchmarks --all --answer-model gpt-4o-mini --judge-model gpt-4o
@@ -323,6 +330,10 @@ Examples:
     parser.add_argument("--answer-model", type=str, default="gpt-4o", help="Model for answer generation")
     parser.add_argument("--judge-model", type=str, default="gpt-4o", help="Model for LLM judge")
     parser.add_argument("--recall-limit", type=int, default=10, help="Max memories to recall per query")
+    parser.add_argument("--recall-mode", type=str, default="full", choices=["full", "summarized"],
+                        help="Recall mode: full (artifact content) or summarized (title+summary only)")
+    parser.add_argument("--dual-mode", action="store_true",
+                        help="Run benchmarks twice: once with full recall, once with summarized")
     parser.add_argument("--project", type=str, default="benchmark-eval", help="Kumiho project prefix")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
 
@@ -353,22 +364,39 @@ Examples:
         print("\nError: specify at least one benchmark (--all, --locomo, --longmemeval, --mab)")
         sys.exit(1)
 
-    config = BenchmarkConfig(
-        project_name=args.project,
-        answer_model=args.answer_model,
-        judge_model=args.judge_model,
-        output_dir=args.output,
-        max_samples=args.max_samples,
-        recall_limit=args.recall_limit,
-    )
+    # Determine recall modes to run
+    if args.dual_mode:
+        recall_modes = ["full", "summarized"]
+    else:
+        recall_modes = [args.recall_mode]
 
-    logger.info("Starting Tier 1 benchmarks: %s", ", ".join(benchmarks))
     t0 = time.time()
 
-    asyncio.run(run_all(config, benchmarks))
+    for mode in recall_modes:
+        mode_suffix = f"-{mode}" if len(recall_modes) > 1 else ""
+        output_dir = f"{args.output}{mode_suffix}" if mode_suffix else args.output
+
+        config = BenchmarkConfig(
+            project_name=f"{args.project}{mode_suffix}",
+            answer_model=args.answer_model,
+            judge_model=args.judge_model,
+            output_dir=output_dir,
+            max_samples=args.max_samples,
+            recall_limit=args.recall_limit,
+            recall_mode=mode,
+        )
+
+        logger.info("=" * 70)
+        logger.info("Starting Tier 1 benchmarks [recall_mode=%s]: %s", mode, ", ".join(benchmarks))
+        logger.info("Output directory: %s", output_dir)
+        logger.info("=" * 70)
+
+        asyncio.run(run_all(config, benchmarks))
 
     elapsed = time.time() - t0
     logger.info("Total benchmark time: %.1f seconds (%.1f minutes)", elapsed, elapsed / 60)
+    if len(recall_modes) > 1:
+        logger.info("Ran both modes: %s", ", ".join(recall_modes))
 
 
 if __name__ == "__main__":

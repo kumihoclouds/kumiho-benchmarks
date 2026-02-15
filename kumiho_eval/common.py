@@ -219,6 +219,7 @@ class BenchmarkConfig:
     max_samples: int | None = None
     consolidation_threshold: int = 20
     recall_limit: int = 10
+    recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
 
 
@@ -412,6 +413,26 @@ class KumihoMemoryAdapter:
         """Close connections."""
         if self._manager:
             await self._manager.close()
+
+    def build_recalled_context(self, memories: list[dict[str, Any]]) -> str:
+        """
+        Build text context from recalled memories based on recall_mode.
+
+        - "full": includes artifact content (raw conversation text) — lossless
+        - "summarized": only title + summary — lossy, comparable to Mem0/Graphiti
+        """
+        texts = []
+        for mem in memories:
+            title = mem.get("title", "")
+            summary = mem.get("summary", "")
+            content = mem.get("content", "")
+
+            if self.config.recall_mode == "full" and content:
+                texts.append(content[:4000])
+            elif summary:
+                texts.append(f"{title}: {summary}" if title else summary)
+
+        return "\n\n".join(texts) if texts else ""
 
 
 # ---------------------------------------------------------------------------

@@ -242,15 +242,8 @@ async def evaluate_locomo(
                 memories = await adapter.recall(question, limit=config.recall_limit)
                 recall_ms = (time.perf_counter() - t0) * 1000
 
-                # Build context from recalled memories
-                recalled_texts = []
-                for mem in memories:
-                    summary = mem.get("summary", "")
-                    title = mem.get("title", "")
-                    if summary:
-                        recalled_texts.append(f"{title}: {summary}" if title else summary)
-
-                recalled_context = "\n\n".join(recalled_texts) if recalled_texts else ""
+                # Build context from recalled memories (mode-aware)
+                recalled_context = adapter.build_recalled_context(memories)
 
                 # Generate answer
                 t1 = time.perf_counter()
