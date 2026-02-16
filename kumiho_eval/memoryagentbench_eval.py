@@ -189,7 +189,7 @@ def load_memoryagentbench(
         )
 
 
-def chunk_context(context: str, chunk_size: int = 4096) -> list[str]:
+def chunk_context(context: str, chunk_size: int = 16384) -> list[str]:
     """Split context into chunks for memory ingestion."""
     words = context.split()
     chunks = []
@@ -218,7 +218,7 @@ def chunk_context(context: str, chunk_size: int = 4096) -> list[str]:
 async def evaluate_memoryagentbench(
     config: BenchmarkConfig,
     splits: list[str] | None = None,
-    chunk_size: int = 4096,
+    chunk_size: int = 16384,
 ) -> dict[str, Any]:
     """
     Run the full MemoryAgentBench evaluation.
@@ -491,8 +491,8 @@ def main():
     parser.add_argument("--output", type=str, default="./results")
     parser.add_argument("--max-samples", type=int, default=None,
                         help="Limit samples per split")
-    parser.add_argument("--chunk-size", type=int, default=4096,
-                        help="Context chunk size for memory ingestion")
+    parser.add_argument("--chunk-size", type=int, default=16384,
+                        help="Context chunk size for memory ingestion (chars)")
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
     parser.add_argument("--judge-model", type=str, default="gpt-4o")
     parser.add_argument("--recall-limit", type=int, default=10)
