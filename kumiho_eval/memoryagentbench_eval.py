@@ -496,6 +496,9 @@ def main():
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
     parser.add_argument("--judge-model", type=str, default="gpt-4o")
     parser.add_argument("--recall-limit", type=int, default=10)
+    parser.add_argument("--recall-mode", type=str, default="full",
+                        choices=["full", "summarized"],
+                        help="Recall mode: full (artifact content) or summarized (title+summary)")
     parser.add_argument("--project", type=str, default="benchmark-mab")
     args = parser.parse_args()
 
@@ -508,6 +511,7 @@ def main():
         output_dir=args.output,
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
+        recall_mode=args.recall_mode,
     )
 
     splits = [s.strip() for s in args.splits.split(",")]
