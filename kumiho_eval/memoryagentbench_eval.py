@@ -52,6 +52,71 @@ RETRY_BASE_DELAY = 10  # seconds
 logger = logging.getLogger("kumiho_eval.memoryagentbench")
 
 # ---------------------------------------------------------------------------
+# Checkpoint / resume helpers (mirrors LongMemEval pattern)
+# ---------------------------------------------------------------------------
+
+
+def _checkpoint_path(output_dir: Path) -> Path:
+    return output_dir / "_checkpoint.jsonl"
+
+
+def _load_checkpoint(output_dir: Path) -> tuple[list[EvalResult], set[str]]:
+    """Load checkpoint if it exists. Returns (results, completed_sample_ids)."""
+    ckpt = _checkpoint_path(output_dir)
+    if not ckpt.exists():
+        return [], set()
+
+    results: list[EvalResult] = []
+    completed: set[str] = set()
+    for line in ckpt.read_text(encoding="utf-8").strip().splitlines():
+        try:
+            data = json.loads(line)
+            r = EvalResult(
+                question_id=data["question_id"],
+                question=data["question"],
+                question_type=data["question_type"],
+                ground_truth=data["ground_truth"],
+                prediction=data["prediction"],
+                recalled_context=data.get("recalled_context", ""),
+                f1_score=data.get("f1_score", 0.0),
+                judge_score=data.get("judge_score", False),
+                exact_match=data.get("exact_match", False),
+                latency_ingest_ms=data.get("latency_ingest_ms", 0.0),
+                latency_recall_ms=data.get("latency_recall_ms", 0.0),
+                latency_answer_ms=data.get("latency_answer_ms", 0.0),
+                metadata=data.get("metadata", {}),
+            )
+            results.append(r)
+            completed.add(data["question_id"])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning("Skipping corrupt checkpoint line: %s", e)
+    logger.info("Loaded checkpoint: %d completed questions", len(completed))
+    return results, completed
+
+
+def _save_checkpoint_line(output_dir: Path, result: EvalResult) -> None:
+    """Append a single result to the checkpoint JSONL file."""
+    ckpt = _checkpoint_path(output_dir)
+    data = {
+        "question_id": result.question_id,
+        "question": result.question,
+        "question_type": result.question_type,
+        "ground_truth": result.ground_truth,
+        "prediction": result.prediction,
+        "recalled_context": result.recalled_context[:500],
+        "f1_score": result.f1_score,
+        "judge_score": result.judge_score,
+        "exact_match": result.exact_match,
+        "latency_ingest_ms": result.latency_ingest_ms,
+        "latency_recall_ms": result.latency_recall_ms,
+        "latency_answer_ms": result.latency_answer_ms,
+        "metadata": result.metadata,
+    }
+    with open(ckpt, "a", encoding="utf-8") as f:
+        f.write(json.dumps(data, ensure_ascii=False) + "\n")
+
+
+# ---------------------------------------------------------------------------
 # Dataset-specific metrics (matching MemoryAgentBench eval_other_utils.py)
 # ---------------------------------------------------------------------------
 
@@ -219,6 +284,7 @@ async def evaluate_memoryagentbench(
     config: BenchmarkConfig,
     splits: list[str] | None = None,
     chunk_size: int = 16384,
+    resume: bool = True,
 ) -> dict[str, Any]:
     """
     Run the full MemoryAgentBench evaluation.
@@ -227,15 +293,23 @@ async def evaluate_memoryagentbench(
       1. Chunk the context → ingest chunks into memory → consolidate
       2. For each question: recall → generate → score
 
+    Checkpoint/resume: saves progress after each sample; skips completed
+    samples on restart (controlled by `resume` parameter).
+
     Returns dict with results, metrics, and per-split/per-competency breakdown.
     """
     if splits is None:
         splits = ["AR", "TTL", "LRU", "CR"]
 
     adapter = KumihoMemoryAdapter(config)
-    all_results: list[EvalResult] = []
     output_dir = Path(config.output_dir) / "memoryagentbench"
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load checkpoint for resume
+    if resume:
+        all_results, completed_ids = _load_checkpoint(output_dir)
+    else:
+        all_results, completed_ids = [], set()
 
     try:
         for split in splits:
@@ -256,6 +330,15 @@ async def evaluate_memoryagentbench(
                     continue
 
                 sample_id = f"{split}-{si}"
+
+                # Check if ALL questions for this sample are already done
+                sample_question_ids = [
+                    str(q_ids[qi]) if qi < len(q_ids) else f"{sample_id}_q{qi}"
+                    for qi in range(len(questions))
+                ]
+                if completed_ids and all(qid in completed_ids for qid in sample_question_ids):
+                    logger.info("Skipping completed sample %s (%d questions)", sample_id, len(questions))
+                    continue
 
                 # Retry per-sample on transient network errors
                 last_sample_error: Exception | None = None
@@ -291,11 +374,16 @@ async def evaluate_memoryagentbench(
                         ingest_ms = (time.perf_counter() - t_ingest) * 1000
 
                         # --- Phase 2: Query ---
+                        sample_results: list[EvalResult] = []
                         for qi in range(len(questions)):
                             question = questions[qi]
                             answer = answers[qi] if qi < len(answers) else ""
                             q_type = q_types[qi] if qi < len(q_types) else split
                             q_id = q_ids[qi] if qi < len(q_ids) else f"{sample_id}_q{qi}"
+
+                            # Skip individual questions already completed
+                            if str(q_id) in completed_ids:
+                                continue
 
                             # Recall
                             t_recall = time.perf_counter()
@@ -377,7 +465,12 @@ async def evaluate_memoryagentbench(
                                     },
                                 },
                             )
-                            all_results.append(result)
+                            sample_results.append(result)
+
+                        # Checkpoint: write all questions for this sample at once
+                        for r in sample_results:
+                            all_results.append(r)
+                            _save_checkpoint_line(output_dir, r)
 
                         last_sample_error = None
                         break  # sample succeeded
@@ -500,6 +593,8 @@ def main():
                         choices=["full", "summarized"],
                         help="Recall mode: full (artifact content) or summarized (title+summary)")
     parser.add_argument("--project", type=str, default="benchmark-mab")
+    parser.add_argument("--no-resume", action="store_true",
+                        help="Start fresh instead of resuming from checkpoint")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -515,7 +610,9 @@ def main():
     )
 
     splits = [s.strip() for s in args.splits.split(",")]
-    asyncio.run(evaluate_memoryagentbench(config, splits=splits, chunk_size=args.chunk_size))
+    asyncio.run(evaluate_memoryagentbench(
+        config, splits=splits, chunk_size=args.chunk_size, resume=not args.no_resume,
+    ))
 
 
 if __name__ == "__main__":
