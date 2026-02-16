@@ -342,6 +342,12 @@ async def _process_single_question(
     Process a single LongMemEval question: ingest -> consolidate -> recall -> answer -> judge.
 
     Raises on transient network errors so the caller can retry.
+
+    Optimisations vs. naive per-turn ingestion:
+      - Turn batching: all turns in a session are combined into a single transcript
+        message, reducing N network round-trips per session to 1.
+      - Parallel sessions: sessions are ingested concurrently (bounded by
+        config.concurrency) instead of sequentially.
     """
     q_id = entry.get("question_id", f"q{qi}")
     question = entry["question"]
@@ -363,29 +369,42 @@ async def _process_single_question(
     space_name = await adapter.create_eval_space(f"lme-{q_id}")
     user_id = f"longmemeval-{q_id}"
 
-    # --- Phase 1: Ingest sessions ---
+    # --- Phase 1: Ingest sessions (batched turns, parallel sessions) ---
     t_ingest_start = time.perf_counter()
-    session_id_list = []
+    sem = asyncio.Semaphore(config.concurrency)
 
-    for session in sessions:
-        date_prefix = f"[{session['date']}] " if session["date"] else ""
-        messages = []
-        for turn in session["turns"]:
-            content = date_prefix + turn.get("content", "")
-            messages.append({"role": turn.get("role", "user"), "content": content})
+    async def _ingest_one(session: dict) -> str | None:
+        """Ingest one session as a single transcript message, then consolidate."""
+        async with sem:
+            date_prefix = f"[{session['date']}] " if session["date"] else ""
+            # Batch all turns into a single transcript to minimise round-trips
+            transcript = "\n".join(
+                f"{date_prefix}{turn.get('role', 'user')}: {turn.get('content', '')}"
+                for turn in session["turns"]
+            )
+            result = await adapter.ingest_session(
+                user_id=user_id,
+                session_messages=[{"role": "user", "content": transcript}],
+                context="personal",
+            )
+            sid = result.get("session_id")
+            if sid:
+                try:
+                    await adapter.consolidate(sid)
+                except Exception as e:
+                    logger.warning("Consolidation failed: %s", e)
+            return sid
 
-        result = await adapter.ingest_session(
-            user_id=user_id,
-            session_messages=messages,
-            context="personal",
-        )
-        sid = result.get("session_id")
-        if sid:
-            session_id_list.append(sid)
-            try:
-                await adapter.consolidate(sid)
-            except Exception as e:
-                logger.warning("Consolidation failed: %s", e)
+    results = await asyncio.gather(
+        *[_ingest_one(s) for s in sessions], return_exceptions=True,
+    )
+    # Re-raise retryable errors so the outer retry loop can handle them
+    for r in results:
+        if isinstance(r, _RETRYABLE_ERRORS):
+            raise r
+        if isinstance(r, Exception):
+            logger.warning("Session ingestion error: %s", r)
+    session_id_list = [r for r in results if isinstance(r, str)]
 
     ingest_ms = (time.perf_counter() - t_ingest_start) * 1000
 
@@ -661,6 +680,8 @@ def main():
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
     parser.add_argument("--judge-model", type=str, default="gpt-4o")
     parser.add_argument("--recall-limit", type=int, default=10)
+    parser.add_argument("--concurrency", type=int, default=4,
+                        help="Max parallel session ingestions per question")
     parser.add_argument("--project", type=str, default="benchmark-longmemeval")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
@@ -675,6 +696,7 @@ def main():
         output_dir=args.output,
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
+        concurrency=args.concurrency,
     )
 
     asyncio.run(evaluate_longmemeval(
