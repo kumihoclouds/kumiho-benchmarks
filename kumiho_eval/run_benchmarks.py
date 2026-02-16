@@ -294,11 +294,11 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Kumiho Cognitive Memory — Tier 1 Benchmark Suite",
+        description="Kumiho Cognitive Memory — Benchmark Suite",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run all benchmarks (full recall, default)
+  # Run all Tier 1 benchmarks (full recall, default)
   python -m kumiho_eval.run_benchmarks --all
 
   # Quick smoke test
@@ -313,6 +313,12 @@ Examples:
   # Dual-mode: run full then summarized (overnight)
   python -m kumiho_eval.run_benchmarks --all --dual-mode
 
+  # Run AGM compliance evaluation (Tier 3)
+  python -m kumiho_eval.run_benchmarks --agm
+
+  # Run everything (Tier 1 + Tier 3)
+  python -m kumiho_eval.run_benchmarks --all --agm
+
   # Run with specific models
   python -m kumiho_eval.run_benchmarks --all --answer-model gpt-4o-mini --judge-model gpt-4o
 """,
@@ -323,6 +329,7 @@ Examples:
     parser.add_argument("--locomo", action="store_true", help="Run LoCoMo benchmark")
     parser.add_argument("--longmemeval", action="store_true", help="Run LongMemEval benchmark")
     parser.add_argument("--mab", action="store_true", help="Run MemoryAgentBench")
+    parser.add_argument("--agm", action="store_true", help="Run AGM compliance evaluation (Tier 3)")
 
     # Configuration
     parser.add_argument("--output", type=str, default="./results", help="Output directory")
@@ -359,9 +366,9 @@ Examples:
         if args.mab:
             benchmarks.append("mab")
 
-    if not benchmarks:
+    if not benchmarks and not args.agm:
         parser.print_help()
-        print("\nError: specify at least one benchmark (--all, --locomo, --longmemeval, --mab)")
+        print("\nError: specify at least one benchmark (--all, --locomo, --longmemeval, --mab, --agm)")
         sys.exit(1)
 
     # Determine recall modes to run
@@ -392,6 +399,34 @@ Examples:
         logger.info("=" * 70)
 
         asyncio.run(run_all(config, benchmarks))
+
+    # --- Tier 3: AGM Compliance ---
+    if args.agm:
+        from .agm_compliance_eval import evaluate_agm_compliance
+
+        logger.info("=" * 70)
+        logger.info("Running AGM Belief Revision Compliance Evaluation (Tier 3)")
+        logger.info("=" * 70)
+
+        agm_config = BenchmarkConfig(
+            project_name=f"{args.project}-agm",
+            output_dir=args.output,
+        )
+
+        agm_report = asyncio.run(
+            evaluate_agm_compliance(
+                config=agm_config,
+                output_dir=f"{args.output}/agm",
+                max_scenarios=args.max_samples,
+            )
+        )
+
+        logger.info(
+            "AGM Compliance: %d/%d passed (%.0f%%)",
+            agm_report.total_passed,
+            agm_report.total_scenarios,
+            agm_report.overall_pass_rate * 100,
+        )
 
     elapsed = time.time() - t0
     logger.info("Total benchmark time: %.1f seconds (%.1f minutes)", elapsed, elapsed / 60)

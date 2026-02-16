@@ -24,6 +24,7 @@ from typing import Any
 
 import backoff
 import numpy as np
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from tqdm import tqdm
 
 from .common import (
@@ -37,9 +38,87 @@ from .common import (
     token_f1,
 )
 
+# Network error types that should trigger retry
+_RETRYABLE_ERRORS = (
+    OSError,
+    RequestsConnectionError,
+    ConnectionError,
+    TimeoutError,
+)
+
 logger = logging.getLogger("kumiho_eval.longmemeval")
 
 LONGMEMEVAL_DATA_DIR = Path(__file__).resolve().parent.parent / "LongMemEval" / "data"
+
+# Max retries per question for transient network errors
+MAX_QUESTION_RETRIES = 5
+RETRY_BASE_DELAY = 10  # seconds
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint helpers
+# ---------------------------------------------------------------------------
+
+
+def _checkpoint_path(output_dir: Path) -> Path:
+    """Deterministic checkpoint file path for resume support."""
+    return output_dir / "_checkpoint.jsonl"
+
+
+def _load_checkpoint(output_dir: Path) -> tuple[list[EvalResult], set[str]]:
+    """Load checkpoint if it exists. Returns (results, completed_question_ids)."""
+    ckpt = _checkpoint_path(output_dir)
+    if not ckpt.exists():
+        return [], set()
+
+    results: list[EvalResult] = []
+    completed: set[str] = set()
+    for line in ckpt.read_text(encoding="utf-8").strip().splitlines():
+        try:
+            data = json.loads(line)
+            r = EvalResult(
+                question_id=data["question_id"],
+                question=data["question"],
+                question_type=data["question_type"],
+                ground_truth=data["ground_truth"],
+                prediction=data["prediction"],
+                recalled_context=data.get("recalled_context", ""),
+                f1_score=data.get("f1_score", 0.0),
+                judge_score=data.get("judge_score", False),
+                exact_match=data.get("exact_match", False),
+                latency_ingest_ms=data.get("latency_ingest_ms", 0.0),
+                latency_recall_ms=data.get("latency_recall_ms", 0.0),
+                latency_answer_ms=data.get("latency_answer_ms", 0.0),
+                metadata=data.get("metadata", {}),
+            )
+            results.append(r)
+            completed.add(data["question_id"])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning("Skipping corrupt checkpoint line: %s", e)
+    logger.info("Loaded checkpoint: %d completed questions", len(completed))
+    return results, completed
+
+
+def _save_checkpoint_line(output_dir: Path, result: EvalResult) -> None:
+    """Append a single result to the checkpoint JSONL file."""
+    ckpt = _checkpoint_path(output_dir)
+    data = {
+        "question_id": result.question_id,
+        "question": result.question,
+        "question_type": result.question_type,
+        "ground_truth": result.ground_truth,
+        "prediction": result.prediction,
+        "recalled_context": result.recalled_context[:500],
+        "f1_score": result.f1_score,
+        "judge_score": result.judge_score,
+        "exact_match": result.exact_match,
+        "latency_ingest_ms": result.latency_ingest_ms,
+        "latency_recall_ms": result.latency_recall_ms,
+        "latency_answer_ms": result.latency_answer_ms,
+        "metadata": result.metadata,
+    }
+    with open(ckpt, "a", encoding="utf-8") as f:
+        f.write(json.dumps(data, ensure_ascii=False) + "\n")
 
 # Mapping from question_type to human-readable label
 QUESTION_TYPE_LABELS = {
@@ -253,16 +332,158 @@ async def longmemeval_judge(
 # ---------------------------------------------------------------------------
 
 
+async def _process_single_question(
+    adapter: KumihoMemoryAdapter,
+    entry: dict,
+    qi: int,
+    config: BenchmarkConfig,
+) -> EvalResult:
+    """
+    Process a single LongMemEval question: ingest -> consolidate -> recall -> answer -> judge.
+
+    Raises on transient network errors so the caller can retry.
+    """
+    q_id = entry.get("question_id", f"q{qi}")
+    question = entry["question"]
+    answer = entry["answer"]
+    q_type = entry.get("question_type", "unknown")
+    q_date = entry.get("question_date", "")
+
+    sessions = extract_haystack_sessions(entry)
+
+    if not sessions:
+        logger.warning("No haystack sessions for %s, skipping", q_id)
+        return EvalResult(
+            question_id=q_id, question=question, question_type=q_type,
+            ground_truth=answer, prediction="[NO_SESSIONS]",
+            metadata={"skipped": True},
+        )
+
+    # Create evaluation space for this question
+    space_name = await adapter.create_eval_space(f"lme-{q_id}")
+    user_id = f"longmemeval-{q_id}"
+
+    # --- Phase 1: Ingest sessions ---
+    t_ingest_start = time.perf_counter()
+    session_id_list = []
+
+    for session in sessions:
+        date_prefix = f"[{session['date']}] " if session["date"] else ""
+        messages = []
+        for turn in session["turns"]:
+            content = date_prefix + turn.get("content", "")
+            messages.append({"role": turn.get("role", "user"), "content": content})
+
+        result = await adapter.ingest_session(
+            user_id=user_id,
+            session_messages=messages,
+            context="personal",
+        )
+        sid = result.get("session_id")
+        if sid:
+            session_id_list.append(sid)
+            try:
+                await adapter.consolidate(sid)
+            except Exception as e:
+                logger.warning("Consolidation failed: %s", e)
+
+    ingest_ms = (time.perf_counter() - t_ingest_start) * 1000
+
+    # --- Phase 2: Recall & answer ---
+    t_recall = time.perf_counter()
+    memories = await adapter.recall(question, limit=config.recall_limit)
+    recall_ms = (time.perf_counter() - t_recall) * 1000
+
+    recalled_context = adapter.build_recalled_context(memories)
+
+    # Determine system prompt based on question type
+    is_abstention = "_abs" in q_id
+    if is_abstention:
+        system = (
+            "You are answering questions about a user's conversation history. "
+            "If the specific information asked about was never discussed, "
+            'clearly state that the information is not available or "I don\'t know".'
+        )
+    elif "temporal" in q_type:
+        system = (
+            "You are answering questions about a user's conversation history. "
+            "Pay careful attention to dates and temporal ordering. "
+            f"The current date is {q_date}. "
+            "Answer with specific dates or time spans when asked."
+        )
+    elif q_type == "knowledge-update":
+        system = (
+            "You are answering questions about a user's conversation history. "
+            "The user's information may have changed over time. "
+            "Always answer with the most recent/updated information."
+        )
+    else:
+        system = (
+            "You are answering questions about a user's conversation history. "
+            "Answer concisely based on the available context."
+        )
+
+    t_answer = time.perf_counter()
+    prediction = await generate_answer(
+        question,
+        recalled_context,
+        system_prompt=system,
+        model=config.answer_model,
+        api_key=config.openai_api_key,
+        max_tokens=200,
+    )
+    answer_ms = (time.perf_counter() - t_answer) * 1000
+
+    # Judge
+    try:
+        judge_ok = await longmemeval_judge(
+            question, answer, prediction, q_type, q_id,
+            model=config.judge_model,
+            api_key=config.openai_api_key,
+        )
+    except Exception as e:
+        logger.warning("Judge failed for %s: %s", q_id, e)
+        judge_ok = False
+
+    return EvalResult(
+        question_id=q_id,
+        question=question,
+        question_type=q_type,
+        ground_truth=answer,
+        prediction=prediction,
+        recalled_context=recalled_context,
+        f1_score=token_f1(prediction, answer),
+        judge_score=judge_ok,
+        latency_ingest_ms=ingest_ms,
+        latency_recall_ms=recall_ms,
+        latency_answer_ms=answer_ms,
+        metadata={
+            "question_date": q_date,
+            "is_abstention": is_abstention,
+            "memories_recalled": len(memories),
+            "sessions_ingested": len(sessions),
+        },
+    )
+
+
 async def evaluate_longmemeval(
     config: BenchmarkConfig,
     variant: str = "s",
     data_dir: str | Path | None = None,
+    resume: bool = True,
 ) -> dict[str, Any]:
     """
     Run the full LongMemEval evaluation.
 
-    1. For each question: ingest haystack sessions → consolidate
-    2. Recall → generate answer → judge
+    1. For each question: ingest haystack sessions -> consolidate
+    2. Recall -> generate answer -> judge
+
+    Features:
+    - Checkpoint/resume: saves progress after each question; skips completed
+      questions on restart (controlled by `resume` parameter).
+    - Retry with backoff: transient network errors are retried up to
+      MAX_QUESTION_RETRIES times before skipping the question.
+    - Error isolation: a single question's failure doesn't crash the run.
 
     Returns dict with results, metrics, and per-type breakdown.
     """
@@ -271,9 +492,17 @@ async def evaluate_longmemeval(
         dataset = dataset[: config.max_samples]
 
     adapter = KumihoMemoryAdapter(config)
-    all_results: list[EvalResult] = []
     output_dir = Path(config.output_dir) / "longmemeval"
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load checkpoint for resume
+    if resume:
+        all_results, completed_ids = _load_checkpoint(output_dir)
+    else:
+        all_results, completed_ids = [], set()
+
+    skipped = 0
+    errors = 0
 
     # Also produce JSONL for official evaluate_qa.py compatibility
     hyp_file = output_dir / "hypotheses.jsonl"
@@ -281,136 +510,61 @@ async def evaluate_longmemeval(
     try:
         for qi, entry in enumerate(tqdm(dataset, desc="LongMemEval")):
             q_id = entry.get("question_id", f"q{qi}")
-            question = entry["question"]
-            answer = entry["answer"]
-            q_type = entry.get("question_type", "unknown")
-            q_date = entry.get("question_date", "")
 
-            # Extract sessions
-            sessions = extract_haystack_sessions(entry)
-
-            if not sessions:
-                logger.warning("No haystack sessions for %s, skipping", q_id)
+            # Skip already-completed questions (checkpoint resume)
+            if q_id in completed_ids:
+                skipped += 1
                 continue
 
-            # Create evaluation space for this question
-            space_name = await adapter.create_eval_space(f"lme-{q_id}")
-            user_id = f"longmemeval-{q_id}"
+            # Retry loop with exponential backoff for transient network errors
+            result: EvalResult | None = None
+            last_error: Exception | None = None
+            for attempt in range(1, MAX_QUESTION_RETRIES + 1):
+                try:
+                    result = await _process_single_question(
+                        adapter, entry, qi, config,
+                    )
+                    break  # success
+                except _RETRYABLE_ERRORS as e:
+                    last_error = e
+                    if attempt < MAX_QUESTION_RETRIES:
+                        delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                        logger.warning(
+                            "Network error on %s (attempt %d/%d), retrying in %ds: %s",
+                            q_id, attempt, MAX_QUESTION_RETRIES, delay, e,
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error(
+                            "Failed %s after %d attempts: %s", q_id, MAX_QUESTION_RETRIES, e,
+                        )
+                except Exception as e:
+                    # Non-retryable error -- log and skip
+                    last_error = e
+                    logger.error("Non-retryable error on %s: %s", q_id, e)
+                    break
 
-            # --- Phase 1: Ingest sessions ---
-            t_ingest_start = time.perf_counter()
-            session_id_list = []
-
-            for session in sessions:
-                # Prefix turns with date for temporal context
-                date_prefix = f"[{session['date']}] " if session["date"] else ""
-                messages = []
-                for turn in session["turns"]:
-                    content = date_prefix + turn.get("content", "")
-                    messages.append({"role": turn.get("role", "user"), "content": content})
-
-                result = await adapter.ingest_session(
-                    user_id=user_id,
-                    session_messages=messages,
-                    context="personal",
-                )
-                sid = result.get("session_id")
-                if sid:
-                    session_id_list.append(sid)
-                    try:
-                        await adapter.consolidate(sid)
-                    except Exception as e:
-                        logger.warning("Consolidation failed: %s", e)
-
-            ingest_ms = (time.perf_counter() - t_ingest_start) * 1000
-
-            # --- Phase 2: Recall & answer ---
-            t_recall = time.perf_counter()
-            memories = await adapter.recall(question, limit=config.recall_limit)
-            recall_ms = (time.perf_counter() - t_recall) * 1000
-
-            # Build context from recalled memories (mode-aware)
-            recalled_context = adapter.build_recalled_context(memories)
-
-            # Determine system prompt based on question type
-            is_abstention = "_abs" in q_id
-            if is_abstention:
-                system = (
-                    "You are answering questions about a user's conversation history. "
-                    "If the specific information asked about was never discussed, "
-                    'clearly state that the information is not available or "I don\'t know".'
-                )
-            elif "temporal" in q_type:
-                system = (
-                    "You are answering questions about a user's conversation history. "
-                    "Pay careful attention to dates and temporal ordering. "
-                    f"The current date is {q_date}. "
-                    "Answer with specific dates or time spans when asked."
-                )
-            elif q_type == "knowledge-update":
-                system = (
-                    "You are answering questions about a user's conversation history. "
-                    "The user's information may have changed over time. "
-                    "Always answer with the most recent/updated information."
-                )
-            else:
-                system = (
-                    "You are answering questions about a user's conversation history. "
-                    "Answer concisely based on the available context."
+            if result is None:
+                # All retries exhausted or non-retryable error
+                errors += 1
+                result = EvalResult(
+                    question_id=q_id,
+                    question=entry.get("question", ""),
+                    question_type=entry.get("question_type", "unknown"),
+                    ground_truth=entry.get("answer", ""),
+                    prediction=f"[ERROR: {last_error}]",
+                    metadata={"error": str(last_error), "skipped_due_to_error": True},
                 )
 
-            t_answer = time.perf_counter()
-            prediction = await generate_answer(
-                question,
-                recalled_context,
-                system_prompt=system,
-                model=config.answer_model,
-                api_key=config.openai_api_key,
-                max_tokens=200,
-            )
-            answer_ms = (time.perf_counter() - t_answer) * 1000
-
-            # Judge
-            try:
-                judge_ok = await longmemeval_judge(
-                    question,
-                    answer,
-                    prediction,
-                    q_type,
-                    q_id,
-                    model=config.judge_model,
-                    api_key=config.openai_api_key,
-                )
-            except Exception as e:
-                logger.warning("Judge failed for %s: %s", q_id, e)
-                judge_ok = False
-
-            result = EvalResult(
-                question_id=q_id,
-                question=question,
-                question_type=q_type,
-                ground_truth=answer,
-                prediction=prediction,
-                recalled_context=recalled_context,
-                f1_score=token_f1(prediction, answer),
-                judge_score=judge_ok,
-                latency_ingest_ms=ingest_ms,
-                latency_recall_ms=recall_ms,
-                latency_answer_ms=answer_ms,
-                metadata={
-                    "question_date": q_date,
-                    "is_abstention": is_abstention,
-                    "memories_recalled": len(memories),
-                    "sessions_ingested": len(sessions),
-                },
-            )
             all_results.append(result)
+            _save_checkpoint_line(output_dir, result)
+            completed_ids.add(q_id)
 
             # Write JSONL line for official evaluator compatibility
             with open(hyp_file, "a", encoding="utf-8") as f:
                 f.write(
                     json.dumps(
-                        {"question_id": q_id, "hypothesis": prediction},
+                        {"question_id": q_id, "hypothesis": result.prediction},
                         ensure_ascii=False,
                     )
                     + "\n"
@@ -419,13 +573,25 @@ async def evaluate_longmemeval(
     finally:
         await adapter.cleanup()
 
+    if skipped:
+        logger.info("Resumed: skipped %d already-completed questions", skipped)
+    if errors:
+        logger.warning("%d questions failed after all retries", errors)
+
+    # Filter out error results for clean metrics
+    valid_results = [r for r in all_results if not r.metadata.get("skipped_due_to_error")]
+    logger.info(
+        "Evaluation complete: %d valid / %d total (%d errors)",
+        len(valid_results), len(all_results), errors,
+    )
+
     # Save results and compute metrics
     save_results(all_results, output_dir / "all_results.json")
-    metrics = compute_aggregate_metrics(all_results)
+    metrics = compute_aggregate_metrics(valid_results)
 
     # Compute per-ability metrics (LongMemEval standard)
     ability_metrics: dict[str, Any] = {}
-    for result in all_results:
+    for result in valid_results:
         qt = result.question_type
         if qt not in ability_metrics:
             ability_metrics[qt] = {"correct": 0, "total": 0}
@@ -439,11 +605,11 @@ async def evaluate_longmemeval(
         ability_metrics[qt]["accuracy"] = c / t if t > 0 else 0.0
 
     # Abstention separate
-    abs_results = [r for r in all_results if r.metadata.get("is_abstention")]
-    non_abs_results = [r for r in all_results if not r.metadata.get("is_abstention")]
+    abs_results = [r for r in valid_results if r.metadata.get("is_abstention")]
+    non_abs_results = [r for r in valid_results if not r.metadata.get("is_abstention")]
 
     metrics["longmemeval"] = {
-        "overall_accuracy": float(np.mean([r.judge_score for r in all_results])),
+        "overall_accuracy": float(np.mean([r.judge_score for r in valid_results])),
         "non_abstention_accuracy": float(np.mean([r.judge_score for r in non_abs_results]))
         if non_abs_results
         else 0.0,
@@ -496,6 +662,8 @@ def main():
     parser.add_argument("--judge-model", type=str, default="gpt-4o")
     parser.add_argument("--recall-limit", type=int, default=10)
     parser.add_argument("--project", type=str, default="benchmark-longmemeval")
+    parser.add_argument("--no-resume", action="store_true",
+                        help="Start fresh instead of resuming from checkpoint")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -509,7 +677,10 @@ def main():
         recall_limit=args.recall_limit,
     )
 
-    asyncio.run(evaluate_longmemeval(config, variant=args.variant, data_dir=args.data_dir))
+    asyncio.run(evaluate_longmemeval(
+        config, variant=args.variant, data_dir=args.data_dir,
+        resume=not args.no_resume,
+    ))
 
 
 if __name__ == "__main__":

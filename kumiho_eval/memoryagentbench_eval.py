@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from tqdm import tqdm
 
 from .common import (
@@ -43,6 +44,10 @@ from .common import (
     save_results,
     token_f1,
 )
+
+_RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+MAX_SAMPLE_RETRIES = 3
+RETRY_BASE_DELAY = 10  # seconds
 
 logger = logging.getLogger("kumiho_eval.memoryagentbench")
 
@@ -250,127 +255,150 @@ async def evaluate_memoryagentbench(
                 if not context or not questions:
                     continue
 
-                # Create eval space
                 sample_id = f"{split}-{si}"
-                await adapter.create_eval_space(f"mab-{sample_id}")
-                user_id = f"mab-{sample_id}"
 
-                # --- Phase 1: Ingest context chunks ---
-                chunks = chunk_context(context, chunk_size=chunk_size)
-                t_ingest = time.perf_counter()
-                session_ids = []
-
-                for ci, chunk_text in enumerate(chunks):
-                    # Ingest each chunk as a user message
-                    messages = [{"role": "user", "content": chunk_text}]
-                    result = await adapter.ingest_session(
-                        user_id=user_id,
-                        session_messages=messages,
-                        context="work",
-                    )
-                    sid = result.get("session_id")
-                    if sid:
-                        session_ids.append(sid)
-
-                # Consolidate all sessions
-                for sid in session_ids:
+                # Retry per-sample on transient network errors
+                last_sample_error: Exception | None = None
+                for attempt in range(1, MAX_SAMPLE_RETRIES + 1):
                     try:
-                        await adapter.consolidate(sid)
-                    except Exception as e:
-                        logger.warning("Consolidation failed: %s", e)
+                        # Create eval space
+                        await adapter.create_eval_space(f"mab-{sample_id}")
+                        user_id = f"mab-{sample_id}"
 
-                ingest_ms = (time.perf_counter() - t_ingest) * 1000
+                        # --- Phase 1: Ingest context chunks ---
+                        chunks = chunk_context(context, chunk_size=chunk_size)
+                        t_ingest = time.perf_counter()
+                        session_ids = []
 
-                # --- Phase 2: Query ---
-                for qi in range(len(questions)):
-                    question = questions[qi]
-                    answer = answers[qi] if qi < len(answers) else ""
-                    q_type = q_types[qi] if qi < len(q_types) else split
-                    q_id = q_ids[qi] if qi < len(q_ids) else f"{sample_id}_q{qi}"
-
-                    # Recall
-                    t_recall = time.perf_counter()
-                    memories = await adapter.recall(question, limit=config.recall_limit)
-                    recall_ms = (time.perf_counter() - t_recall) * 1000
-
-                    # Build context from recalled memories (mode-aware)
-                    recalled_context = adapter.build_recalled_context(memories)
-
-                    # Determine system prompt based on competency
-                    if split == "CR":
-                        system = (
-                            "You are answering questions where the context may contain "
-                            "conflicting information. Always use the MOST RECENT or "
-                            "LATEST information. If facts have been updated or corrected, "
-                            "use the corrected version."
-                        )
-                    elif split == "TTL":
-                        system = (
-                            "You are answering questions where the context teaches you "
-                            "new rules, labels, or procedures. Apply what you learned "
-                            "from the context to answer the question."
-                        )
-                    else:
-                        system = (
-                            "You are answering questions based on information from a "
-                            "long context. Answer precisely with exact information."
-                        )
-
-                    t_answer = time.perf_counter()
-                    prediction = await generate_answer(
-                        question,
-                        recalled_context,
-                        system_prompt=system,
-                        model=config.answer_model,
-                        api_key=config.openai_api_key,
-                        max_tokens=200,
-                    )
-                    answer_ms = (time.perf_counter() - t_answer) * 1000
-
-                    # Compute dataset-specific metrics
-                    mab_metrics = compute_mab_metrics(prediction, answer, source)
-
-                    # Also run LLM judge for LongMemEval-sourced questions
-                    judge_ok = False
-                    if "longmemeval" in source:
-                        try:
-                            judge_ok = await llm_judge(
-                                question,
-                                str(answer),
-                                prediction,
-                                model=config.judge_model,
-                                api_key=config.openai_api_key,
+                        for ci, chunk_text in enumerate(chunks):
+                            messages = [{"role": "user", "content": chunk_text}]
+                            result = await adapter.ingest_session(
+                                user_id=user_id,
+                                session_messages=messages,
+                                context="work",
                             )
-                        except Exception:
-                            pass
+                            sid = result.get("session_id")
+                            if sid:
+                                session_ids.append(sid)
 
-                    result = EvalResult(
-                        question_id=str(q_id),
-                        question=question,
-                        question_type=f"{split}/{q_type}",
-                        ground_truth=str(answer),
-                        prediction=prediction,
-                        recalled_context=recalled_context,
-                        f1_score=mab_metrics.get("primary_metric", 0.0),
-                        judge_score=judge_ok,
-                        exact_match=mab_metrics.get("exact_match", 0.0) == 1.0,
-                        latency_ingest_ms=ingest_ms / max(len(questions), 1),
-                        latency_recall_ms=recall_ms,
-                        latency_answer_ms=answer_ms,
-                        metadata={
-                            "split": split,
-                            "source": source,
-                            "sample_index": si,
-                            "chunks_ingested": len(chunks),
-                            "memories_recalled": len(memories),
-                            **{
-                                k: v
-                                for k, v in mab_metrics.items()
-                                if k != "primary_metric"
-                            },
-                        },
-                    )
-                    all_results.append(result)
+                        # Consolidate all sessions
+                        for sid in session_ids:
+                            try:
+                                await adapter.consolidate(sid)
+                            except Exception as e:
+                                logger.warning("Consolidation failed: %s", e)
+
+                        ingest_ms = (time.perf_counter() - t_ingest) * 1000
+
+                        # --- Phase 2: Query ---
+                        for qi in range(len(questions)):
+                            question = questions[qi]
+                            answer = answers[qi] if qi < len(answers) else ""
+                            q_type = q_types[qi] if qi < len(q_types) else split
+                            q_id = q_ids[qi] if qi < len(q_ids) else f"{sample_id}_q{qi}"
+
+                            # Recall
+                            t_recall = time.perf_counter()
+                            memories = await adapter.recall(question, limit=config.recall_limit)
+                            recall_ms = (time.perf_counter() - t_recall) * 1000
+
+                            recalled_context = adapter.build_recalled_context(memories)
+
+                            # Determine system prompt based on competency
+                            if split == "CR":
+                                system = (
+                                    "You are answering questions where the context may contain "
+                                    "conflicting information. Always use the MOST RECENT or "
+                                    "LATEST information. If facts have been updated or corrected, "
+                                    "use the corrected version."
+                                )
+                            elif split == "TTL":
+                                system = (
+                                    "You are answering questions where the context teaches you "
+                                    "new rules, labels, or procedures. Apply what you learned "
+                                    "from the context to answer the question."
+                                )
+                            else:
+                                system = (
+                                    "You are answering questions based on information from a "
+                                    "long context. Answer precisely with exact information."
+                                )
+
+                            t_answer = time.perf_counter()
+                            prediction = await generate_answer(
+                                question,
+                                recalled_context,
+                                system_prompt=system,
+                                model=config.answer_model,
+                                api_key=config.openai_api_key,
+                                max_tokens=200,
+                            )
+                            answer_ms = (time.perf_counter() - t_answer) * 1000
+
+                            mab_metrics = compute_mab_metrics(prediction, answer, source)
+
+                            # Also run LLM judge for LongMemEval-sourced questions
+                            judge_ok = False
+                            if "longmemeval" in source:
+                                try:
+                                    judge_ok = await llm_judge(
+                                        question,
+                                        str(answer),
+                                        prediction,
+                                        model=config.judge_model,
+                                        api_key=config.openai_api_key,
+                                    )
+                                except Exception:
+                                    pass
+
+                            result = EvalResult(
+                                question_id=str(q_id),
+                                question=question,
+                                question_type=f"{split}/{q_type}",
+                                ground_truth=str(answer),
+                                prediction=prediction,
+                                recalled_context=recalled_context,
+                                f1_score=mab_metrics.get("primary_metric", 0.0),
+                                judge_score=judge_ok,
+                                exact_match=mab_metrics.get("exact_match", 0.0) == 1.0,
+                                latency_ingest_ms=ingest_ms / max(len(questions), 1),
+                                latency_recall_ms=recall_ms,
+                                latency_answer_ms=answer_ms,
+                                metadata={
+                                    "split": split,
+                                    "source": source,
+                                    "sample_index": si,
+                                    "chunks_ingested": len(chunks),
+                                    "memories_recalled": len(memories),
+                                    **{
+                                        k: v
+                                        for k, v in mab_metrics.items()
+                                        if k != "primary_metric"
+                                    },
+                                },
+                            )
+                            all_results.append(result)
+
+                        last_sample_error = None
+                        break  # sample succeeded
+
+                    except _RETRYABLE_ERRORS as e:
+                        last_sample_error = e
+                        if attempt < MAX_SAMPLE_RETRIES:
+                            delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                            logger.warning(
+                                "Network error on %s (attempt %d/%d), retrying in %ds: %s",
+                                sample_id, attempt, MAX_SAMPLE_RETRIES, delay, e,
+                            )
+                            await asyncio.sleep(delay)
+                        else:
+                            logger.error(
+                                "Failed sample %s after %d attempts: %s",
+                                sample_id, MAX_SAMPLE_RETRIES, e,
+                            )
+
+                if last_sample_error is not None:
+                    logger.error("Skipping sample %s due to persistent network errors", sample_id)
 
             # Save per-split results
             split_results = [r for r in all_results if r.metadata.get("split") == split]

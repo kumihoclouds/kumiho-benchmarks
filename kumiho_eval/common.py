@@ -25,6 +25,12 @@ from typing import Any, Optional
 
 import backoff
 import numpy as np
+from requests.exceptions import ConnectionError as RequestsConnectionError
+
+# Network error types that warrant retry in adapter methods
+_NETWORK_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+_MAX_ADAPTER_RETRIES = 5
+_ADAPTER_RETRY_BASE = 5  # seconds
 
 logger = logging.getLogger("kumiho_eval")
 
@@ -273,14 +279,16 @@ class KumihoMemoryAdapter:
             PIIRedactor,
         )
 
-        # Connect SDK
+        # Connect SDK — pass whatever auth we have; connect() handles discovery
         endpoint = self.config.kumiho_endpoint or os.environ.get("KUMIHO_ENDPOINT")
         token = self.config.kumiho_token or os.environ.get("KUMIHO_AUTH_TOKEN")
 
-        if endpoint and token:
-            self._kumiho_client = kumiho.connect(endpoint=endpoint, token=token)
-        else:
-            self._kumiho_client = kumiho.connect()
+        connect_kwargs: dict[str, Any] = {}
+        if endpoint:
+            connect_kwargs["endpoint"] = endpoint
+        if token:
+            connect_kwargs["token"] = token
+        self._kumiho_client = kumiho.connect(**connect_kwargs)
 
         # Build memory manager components
         redis_buf = RedisMemoryBuffer(
@@ -344,6 +352,8 @@ class KumihoMemoryAdapter:
         """
         Ingest a single session's messages into working memory.
 
+        Includes retry with exponential backoff for transient network errors.
+
         Args:
             user_id: Stable user identifier for the conversation
             session_messages: List of {"role": "user"|"assistant", "content": "..."}
@@ -363,7 +373,8 @@ class KumihoMemoryAdapter:
             content = msg.get("content", msg.get("text", ""))
 
             if role in ("user", "human"):
-                resp = await self._manager.ingest_message(
+                resp = await self._retry_network(
+                    self._manager.ingest_message,
                     user_id=user_id,
                     message=content,
                     role="user",
@@ -374,7 +385,8 @@ class KumihoMemoryAdapter:
                 result["message_count"] = resp.get("message_count", 0)
             else:
                 if session_id:
-                    await self._manager.add_assistant_response(
+                    await self._retry_network(
+                        self._manager.add_assistant_response,
                         session_id=session_id,
                         response=content,
                     )
@@ -384,11 +396,42 @@ class KumihoMemoryAdapter:
         result["ingest_ms"] = (time.perf_counter() - t0) * 1000
         return result
 
+    async def _retry_network(self, coro_func, *args, **kwargs) -> Any:
+        """
+        Call an async function with retry on transient network errors.
+
+        Uses exponential backoff: 5s, 10s, 20s, 40s, 80s.
+        """
+        last_err: Exception | None = None
+        for attempt in range(1, _MAX_ADAPTER_RETRIES + 1):
+            try:
+                return await coro_func(*args, **kwargs)
+            except _NETWORK_ERRORS as e:
+                last_err = e
+                if attempt < _MAX_ADAPTER_RETRIES:
+                    delay = _ADAPTER_RETRY_BASE * (2 ** (attempt - 1))
+                    logger.warning(
+                        "Network error (attempt %d/%d), retrying in %ds: %s",
+                        attempt, _MAX_ADAPTER_RETRIES, delay, e,
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        "Network error persists after %d attempts: %s",
+                        _MAX_ADAPTER_RETRIES, e,
+                    )
+                    raise
+
+        # Should not reach here, but just in case
+        raise last_err  # type: ignore[misc]
+
     async def consolidate(self, session_id: str) -> dict[str, Any]:
         """Consolidate a session into long-term graph memory."""
         await self.initialise()
         t0 = time.perf_counter()
-        result = await self._manager.consolidate_session(session_id=session_id)
+        result = await self._retry_network(
+            self._manager.consolidate_session, session_id=session_id,
+        )
         result["consolidate_ms"] = (time.perf_counter() - t0) * 1000
         return result
 
@@ -402,7 +445,8 @@ class KumihoMemoryAdapter:
     ) -> list[dict[str, Any]]:
         """Recall memories relevant to a query."""
         await self.initialise()
-        return await self._manager.recall_memories(
+        return await self._retry_network(
+            self._manager.recall_memories,
             query,
             limit=limit or self.config.recall_limit,
             space_paths=space_paths,

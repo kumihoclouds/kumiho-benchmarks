@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from tqdm import tqdm
 
 from .common import (
@@ -40,6 +41,10 @@ from .common import (
     save_results,
     token_f1,
 )
+
+_RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+MAX_CONV_RETRIES = 3
+RETRY_BASE_DELAY = 15  # seconds
 
 logger = logging.getLogger("kumiho_eval.locomo")
 
@@ -196,130 +201,155 @@ async def evaluate_locomo(
                 len(qa_pairs),
             )
 
-            # Create isolated evaluation space
-            space_name = await adapter.create_eval_space(conv_id)
+            # Retry the entire conversation processing on transient network errors
+            last_conv_error: Exception | None = None
+            for conv_attempt in range(1, MAX_CONV_RETRIES + 1):
+                try:
+                    # Create isolated evaluation space
+                    space_name = await adapter.create_eval_space(conv_id)
 
-            # --- Phase 1: Ingest all sessions ---
-            user_id = f"locomo-{conv_id}"
-            session_ids: list[str] = []
-            total_ingest_ms = 0.0
+                    # --- Phase 1: Ingest all sessions ---
+                    user_id = f"locomo-{conv_id}"
+                    session_ids: list[str] = []
+                    total_ingest_ms = 0.0
 
-            for session in tqdm(
-                sessions, desc=f"Ingesting {conv_id}", leave=False
-            ):
-                messages = session_to_messages(session)
-                result = await adapter.ingest_session(
-                    user_id=user_id,
-                    session_messages=messages,
-                    context="personal",
-                )
-                if result.get("session_id"):
-                    session_ids.append(result["session_id"])
-                total_ingest_ms += result.get("ingest_ms", 0)
-
-                # Consolidate each session to long-term memory
-                if result.get("session_id"):
-                    try:
-                        await adapter.consolidate(result["session_id"])
-                    except Exception as e:
-                        logger.warning("Consolidation failed for session: %s", e)
-
-            avg_ingest_ms = total_ingest_ms / max(len(sessions), 1)
-
-            # --- Phase 2: Answer questions ---
-            full_context = format_conversation_context(sessions)
-
-            for qi, qa in enumerate(
-                tqdm(qa_pairs, desc=f"Evaluating {conv_id}", leave=False)
-            ):
-                question = qa["question"]
-                answer = str(qa.get("answer", qa.get("adversarial_answer", "")))
-                category = qa.get("category", 0)
-                q_id = f"{conv_id}_q{qi}"
-
-                # Recall from memory
-                t0 = time.perf_counter()
-                memories = await adapter.recall(question, limit=config.recall_limit)
-                recall_ms = (time.perf_counter() - t0) * 1000
-
-                # Build context from recalled memories (mode-aware)
-                recalled_context = adapter.build_recalled_context(memories)
-
-                # Generate answer
-                t1 = time.perf_counter()
-                if category == 5:
-                    # Adversarial: instruct model to refuse if info not available
-                    system = (
-                        "You are answering questions about a conversation. "
-                        "If the information is not available in the context, "
-                        'say "No information available".'
-                    )
-                else:
-                    system = (
-                        "You are answering questions about a conversation between two people. "
-                        "Answer concisely with exact facts from the context. "
-                        "For temporal questions, use approximate dates from the conversation."
-                    )
-
-                # Use recalled context, fall back to a truncated version of full context
-                answer_context = recalled_context if recalled_context else full_context[:8000]
-
-                prediction = await generate_answer(
-                    question,
-                    answer_context,
-                    system_prompt=system,
-                    model=config.answer_model,
-                    api_key=config.openai_api_key,
-                    max_tokens=150,
-                )
-                answer_ms = (time.perf_counter() - t1) * 1000
-
-                # Score
-                f1 = score_locomo_qa(category, prediction, answer)
-
-                # LLM judge
-                judge_ok = False
-                if judge and category != 5:
-                    try:
-                        judge_ok = await llm_judge(
-                            question,
-                            answer,
-                            prediction,
-                            model=config.judge_model,
-                            api_key=config.openai_api_key,
+                    for session in tqdm(
+                        sessions, desc=f"Ingesting {conv_id}", leave=False
+                    ):
+                        messages = session_to_messages(session)
+                        result = await adapter.ingest_session(
+                            user_id=user_id,
+                            session_messages=messages,
+                            context="personal",
                         )
-                    except Exception as e:
-                        logger.warning("Judge failed for %s: %s", q_id, e)
-                elif category == 5:
-                    judge_ok = f1 == 1.0
+                        if result.get("session_id"):
+                            session_ids.append(result["session_id"])
+                        total_ingest_ms += result.get("ingest_ms", 0)
 
-                result = EvalResult(
-                    question_id=q_id,
-                    question=question,
-                    question_type=CATEGORY_NAMES.get(category, f"cat-{category}"),
-                    ground_truth=answer,
-                    prediction=prediction,
-                    recalled_context=recalled_context,
-                    f1_score=f1,
-                    judge_score=judge_ok,
-                    exact_match=exact_match(prediction, answer),
-                    latency_ingest_ms=avg_ingest_ms,
-                    latency_recall_ms=recall_ms,
-                    latency_answer_ms=answer_ms,
-                    metadata={
-                        "category": category,
-                        "conv_id": conv_id,
-                        "evidence": qa.get("evidence", []),
-                        "memories_recalled": len(memories),
-                    },
-                )
-                all_results.append(result)
+                        # Consolidate each session to long-term memory
+                        if result.get("session_id"):
+                            try:
+                                await adapter.consolidate(result["session_id"])
+                            except Exception as e:
+                                logger.warning("Consolidation failed for session: %s", e)
 
-            # Save per-conversation intermediate results
-            save_results(
-                [r for r in all_results if r.metadata.get("conv_id") == conv_id],
-                output_dir / f"{conv_id}_results.json",
-            )
+                    avg_ingest_ms = total_ingest_ms / max(len(sessions), 1)
+
+                    # --- Phase 2: Answer questions ---
+                    full_context = format_conversation_context(sessions)
+
+                    for qi, qa in enumerate(
+                        tqdm(qa_pairs, desc=f"Evaluating {conv_id}", leave=False)
+                    ):
+                        question = qa["question"]
+                        answer = str(qa.get("answer", qa.get("adversarial_answer", "")))
+                        category = qa.get("category", 0)
+                        q_id = f"{conv_id}_q{qi}"
+
+                        # Recall from memory
+                        t0 = time.perf_counter()
+                        memories = await adapter.recall(question, limit=config.recall_limit)
+                        recall_ms = (time.perf_counter() - t0) * 1000
+
+                        # Build context from recalled memories (mode-aware)
+                        recalled_context = adapter.build_recalled_context(memories)
+
+                        # Generate answer
+                        t1 = time.perf_counter()
+                        if category == 5:
+                            # Adversarial: instruct model to refuse if info not available
+                            system = (
+                                "You are answering questions about a conversation. "
+                                "If the information is not available in the context, "
+                                'say "No information available".'
+                            )
+                        else:
+                            system = (
+                                "You are answering questions about a conversation between two people. "
+                                "Answer concisely with exact facts from the context. "
+                                "For temporal questions, use approximate dates from the conversation."
+                            )
+
+                        # Use recalled context, fall back to a truncated version of full context
+                        answer_context = recalled_context if recalled_context else full_context[:8000]
+
+                        prediction = await generate_answer(
+                            question,
+                            answer_context,
+                            system_prompt=system,
+                            model=config.answer_model,
+                            api_key=config.openai_api_key,
+                            max_tokens=150,
+                        )
+                        answer_ms = (time.perf_counter() - t1) * 1000
+
+                        # Score
+                        f1 = score_locomo_qa(category, prediction, answer)
+
+                        # LLM judge
+                        judge_ok = False
+                        if judge and category != 5:
+                            try:
+                                judge_ok = await llm_judge(
+                                    question,
+                                    answer,
+                                    prediction,
+                                    model=config.judge_model,
+                                    api_key=config.openai_api_key,
+                                )
+                            except Exception as e:
+                                logger.warning("Judge failed for %s: %s", q_id, e)
+                        elif category == 5:
+                            judge_ok = f1 == 1.0
+
+                        result = EvalResult(
+                            question_id=q_id,
+                            question=question,
+                            question_type=CATEGORY_NAMES.get(category, f"cat-{category}"),
+                            ground_truth=answer,
+                            prediction=prediction,
+                            recalled_context=recalled_context,
+                            f1_score=f1,
+                            judge_score=judge_ok,
+                            exact_match=exact_match(prediction, answer),
+                            latency_ingest_ms=avg_ingest_ms,
+                            latency_recall_ms=recall_ms,
+                            latency_answer_ms=answer_ms,
+                            metadata={
+                                "category": category,
+                                "conv_id": conv_id,
+                                "evidence": qa.get("evidence", []),
+                                "memories_recalled": len(memories),
+                            },
+                        )
+                        all_results.append(result)
+
+                    # Save per-conversation intermediate results
+                    save_results(
+                        [r for r in all_results if r.metadata.get("conv_id") == conv_id],
+                        output_dir / f"{conv_id}_results.json",
+                    )
+
+                    last_conv_error = None
+                    break  # conversation succeeded
+
+                except _RETRYABLE_ERRORS as e:
+                    last_conv_error = e
+                    if conv_attempt < MAX_CONV_RETRIES:
+                        delay = RETRY_BASE_DELAY * (2 ** (conv_attempt - 1))
+                        logger.warning(
+                            "Network error on %s (attempt %d/%d), retrying in %ds: %s",
+                            conv_id, conv_attempt, MAX_CONV_RETRIES, delay, e,
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error(
+                            "Failed conversation %s after %d attempts: %s",
+                            conv_id, MAX_CONV_RETRIES, e,
+                        )
+
+            if last_conv_error is not None:
+                logger.error("Skipping conversation %s due to persistent network errors", conv_id)
 
     finally:
         await adapter.cleanup()
