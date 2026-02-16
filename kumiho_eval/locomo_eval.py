@@ -59,6 +59,70 @@ CATEGORY_NAMES = {
     5: "adversarial",
 }
 
+# ---------------------------------------------------------------------------
+# Checkpoint / resume (same pattern as LongMemEval / MAB)
+# ---------------------------------------------------------------------------
+
+
+def _checkpoint_path(output_dir: Path) -> Path:
+    return output_dir / "_checkpoint.jsonl"
+
+
+def _load_checkpoint(output_dir: Path) -> tuple[list[EvalResult], set[str]]:
+    """Load checkpoint if it exists. Returns (results, completed_question_ids)."""
+    ckpt = _checkpoint_path(output_dir)
+    if not ckpt.exists():
+        return [], set()
+
+    results: list[EvalResult] = []
+    completed: set[str] = set()
+    for line in ckpt.read_text(encoding="utf-8").strip().splitlines():
+        try:
+            data = json.loads(line)
+            r = EvalResult(
+                question_id=data["question_id"],
+                question=data["question"],
+                question_type=data["question_type"],
+                ground_truth=data["ground_truth"],
+                prediction=data["prediction"],
+                recalled_context=data.get("recalled_context", ""),
+                f1_score=data.get("f1_score", 0.0),
+                judge_score=data.get("judge_score", False),
+                exact_match=data.get("exact_match", False),
+                latency_ingest_ms=data.get("latency_ingest_ms", 0.0),
+                latency_recall_ms=data.get("latency_recall_ms", 0.0),
+                latency_answer_ms=data.get("latency_answer_ms", 0.0),
+                metadata=data.get("metadata", {}),
+            )
+            results.append(r)
+            completed.add(data["question_id"])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning("Skipping corrupt checkpoint line: %s", e)
+    logger.info("Loaded checkpoint: %d completed questions", len(completed))
+    return results, completed
+
+
+def _save_checkpoint_line(output_dir: Path, result: EvalResult) -> None:
+    """Append a single result to the checkpoint JSONL file."""
+    ckpt = _checkpoint_path(output_dir)
+    data = {
+        "question_id": result.question_id,
+        "question": result.question,
+        "question_type": result.question_type,
+        "ground_truth": result.ground_truth,
+        "prediction": result.prediction,
+        "recalled_context": result.recalled_context[:500],
+        "f1_score": result.f1_score,
+        "judge_score": result.judge_score,
+        "exact_match": result.exact_match,
+        "latency_ingest_ms": result.latency_ingest_ms,
+        "latency_recall_ms": result.latency_recall_ms,
+        "latency_answer_ms": result.latency_answer_ms,
+        "metadata": result.metadata,
+    }
+    with open(ckpt, "a", encoding="utf-8") as f:
+        f.write(json.dumps(data, ensure_ascii=False) + "\n")
+
 
 # ---------------------------------------------------------------------------
 # Data loading helpers
@@ -169,12 +233,16 @@ async def evaluate_locomo(
     config: BenchmarkConfig,
     data_path: str | Path | None = None,
     judge: bool = True,
+    resume: bool = True,
 ) -> dict[str, Any]:
     """
     Run the full LoCoMo evaluation.
 
-    1. For each conversation: ingest sessions → consolidate
+    1. For each conversation: ingest sessions (parallel) → consolidate
     2. For each QA pair: recall → generate answer → score
+
+    Checkpoint/resume: saves progress after each question; skips completed
+    questions on restart (controlled by `resume` parameter).
 
     Returns dict with results, metrics, and per-category breakdown.
     """
@@ -183,9 +251,16 @@ async def evaluate_locomo(
         dataset = dataset[: config.max_samples]
 
     adapter = KumihoMemoryAdapter(config)
-    all_results: list[EvalResult] = []
     output_dir = Path(config.output_dir) / "locomo"
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load checkpoint for resume
+    if resume:
+        all_results, completed_ids = _load_checkpoint(output_dir)
+    else:
+        all_results, completed_ids = [], set()
+
+    sem = asyncio.Semaphore(config.concurrency)
 
     try:
         for conv_idx, sample in enumerate(dataset):
@@ -193,6 +268,12 @@ async def evaluate_locomo(
             conversation = sample["conversation"]
             qa_pairs = sample["qa"]
             sessions = extract_sessions(conversation)
+
+            # Check if all questions for this conversation are done
+            conv_q_ids = [f"{conv_id}_q{qi}" for qi in range(len(qa_pairs))]
+            if completed_ids and all(qid in completed_ids for qid in conv_q_ids):
+                logger.info("Skipping completed conversation %s (%d questions)", conv_id, len(qa_pairs))
+                continue
 
             logger.info(
                 "Processing conversation %s (%d sessions, %d questions)",
@@ -208,31 +289,37 @@ async def evaluate_locomo(
                     # Create isolated evaluation space
                     space_name = await adapter.create_eval_space(conv_id)
 
-                    # --- Phase 1: Ingest all sessions ---
+                    # --- Phase 1: Ingest all sessions (parallel) ---
                     user_id = f"locomo-{conv_id}"
-                    session_ids: list[str] = []
-                    total_ingest_ms = 0.0
+                    t_ingest = time.perf_counter()
 
-                    for session in tqdm(
-                        sessions, desc=f"Ingesting {conv_id}", leave=False
-                    ):
-                        messages = session_to_messages(session)
-                        result = await adapter.ingest_session(
-                            user_id=user_id,
-                            session_messages=messages,
-                            context="personal",
-                        )
-                        if result.get("session_id"):
-                            session_ids.append(result["session_id"])
-                        total_ingest_ms += result.get("ingest_ms", 0)
+                    async def _ingest_one(session: dict) -> str | None:
+                        async with sem:
+                            messages = session_to_messages(session)
+                            result = await adapter.ingest_session(
+                                user_id=user_id,
+                                session_messages=messages,
+                                context="personal",
+                            )
+                            sid = result.get("session_id")
+                            if sid:
+                                try:
+                                    await adapter.consolidate(sid)
+                                except Exception as e:
+                                    logger.warning("Consolidation failed for session: %s", e)
+                            return sid
 
-                        # Consolidate each session to long-term memory
-                        if result.get("session_id"):
-                            try:
-                                await adapter.consolidate(result["session_id"])
-                            except Exception as e:
-                                logger.warning("Consolidation failed for session: %s", e)
+                    ingest_results = await asyncio.gather(
+                        *[_ingest_one(s) for s in sessions],
+                        return_exceptions=True,
+                    )
+                    for r in ingest_results:
+                        if isinstance(r, _RETRYABLE_ERRORS):
+                            raise r
+                        if isinstance(r, Exception):
+                            logger.warning("Session ingestion error: %s", r)
 
+                    total_ingest_ms = (time.perf_counter() - t_ingest) * 1000
                     avg_ingest_ms = total_ingest_ms / max(len(sessions), 1)
 
                     # --- Phase 2: Answer questions ---
@@ -245,6 +332,10 @@ async def evaluate_locomo(
                         answer = str(qa.get("answer", qa.get("adversarial_answer", "")))
                         category = qa.get("category", 0)
                         q_id = f"{conv_id}_q{qi}"
+
+                        # Skip already-completed questions (checkpoint resume)
+                        if q_id in completed_ids:
+                            continue
 
                         # Recall from memory
                         t0 = time.perf_counter()
@@ -323,6 +414,7 @@ async def evaluate_locomo(
                             },
                         )
                         all_results.append(result)
+                        _save_checkpoint_line(output_dir, result)
 
                     # Save per-conversation intermediate results
                     save_results(
@@ -408,7 +500,14 @@ def main():
     parser.add_argument("--answer-model", type=str, default="gpt-4o", help="Model for answer generation")
     parser.add_argument("--judge-model", type=str, default="gpt-4o", help="Model for LLM judge")
     parser.add_argument("--recall-limit", type=int, default=10, help="Max memories to recall")
+    parser.add_argument("--recall-mode", type=str, default="full",
+                        choices=["full", "summarized"],
+                        help="Recall mode: full (artifact content) or summarized (title+summary)")
+    parser.add_argument("--concurrency", type=int, default=4,
+                        help="Max parallel session ingestions per conversation")
     parser.add_argument("--no-judge", action="store_true", help="Skip LLM judge (F1 only)")
+    parser.add_argument("--no-resume", action="store_true",
+                        help="Start fresh instead of resuming from checkpoint")
     parser.add_argument("--project", type=str, default="benchmark-locomo", help="Kumiho project name")
     args = parser.parse_args()
 
@@ -421,9 +520,13 @@ def main():
         output_dir=args.output,
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
+        recall_mode=args.recall_mode,
+        concurrency=args.concurrency,
     )
 
-    asyncio.run(evaluate_locomo(config, data_path=args.data, judge=not args.no_judge))
+    asyncio.run(evaluate_locomo(
+        config, data_path=args.data, judge=not args.no_judge, resume=not args.no_resume,
+    ))
 
 
 if __name__ == "__main__":

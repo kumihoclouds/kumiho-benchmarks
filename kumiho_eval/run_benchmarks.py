@@ -78,6 +78,14 @@ REFERENCE_SCORES = {
             "source": "arXiv 2507.05257",
         },
     },
+    "locomo_plus": {
+        "RAG (BM25+DPR)": {"cognitive_accuracy": 0.26, "source": "arXiv 2602.10715"},
+        "Mem0": {"cognitive_accuracy": 0.41, "source": "arXiv 2602.10715"},
+        "SeCom": {"cognitive_accuracy": 0.42, "source": "arXiv 2602.10715"},
+        "A-Mem": {"cognitive_accuracy": 0.41, "source": "arXiv 2602.10715"},
+        "GPT-4o": {"cognitive_accuracy": 0.44, "source": "arXiv 2602.10715"},
+        "Gemini-2.5-Flash": {"cognitive_accuracy": 0.45, "source": "arXiv 2602.10715"},
+    },
 }
 
 
@@ -175,6 +183,30 @@ def generate_paper_table(all_metrics: dict[str, Any]) -> str:
         lines.append("\\end{tabular}")
         lines.append("\\end{table}")
 
+    # LoCoMo-Plus table
+    if "locomo_plus" in all_metrics:
+        lp = all_metrics["locomo_plus"].get("locomo_plus", {})
+        lines.append("")
+        lines.append("% --- LoCoMo-Plus (Cognitive Memory) Results ---")
+        lines.append("\\begin{table}[h]")
+        lines.append("\\centering")
+        lines.append("\\caption{LoCoMo-Plus Cognitive Memory Results}")
+        lines.append("\\label{tab:locomo-plus-results}")
+        lines.append("\\begin{tabular}{lc}")
+        lines.append("\\toprule")
+        lines.append("System & Cognitive Accuracy \\\\")
+        lines.append("\\midrule")
+
+        for name, ref in REFERENCE_SCORES.get("locomo_plus", {}).items():
+            lines.append(f"{name} & {ref['cognitive_accuracy']:.3f} \\\\")
+
+        our_acc = lp.get("overall_judge_accuracy", 0)
+        lines.append("\\midrule")
+        lines.append(f"\\textbf{{Kumiho (ours)}} & \\textbf{{{our_acc:.3f}}} \\\\")
+        lines.append("\\bottomrule")
+        lines.append("\\end{tabular}")
+        lines.append("\\end{table}")
+
     return "\n".join(lines)
 
 
@@ -229,6 +261,22 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
         )
         result = await evaluate_memoryagentbench(mab_config)
         all_metrics["memoryagentbench"] = result["metrics"]
+
+    if "locomo-plus" in benchmarks:
+        from .locomo_plus_eval import evaluate_locomo_plus
+
+        logger.info("=" * 60)
+        logger.info("Running LoCoMo-Plus (Cognitive Memory)...")
+        logger.info("=" * 60)
+
+        lp_config = BenchmarkConfig(
+            **{
+                **config.__dict__,
+                "project_name": f"{config.project_name}-locomo-plus",
+            }
+        )
+        result = await evaluate_locomo_plus(lp_config)
+        all_metrics["locomo_plus"] = result["metrics"]
 
     # Save combined metrics
     output_dir = Path(config.output_dir)
@@ -286,6 +334,13 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
         for split, vals in comp.items():
             print(f"    {split}: {vals.get('avg_primary_metric', 0) * 100:.1f}%")
 
+    if "locomo_plus" in all_metrics:
+        lp = all_metrics["locomo_plus"].get("locomo_plus", {})
+        print(f"\n  LoCoMo-Plus (Cognitive):")
+        print(f"    Overall Accuracy: {lp.get('overall_judge_accuracy', 0):.4f}")
+        for rtype, vals in lp.get("by_relation_type", {}).items():
+            print(f"    {rtype}: {vals.get('judge_accuracy', 0):.4f}")
+
     print(f"\n  Output: {output_dir}")
     print("=" * 70 + "\n")
 
@@ -327,6 +382,7 @@ Examples:
     # Benchmark selection
     parser.add_argument("--all", action="store_true", help="Run all Tier 1 benchmarks")
     parser.add_argument("--locomo", action="store_true", help="Run LoCoMo benchmark")
+    parser.add_argument("--locomo-plus", action="store_true", help="Run LoCoMo-Plus cognitive memory benchmark")
     parser.add_argument("--longmemeval", action="store_true", help="Run LongMemEval benchmark")
     parser.add_argument("--mab", action="store_true", help="Run MemoryAgentBench")
     parser.add_argument("--agm", action="store_true", help="Run AGM compliance evaluation (Tier 3)")
@@ -357,10 +413,12 @@ Examples:
     # Determine which benchmarks to run
     benchmarks = []
     if args.all:
-        benchmarks = ["locomo", "longmemeval", "mab"]
+        benchmarks = ["locomo", "locomo-plus", "longmemeval", "mab"]
     else:
         if args.locomo:
             benchmarks.append("locomo")
+        if getattr(args, "locomo_plus", False):
+            benchmarks.append("locomo-plus")
         if args.longmemeval:
             benchmarks.append("longmemeval")
         if args.mab:
