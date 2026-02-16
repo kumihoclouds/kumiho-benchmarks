@@ -249,8 +249,8 @@ async def evaluate_memoryagentbench(
                 answers = sample.get("answers", [])
                 metadata = sample.get("metadata", {})
                 source = metadata.get("source", split)
-                q_types = metadata.get("question_types", [])
-                q_ids = metadata.get("question_ids", [])
+                q_types = metadata.get("question_types") or []
+                q_ids = metadata.get("question_ids") or []
 
                 if not context or not questions:
                     continue
