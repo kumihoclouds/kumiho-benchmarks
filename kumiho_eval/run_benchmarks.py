@@ -398,6 +398,8 @@ Examples:
     parser.add_argument("--dual-mode", action="store_true",
                         help="Run benchmarks twice: once with full recall, once with summarized")
     parser.add_argument("--project", type=str, default="benchmark-eval", help="Kumiho project prefix")
+    parser.add_argument("--graph-augmented", action="store_true",
+                        help="Enable graph-augmented recall for LoCoMo-Plus (follow edges)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
@@ -449,6 +451,7 @@ Examples:
             max_samples=args.max_samples,
             recall_limit=args.recall_limit,
             recall_mode=mode,
+            graph_augmented=getattr(args, "graph_augmented", False),
         )
 
         logger.info("=" * 70)

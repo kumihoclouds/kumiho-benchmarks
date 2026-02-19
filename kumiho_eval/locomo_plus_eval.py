@@ -40,7 +40,6 @@ from .common import (
     KumihoMemoryAdapter,
     compute_aggregate_metrics,
     generate_answer,
-    print_metrics_table,
     save_results,
 )
 
@@ -378,41 +377,38 @@ def _session_to_messages(session: dict, speaker_a: str) -> list[dict[str, str]]:
 # Cognitive judge
 # ---------------------------------------------------------------------------
 
-_COGNITIVE_JUDGE_SYSTEM = (
-    "You are evaluating whether a model's response demonstrates awareness of "
-    "an implicit constraint from an earlier conversation. Respond with ONLY "
-    'a JSON object: {"label": "correct" or "wrong", "reason": "brief explanation"}'
-)
+_COGNITIVE_JUDGE_SYSTEM = "You are a Memory Awareness Judge."
 
-_COGNITIVE_JUDGE_TEMPLATE = """Evidence (cue from earlier session):
+_COGNITIVE_JUDGE_TEMPLATE = """Your task: Judge whether the Model Prediction considers or is linked to the Evidence. If there is a clear connection, the answer is correct (score 1); if not, it is wrong (no score).
+
+Labels:
+- "correct": The prediction explicitly or implicitly reflects/uses the evidence (memory or constraint). Give 1 point.
+- "wrong": The prediction does not show such a link to the evidence. No point.
+
+Memory/Evidence:
 {evidence}
 
-Trigger query the model was responding to:
-{trigger}
-
-Model's response:
+Model Prediction:
 {prediction}
 
-Does the model's response explicitly or implicitly reflect, reference,
-or act consistently with the evidence/constraint from the earlier cue?
-
-Scoring:
-- "correct" (1.0): The response reflects or uses the constraint/evidence
-- "wrong" (0.0): The response shows no connection to the evidence
-
-Respond with ONLY: {{"label": "correct" or "wrong", "reason": "..."}}"""
+Return your judgment strictly in JSON format:
+{{"label": "correct"|"wrong", "reason": "<Does the prediction relate to the evidence?>"}}
+"""
 
 
 async def cognitive_judge(
     evidence: str,
-    trigger: str,
     prediction: str,
     *,
-    model: str = "gpt-4o",
+    model: str = "gpt-4o-mini",
     api_key: str | None = None,
 ) -> tuple[bool, str]:
     """
     Judge whether a response demonstrates awareness of the cue evidence.
+
+    Matches LoCoMo-Plus paper methodology (Table 7 / prompt.py):
+    - Only evidence + prediction are shown to the judge (no trigger)
+    - Default judge model: gpt-4o-mini (paper default)
 
     Returns (is_correct, reason).
     """
@@ -423,7 +419,7 @@ async def cognitive_judge(
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
     prompt = _COGNITIVE_JUDGE_TEMPLATE.format(
-        evidence=evidence, trigger=trigger, prediction=prediction,
+        evidence=evidence, prediction=prediction,
     )
 
     @backoff.on_exception(backoff.expo, Exception, max_tries=3)
@@ -434,7 +430,7 @@ async def cognitive_judge(
                 {"role": "system", "content": _COGNITIVE_JUDGE_SYSTEM},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=100,
+            max_tokens=512,
             temperature=0.0,
         )
         return resp.choices[0].message.content.strip()
@@ -497,166 +493,220 @@ async def evaluate_locomo_plus(
 
     logger.info("LoCoMo-Plus: %d cognitive entries, %d base conversations", len(plus_data), len(base_data))
 
-    sem = asyncio.Semaphore(config.concurrency)
+    # Session-level semaphore (limits concurrent ingestion RPCs to kumiho-server)
+    session_sem = asyncio.Semaphore(config.concurrency)
+    # Entry-level semaphore (limits concurrent entries being processed)
+    entry_sem = asyncio.Semaphore(max(1, config.entry_concurrency))
+    # Lock for thread-safe checkpoint writes and result list appends
+    checkpoint_lock = asyncio.Lock()
+    pbar = tqdm(total=len(plus_data) - len(completed_ids), desc="LoCoMo-Plus")
 
-    try:
-        for ei, entry in enumerate(tqdm(plus_data, desc="LoCoMo-Plus")):
-            entry_id = f"cog-{ei}"
-            if entry_id in completed_ids:
-                continue
+    async def _process_entry(ei: int, entry: dict) -> None:
+        """Process a single cognitive entry end-to-end."""
+        entry_id = f"cog-{ei}"
 
-            relation_type = entry.get("relation_type", "unknown")
-            cue_dialogue = entry.get("cue_dialogue", "")
-            trigger_query = entry.get("trigger_query", "")
-            time_gap = entry.get("time_gap", "two weeks later")
+        relation_type = entry.get("relation_type", "unknown")
+        cue_dialogue = entry.get("cue_dialogue", "")
+        trigger_query_raw = entry.get("trigger_query", "")
+        time_gap = entry.get("time_gap", "two weeks later")
 
-            if not cue_dialogue or not trigger_query:
-                continue
+        if not cue_dialogue or not trigger_query_raw:
+            pbar.update(1)
+            return
 
-            # Cyclic assignment to base conversation
-            base_conv = base_data[ei % len(base_data)]
-            conversation = base_conv["conversation"]
-            speaker_a = conversation.get("speaker_a", "A")
+        # Cyclic assignment to base conversation
+        base_conv = base_data[ei % len(base_data)]
+        conversation = base_conv["conversation"]
+        speaker_a = conversation.get("speaker_a", "A")
 
-            # Stitch cue + trigger into conversation
-            stitched_sessions, mapped_cue, mapped_trigger = stitch_conversation(
-                conversation, cue_dialogue, trigger_query, time_gap,
-            )
+        # Stitch cue + trigger into conversation
+        stitched_sessions, mapped_cue, mapped_trigger = stitch_conversation(
+            conversation, cue_dialogue, trigger_query_raw, time_gap,
+        )
 
-            if not stitched_sessions:
-                continue
+        if not stitched_sessions:
+            pbar.update(1)
+            return
 
-            # Retry on transient errors
-            last_error: Exception | None = None
-            for attempt in range(1, MAX_ENTRY_RETRIES + 1):
-                try:
-                    await adapter.create_eval_space(f"lp-{entry_id}")
-                    user_id = f"locomo-plus-{entry_id}"
+        # Retry on transient errors
+        last_error: Exception | None = None
+        for attempt in range(1, MAX_ENTRY_RETRIES + 1):
+            try:
+                user_id = f"locomo-plus-{entry_id}"
+                # Space is derived automatically from user_id during
+                # consolidation (context/user_id → personal/locomo-plus-cog-N).
+                # We still construct it here for recall scoping.
+                user_space = f"{config.project_name}/personal/{user_id}"
 
-                    # --- Phase 1: Ingest all sessions (parallel) ---
-                    t_ingest = time.perf_counter()
+                # --- Phase 1: Ingest all sessions (parallel) ---
+                t_ingest = time.perf_counter()
 
-                    # Exclude trigger session from ingestion — it's the query
-                    ingest_sessions = [
-                        s for s in stitched_sessions
-                        if not s.get("is_trigger")
-                    ]
+                # Exclude trigger session from ingestion — it's the query
+                ingest_sessions = [
+                    s for s in stitched_sessions
+                    if not s.get("is_trigger")
+                ]
 
-                    async def _ingest_one(session: dict) -> str | None:
-                        async with sem:
-                            messages = _session_to_messages(session, speaker_a)
-                            if not messages:
-                                return None
-                            result = await adapter.ingest_session(
-                                user_id=user_id,
-                                session_messages=messages,
-                                context="personal",
-                            )
-                            sid = result.get("session_id")
-                            if sid:
-                                try:
-                                    await adapter.consolidate(sid)
-                                except Exception as e:
-                                    logger.warning("Consolidation failed: %s", e)
-                            return sid
+                async def _ingest_one(session: dict) -> str | None:
+                    async with session_sem:
+                        messages = _session_to_messages(session, speaker_a)
+                        if not messages:
+                            return None
+                        result = await adapter.ingest_session(
+                            user_id=user_id,
+                            session_messages=messages,
+                            context="personal",
+                        )
+                        sid = result.get("session_id")
+                        if sid:
+                            try:
+                                cons = await adapter.consolidate(
+                                    sid,
+                                    user_id=user_id,
+                                    context="personal",
+                                )
+                                # Post-consolidation: discover & create edges
+                                if config.graph_augmented and cons.get("success"):
+                                    store_res = cons.get("store_result", {})
+                                    rev_kref = store_res.get("revision_kref", "")
+                                    summary = cons.get("summary", "")
+                                    if rev_kref and summary:
+                                        try:
+                                            await adapter.discover_and_link_edges(
+                                                rev_kref, summary,
+                                            )
+                                        except Exception as e:
+                                            logger.debug("Edge discovery failed: %s", e)
+                            except Exception as e:
+                                logger.warning("Consolidation failed: %s", e)
+                        return sid
 
-                    ingest_results = await asyncio.gather(
-                        *[_ingest_one(s) for s in ingest_sessions],
-                        return_exceptions=True,
-                    )
-                    for r in ingest_results:
-                        if isinstance(r, _RETRYABLE_ERRORS):
-                            raise r
+                ingest_results = await asyncio.gather(
+                    *[_ingest_one(s) for s in ingest_sessions],
+                    return_exceptions=True,
+                )
+                for r in ingest_results:
+                    if isinstance(r, _RETRYABLE_ERRORS):
+                        raise r
 
-                    ingest_ms = (time.perf_counter() - t_ingest) * 1000
+                ingest_ms = (time.perf_counter() - t_ingest) * 1000
 
-                    # --- Phase 2: Recall using trigger query ---
-                    # Extract the text content of the trigger
-                    trigger_text = " ".join(
-                        t["text"] for t in stitched_sessions[-1].get("turns", [])
-                    )
+                # --- Phase 2: Recall using trigger query ---
+                trigger_text = " ".join(
+                    t["text"] for t in stitched_sessions[-1].get("turns", [])
+                )
 
-                    t_recall = time.perf_counter()
-                    memories = await adapter.recall(trigger_text, limit=config.recall_limit)
-                    recall_ms = (time.perf_counter() - t_recall) * 1000
-
-                    recalled_context = adapter.build_recalled_context(memories)
-
-                    # --- Phase 3: Generate response ---
-                    system = (
-                        "You are in an ongoing conversation with a friend. "
-                        "Based on your memory of previous conversations, respond "
-                        "naturally to what they said. If something they mention "
-                        "connects to earlier conversations, reference it naturally."
-                    )
-
-                    t_answer = time.perf_counter()
-                    prediction = await generate_answer(
+                t_recall = time.perf_counter()
+                if config.graph_augmented:
+                    memories = await adapter.recall_with_graph_augmentation(
                         trigger_text,
-                        recalled_context,
-                        system_prompt=system,
-                        model=config.answer_model,
-                        api_key=config.openai_api_key,
-                        max_tokens=200,
+                        limit=config.recall_limit,
+                        space_paths=[user_space],
                     )
-                    answer_ms = (time.perf_counter() - t_answer) * 1000
+                else:
+                    memories = await adapter.recall(
+                        trigger_text,
+                        limit=config.recall_limit,
+                        space_paths=[user_space],
+                    )
+                recall_ms = (time.perf_counter() - t_recall) * 1000
 
-                    # --- Phase 4: Cognitive judge ---
-                    judge_ok, judge_reason = await cognitive_judge(
-                        evidence=mapped_cue,
-                        trigger=trigger_text,
-                        prediction=prediction,
-                        model=config.judge_model,
-                        api_key=config.openai_api_key,
-                    )
+                recalled_context = adapter.build_recalled_context(memories)
 
-                    result = EvalResult(
-                        question_id=entry_id,
-                        question=trigger_text,
-                        question_type=f"cognitive/{relation_type}",
-                        ground_truth=mapped_cue,  # evidence is the "ground truth"
-                        prediction=prediction,
-                        recalled_context=recalled_context,
-                        f1_score=1.0 if judge_ok else 0.0,
-                        judge_score=judge_ok,
-                        exact_match=False,
-                        latency_ingest_ms=ingest_ms,
-                        latency_recall_ms=recall_ms,
-                        latency_answer_ms=answer_ms,
-                        metadata={
-                            "relation_type": relation_type,
-                            "time_gap": time_gap,
-                            "time_gap_days": parse_time_gap(time_gap),
-                            "base_conv_idx": ei % len(base_data),
-                            "memories_recalled": len(memories),
-                            "judge_reason": judge_reason,
-                        },
-                    )
+                # --- Phase 3: Generate response ---
+                # Match LoCoMo-Plus INSTRUCTION_COGNITIVE (utils.py)
+                system = (
+                    "This is a memory-aware dialogue setting. "
+                    "You are continuing or reflecting on a prior conversation. "
+                    "Show that you are aware of the relevant memory or context "
+                    "from your past interactions when responding."
+                )
+
+                t_answer = time.perf_counter()
+                prediction = await generate_answer(
+                    trigger_text,
+                    recalled_context,
+                    system_prompt=system,
+                    model=config.answer_model,
+                    api_key=config.openai_api_key,
+                    max_tokens=256,
+                )
+                answer_ms = (time.perf_counter() - t_answer) * 1000
+
+                # --- Phase 4: Cognitive judge ---
+                # Paper judge only sees evidence + prediction (no trigger)
+                judge_ok, judge_reason = await cognitive_judge(
+                    evidence=mapped_cue,
+                    prediction=prediction,
+                    model=config.judge_model,
+                    api_key=config.openai_api_key,
+                )
+
+                result = EvalResult(
+                    question_id=entry_id,
+                    question=trigger_text,
+                    question_type=f"cognitive/{relation_type}",
+                    ground_truth=mapped_cue,
+                    prediction=prediction,
+                    recalled_context=recalled_context,
+                    f1_score=1.0 if judge_ok else 0.0,
+                    judge_score=judge_ok,
+                    exact_match=False,
+                    latency_ingest_ms=ingest_ms,
+                    latency_recall_ms=recall_ms,
+                    latency_answer_ms=answer_ms,
+                    metadata={
+                        "relation_type": relation_type,
+                        "time_gap": time_gap,
+                        "time_gap_days": parse_time_gap(time_gap),
+                        "base_conv_idx": ei % len(base_data),
+                        "memories_recalled": len(memories),
+                        "judge_reason": judge_reason,
+                    },
+                )
+                async with checkpoint_lock:
                     all_results.append(result)
                     _save_checkpoint_line(output_dir, result)
+                pbar.update(1)
 
-                    last_error = None
-                    break
+                last_error = None
+                break
 
-                except _RETRYABLE_ERRORS as e:
-                    last_error = e
-                    if attempt < MAX_ENTRY_RETRIES:
-                        delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
-                        logger.warning(
-                            "Network error on %s (attempt %d/%d), retrying in %ds: %s",
-                            entry_id, attempt, MAX_ENTRY_RETRIES, delay, e,
-                        )
-                        await asyncio.sleep(delay)
-                    else:
-                        logger.error(
-                            "Failed entry %s after %d attempts: %s",
-                            entry_id, MAX_ENTRY_RETRIES, e,
-                        )
+            except _RETRYABLE_ERRORS as e:
+                last_error = e
+                if attempt < MAX_ENTRY_RETRIES:
+                    delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                    logger.warning(
+                        "Network error on %s (attempt %d/%d), retrying in %ds: %s",
+                        entry_id, attempt, MAX_ENTRY_RETRIES, delay, e,
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        "Failed entry %s after %d attempts: %s",
+                        entry_id, MAX_ENTRY_RETRIES, e,
+                    )
 
-            if last_error is not None:
-                logger.error("Skipping entry %s due to persistent errors", entry_id)
+        if last_error is not None:
+            logger.error("Skipping entry %s due to persistent errors", entry_id)
+            pbar.update(1)
 
+    try:
+        # Build tasks for all pending entries
+        async def _sem_entry(ei: int, entry: dict) -> None:
+            async with entry_sem:
+                await _process_entry(ei, entry)
+
+        pending = [
+            (ei, entry) for ei, entry in enumerate(plus_data)
+            if f"cog-{ei}" not in completed_ids
+        ]
+        await asyncio.gather(
+            *[_sem_entry(ei, entry) for ei, entry in pending],
+            return_exceptions=True,
+        )
     finally:
+        pbar.close()
         await adapter.cleanup()
 
     # Save all results
@@ -709,25 +759,33 @@ async def evaluate_locomo_plus(
     with open(output_dir / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2, default=str)
 
-    # Print results
-    print_metrics_table(metrics, "LoCoMo-Plus (Cognitive Memory)")
-
+    # Print results — cognitive eval uses Judge Accuracy only (no F1/EM)
     lp = metrics["locomo_plus"]
-    print(f"  LoCoMo-Plus Cognitive Memory Breakdown:")
-    print(f"  {'Category':<20} {'Count':>6} {'Judge Acc':>10}")
+    print(f"\n{'=' * 70}")
+    print(f"  LoCoMo-Plus (Cognitive Memory) — Kumiho Evaluation")
+    print(f"{'=' * 70}")
+    print(f"  Total entries:           {lp['total_entries']}")
+    print(f"  Judge Accuracy:          {lp['overall_judge_accuracy']:.4f}")
+    print(f"  Avg Recall Latency:      {metrics.get('avg_latency_recall_ms', 0):.1f} ms")
+    print(f"  Avg Answer Latency:      {metrics.get('avg_latency_answer_ms', 0):.1f} ms")
+
+    print(f"\n  By Relation Type:")
+    print(f"  {'Type':<20} {'Count':>6} {'Judge Acc':>10}")
     print(f"  {'-' * 38}")
-    print(f"  {'Overall':<20} {lp['total_entries']:>6} {lp['overall_judge_accuracy']:>10.4f}")
-    for rtype, vals in type_metrics.items():
-        print(f"  {rtype:<20} {vals['count']:>6} {vals['judge_accuracy']:>10.4f}")
-    print()
-    print(f"  By Time Gap:")
+    for rtype in ["causal", "state"]:
+        if rtype in type_metrics:
+            vals = type_metrics[rtype]
+            print(f"  {rtype:<20} {vals['count']:>6} {vals['judge_accuracy']:>10.4f}")
+
+    print(f"\n  By Time Gap:")
     print(f"  {'Gap':<20} {'Count':>6} {'Judge Acc':>10}")
     print(f"  {'-' * 38}")
     for bucket in ["<=2wk", "2wk-1mo", "1-3mo", "3-6mo", ">6mo"]:
         if bucket in gap_scores:
             v = gap_scores[bucket]
             print(f"  {bucket:<20} {v['count']:>6} {v['judge_accuracy']:>10.4f}")
-    print()
+
+    print(f"{'=' * 70}\n")
 
     return {"results": all_results, "metrics": metrics}
 
@@ -746,16 +804,20 @@ def main():
     parser.add_argument("--output", type=str, default="./results")
     parser.add_argument("--max-samples", type=int, default=None, help="Limit entries")
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
-    parser.add_argument("--judge-model", type=str, default="gpt-4o")
+    parser.add_argument("--judge-model", type=str, default="gpt-4o-mini")
     parser.add_argument("--recall-limit", type=int, default=10)
     parser.add_argument("--recall-mode", type=str, default="full",
                         choices=["full", "summarized"],
                         help="Recall mode: full (artifact content) or summarized (title+summary)")
     parser.add_argument("--concurrency", type=int, default=4,
-                        help="Max parallel session ingestions per entry")
+                        help="Max parallel session ingestions (shared across entries)")
+    parser.add_argument("--entry-concurrency", type=int, default=1,
+                        help="Max entries processed in parallel (pipeline parallelism)")
     parser.add_argument("--project", type=str, default="benchmark-locomo-plus")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
+    parser.add_argument("--graph-augmented", action="store_true",
+                        help="Enable graph-augmented recall (follow edges from recalled memories)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -769,6 +831,8 @@ def main():
         recall_limit=args.recall_limit,
         recall_mode=args.recall_mode,
         concurrency=args.concurrency,
+        entry_concurrency=args.entry_concurrency,
+        graph_augmented=args.graph_augmented,
     )
 
     asyncio.run(evaluate_locomo_plus(
