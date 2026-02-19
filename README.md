@@ -4,21 +4,70 @@ Reproducible evaluation harness for **Graph-Native Cognitive Memory** systems.
 Tests long-term conversational memory, belief revision compliance, and retrieval
 quality against established benchmarks and formal postulates.
 
-Built to evaluate [Kumiho Cloud](https://kumiho.cloud)'s dual-store architecture
+Built to evaluate [Kumiho](https://kumiho.io)'s dual-store architecture
 (Redis working memory + Neo4j long-term graph) and generate paper-ready tables
 for the AI Cognitive Memory paper.
 
+## Latest Results
+
+### LoCoMo-Plus (Level-2 Cognitive Memory)
+
+**61.6% judge accuracy** on the full 401-entry LoCoMo-Plus benchmark — the
+highest reported score, outperforming Gemini-2.5-Pro (45.72%) by 15.9 points.
+
+| System | Model | LoCoMo-Plus Accuracy |
+|--------|-------|---------------------|
+| RAG (text-embedding-large) | text-embedding-large | 29.8% |
+| Mem0 | Various | 41.4% |
+| A-Mem | Various | 42.4% |
+| SeCom | Various | 42.6% |
+| GPT-4.1 | GPT-4.1 (full context) | 43.6% |
+| Gemini-2.5-Pro | Gemini-2.5-Pro (1M ctx) | 45.7% |
+| **Kumiho Cognitive Memory** | **GPT-4o-mini + GPT-4o** | **61.6%** |
+
+Total cost for the full 401-entry run: **<$8** using GPT-4o-mini for
+summarization/reformulation and GPT-4o for answer generation.
+
+#### By Constraint Type
+
+| Type | Accuracy | Description |
+|------|----------|-------------|
+| Causal | 73.3% | Cause-effect reasoning |
+| State | 73.0% | State-change tracking |
+| Goal | 51.0% | Goal/intention inference |
+| Value | 49.0% | Value/belief inference |
+
+See [docs/AI_Cognitive_memory_LoCoMo_Plus_benchmark.md](../docs/AI_Cognitive_memory_LoCoMo_Plus_benchmark.md)
+for the full analysis including time-gap breakdown, failure analysis, and paper
+integration notes.
+
+### LoCoMo (Level-1 Conversational QA)
+
+| System | LoCoMo Judge Acc. | Source |
+|--------|-------------------|--------|
+| MAGMA | 70.0% | arXiv 2601.03236 |
+| Mem0 | 67.1% | arXiv 2504.19413 |
+| Mem0+Graph | 65.7% | arXiv 2504.19413 |
+| Zep/Graphiti | 58.4% | arXiv 2501.13956 |
+| LangMem | 51.2% | arXiv 2504.19413 |
+| A-Mem | 40.6% | arXiv 2504.19413 |
+| **Kumiho (full)** | **95.2%** | This work |
+| **Kumiho (summarized)** | **99.6%** | This work |
+
+---
+
 ## Benchmarks
 
-### Tier 1 — Conversational Memory Benchmarks
+### Conversational Memory Benchmarks
 
 | Benchmark | Focus | Metric | Source |
 |-----------|-------|--------|--------|
 | **LoCoMo** | Long conversation QA (10 conversations, ~200 QA pairs across 5 categories) | Token-F1, LLM-as-Judge Accuracy | [Maharana et al. 2024](https://arxiv.org/abs/2402.14562) |
+| **LoCoMo-Plus** | Level-2 cognitive memory (401 entries, 4 constraint types, cue-trigger semantic disconnect) | LLM Cognitive Judge Accuracy | [arXiv 2602.10715](https://arxiv.org/abs/2602.10715) |
 | **LongMemEval** | 5 core memory abilities (500 questions, multi-session, temporal) | Accuracy across ability categories | [ICLR 2025](https://arxiv.org/abs/2410.10813) |
 | **MemoryAgentBench** | Agent competency (action recall, TTL, LRU, single/multi-hop CR) | Per-competency accuracy | [MemoryAgentBench](https://github.com/MemoryAgentBench) |
 
-### Tier 3 — AGM Belief Revision Compliance
+### AGM Belief Revision Compliance
 
 Tests whether the memory system satisfies the formal AGM postulates
 (Alchourron, Gardenfors, Makinson 1985) and Hansson's belief base postulates
@@ -42,7 +91,7 @@ operationally on the graph:
 ### Prerequisites
 
 - Python 3.11+
-- A running [Kumiho Cloud](https://kumiho.cloud) instance (or local dev server)
+- A [Kumiho](https://kumiho.io) account
 - OpenAI API key (for answer generation and LLM-as-Judge)
 
 ### Install
@@ -53,7 +102,7 @@ cd kumiho-benchmarks
 pip install -r kumiho_eval/requirements.txt
 ```
 
-The three Tier 1 benchmark datasets are included as git submodules (`locomo/`,
+The benchmark datasets are included as git submodules (`locomo/`,
 `LongMemEval/`, `MemoryAgentBench/`). The `--recurse-submodules` flag fetches
 them automatically. If you already cloned without it:
 
@@ -66,12 +115,7 @@ git submodule update --init --recursive
 ```bash
 # Required
 export OPENAI_API_KEY="sk-..."
-export KUMIHO_AUTH_TOKEN="your-kumiho-api-token"
-
-# Optional (defaults shown)
-export KUMIHO_ENDPOINT=""                # auto-discover if empty
-export KUMIHO_UPSTASH_REDIS_URL=""       # Redis for working memory
-export KUMIHO_LLM_API_KEY=""             # LLM for memory summarization
+export KUMIHO_AUTH_TOKEN="your-kumiho-api-token"  # from kumiho.io dashboard
 ```
 
 Or create a `.env.local` file in `kumiho_eval/`.
@@ -86,6 +130,7 @@ python -m kumiho_eval.run_benchmarks --all
 
 # Run individual benchmarks
 python -m kumiho_eval.run_benchmarks --locomo
+python -m kumiho_eval.run_benchmarks --locomo-plus
 python -m kumiho_eval.run_benchmarks --longmemeval
 python -m kumiho_eval.run_benchmarks --mab
 
@@ -94,6 +139,9 @@ python -m kumiho_eval.run_benchmarks --all --max-samples 1
 
 # Custom models
 python -m kumiho_eval.run_benchmarks --all --answer-model gpt-4o --judge-model gpt-4o
+
+# Enable graph-augmented recall (edge traversal) for LoCoMo-Plus
+python -m kumiho_eval.run_benchmarks --locomo-plus --graph-augmented
 
 # Compare full vs summarized recall modes
 python -m kumiho_eval.run_benchmarks --all --dual-mode
@@ -105,53 +153,159 @@ python -m kumiho_eval.run_benchmarks --agm
 python -m kumiho_eval.run_benchmarks --all --agm
 ```
 
-### CLI Options
+### Unified Runner CLI Options
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--all` | | Run all Tier 1 benchmarks |
 | `--locomo` | | Run LoCoMo benchmark |
+| `--locomo-plus` | | Run LoCoMo-Plus cognitive memory benchmark |
 | `--longmemeval` | | Run LongMemEval benchmark |
 | `--mab` | | Run MemoryAgentBench |
 | `--agm` | | Run AGM compliance evaluation (Tier 3) |
-| `--output` | `./results` | Output directory for metrics and reports |
+| `--output` | `./results` | Output directory |
 | `--max-samples` | all | Limit samples per benchmark |
 | `--answer-model` | `gpt-4o` | Model for answer generation |
 | `--judge-model` | `gpt-4o` | Model for LLM-as-Judge evaluation |
 | `--recall-limit` | `10` | Max memories recalled per query |
 | `--recall-mode` | `full` | `full` (artifact content) or `summarized` (title+summary) |
-| `--dual-mode` | | Run twice: full recall then summarized recall |
+| `--dual-mode` | | Run both full and summarized, then compare |
+| `--graph-augmented` | | Enable graph-augmented recall (edge traversal) |
 | `--project` | `benchmark-eval` | Kumiho project name prefix |
 | `-v` | | Verbose logging |
 
-### Standalone AGM Compliance
+### Standalone Evaluations
+
+Each benchmark can also be run directly with finer-grained control:
 
 ```bash
+# LoCoMo-Plus (recommended: summarized + graph-augmented for best results)
+python -m kumiho_eval.locomo_plus_eval \
+  --concurrency 16 \
+  --entry-concurrency 4 \
+  --graph-augmented \
+  --recall-mode summarized \
+  --project benchmark-locomo-plus
+
+# LoCoMo (original)
+python -m kumiho_eval.locomo_eval \
+  --concurrency 4 \
+  --recall-mode full \
+  --project benchmark-locomo
+
+# LongMemEval
+python -m kumiho_eval.longmemeval_eval \
+  --variant s \
+  --concurrency 4 \
+  --project benchmark-longmemeval
+
+# MemoryAgentBench
+python -m kumiho_eval.memoryagentbench_eval \
+  --splits AR,TTL,LRU,CR \
+  --project benchmark-mab
+
+# AGM compliance
 python -m kumiho_eval.agm_compliance_eval [--max-scenarios N] [--output DIR]
 ```
 
+### Standalone CLI Options
+
+#### locomo_plus_eval.py
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--data` | auto | Path to locomo_plus.json |
+| `--base-data` | auto | Path to locomo10.json |
+| `--concurrency` | `4` | Max parallel session ingestions |
+| `--entry-concurrency` | `1` | Max entries processed in parallel |
+| `--graph-augmented` | | Enable graph-augmented recall (edge traversal) |
+| `--recall-mode` | `full` | `full` or `summarized` |
+| `--recall-limit` | `10` | Max memories recalled per query |
+| `--answer-model` | `gpt-4o` | Model for answer generation |
+| `--judge-model` | `gpt-4o-mini` | Model for cognitive judge |
+| `--project` | `benchmark-locomo-plus` | Kumiho project name |
+| `--max-samples` | all | Limit entries |
+| `--no-resume` | | Start fresh (ignore checkpoint) |
+
+#### locomo_eval.py
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--data` | auto | Path to locomo10.json |
+| `--concurrency` | `4` | Max parallel session ingestions per conversation |
+| `--recall-mode` | `full` | `full` or `summarized` |
+| `--recall-limit` | `10` | Max memories recalled |
+| `--answer-model` | `gpt-4o` | Model for answer generation |
+| `--judge-model` | `gpt-4o` | Model for LLM judge |
+| `--no-judge` | | Skip LLM judge (F1 only) |
+| `--project` | `benchmark-locomo` | Kumiho project name |
+| `--max-samples` | all | Limit conversations |
+| `--no-resume` | | Start fresh (ignore checkpoint) |
+
+#### longmemeval_eval.py
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--variant` | `s` | Dataset variant: `s` (small), `m` (medium), `oracle` |
+| `--data-dir` | auto | Data directory override |
+| `--concurrency` | `4` | Max parallel session ingestions |
+| `--recall-mode` | `full` | `full` or `summarized` |
+| `--recall-limit` | `10` | Max memories recalled |
+| `--answer-model` | `gpt-4o` | Model for answer generation |
+| `--judge-model` | `gpt-4o` | Model for LLM judge |
+| `--project` | `benchmark-longmemeval` | Kumiho project name |
+| `--max-samples` | all | Limit questions |
+| `--no-resume` | | Start fresh (ignore checkpoint) |
+
+#### memoryagentbench_eval.py
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--splits` | `AR,TTL,LRU,CR` | Comma-separated competency splits |
+| `--chunk-size` | `16384` | Context chunk size (chars) for ingestion |
+| `--recall-mode` | `full` | `full` or `summarized` |
+| `--recall-limit` | `10` | Max memories recalled |
+| `--answer-model` | `gpt-4o` | Model for answer generation |
+| `--judge-model` | `gpt-4o` | Model for LLM judge |
+| `--project` | `benchmark-mab` | Kumiho project name |
+| `--max-samples` | all | Limit samples per split |
+| `--no-resume` | | Start fresh (ignore checkpoint) |
+
 ## Output
 
-Each run produces timestamped results in the output directory:
+Each run produces results in the output directory with checkpoint/resume support:
 
 ```
 results/
   locomo/
-    locomo_results_20260216T120000.json       # Per-question results
-    locomo_metrics_20260216T120000.json        # Aggregate metrics
+    _checkpoint.jsonl                             # Resume checkpoint
+    all_results.json                              # Per-question results
+    metrics.json                                  # Aggregate metrics
+  locomo_plus/
+    _checkpoint.jsonl                             # Resume checkpoint
+    all_results.json                              # Per-entry results
+    metrics.json                                  # Per relation type + time gap breakdown
   longmemeval/
-    longmemeval_results_20260216T120000.json
-    longmemeval_metrics_20260216T120000.json
+    _checkpoint.jsonl
+    all_results.json
+    metrics.json
+    hypotheses.jsonl                              # Compatible with official evaluate_qa.py
   mab/
-    mab_results_20260216T120000.json
-    mab_metrics_20260216T120000.json
+    _checkpoint.jsonl
+    all_results.json
+    metrics.json
+    AR_results.json / TTL_results.json / ...      # Per-competency results
   agm/
-    agm_report_20260216T120000.json           # Full compliance report
-    agm_compliance_matrix.txt                 # Postulate × category matrix
-    agm_latex_table.tex                       # Paper-ready LaTeX table
-  combined_metrics.json                       # All benchmarks in one file
-  comparison_table.tex                        # LaTeX comparison vs baselines
+    agm_report_TIMESTAMP.json                     # Full compliance report
+    agm_compliance_matrix.txt                     # Postulate x category matrix
+    agm_latex_table.tex                           # Paper-ready LaTeX table
+  tier1_metrics_TIMESTAMP.json                    # All Tier 1 combined
+  paper_tables_TIMESTAMP.tex                      # LaTeX comparison vs baselines
 ```
+
+All evaluation scripts support checkpoint/resume by default. If a run is
+interrupted, re-run the same command to pick up where it left off. Use
+`--no-resume` to start fresh.
 
 ### Recall Modes
 
@@ -165,17 +319,18 @@ result for the paper's BYO-storage contribution.
 
 ## Architecture
 
-```
+```text
 kumiho_eval/
 ├── run_benchmarks.py          # Unified CLI runner
 ├── common.py                  # KumihoMemoryAdapter, BenchmarkConfig, metrics
 ├── locomo_eval.py             # LoCoMo benchmark (Tier 1)
+├── locomo_plus_eval.py        # LoCoMo-Plus cognitive memory benchmark
 ├── longmemeval_eval.py        # LongMemEval benchmark (Tier 1)
 ├── memoryagentbench_eval.py   # MemoryAgentBench benchmark (Tier 1)
 ├── agm_compliance_eval.py     # AGM belief revision compliance (Tier 3)
 └── requirements.txt
 
-locomo/                        # LoCoMo dataset (submodule)
+locomo/                        # LoCoMo + LoCoMo-Plus dataset (submodule)
 LongMemEval/                   # LongMemEval dataset (submodule)
 MemoryAgentBench/              # MemoryAgentBench dataset (submodule)
 ```
@@ -188,20 +343,6 @@ a standard interface for all benchmarks:
 3. **`consolidate()`** — Trigger summarization and long-term storage
 4. **`recall()`** — Query long-term memory (full or summarized mode)
 5. **`cleanup()`** — Remove evaluation data after the run
-
-## Reference Scores
-
-The runner includes hard-coded reference scores from published systems for
-paper comparison tables:
-
-| System | LoCoMo Judge Acc. | Source |
-|--------|-------------------|--------|
-| MAGMA | 70.0% | arXiv 2601.03236 |
-| Mem0 | 58.3% | arXiv 2504.19413 |
-| Zep | 50.5% | arXiv 2504.19413 |
-| A-Mem | 67.3% | arXiv 2504.01080 |
-| ReadAgent | 56.0% | arXiv 2402.09727 |
-| **Kumiho (full)** | **95.2%** | This work |
 
 ## Contributing
 
@@ -220,7 +361,7 @@ If you use this benchmark suite in your research, please cite:
 ```bibtex
 @software{kumiho_eval_2026,
   title   = {kumiho-eval: Empirical Benchmark Suite for AI Cognitive Memory},
-  author  = {Park, Youngbin},
+  author  = {Kumiho Inc.},
   year    = {2026},
   url     = {https://github.com/kumihoclouds/kumiho-benchmarks},
 }
