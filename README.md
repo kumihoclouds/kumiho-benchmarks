@@ -12,8 +12,10 @@ for the AI Cognitive Memory paper.
 
 ### LoCoMo-Plus (Level-2 Cognitive Memory)
 
-**61.6% judge accuracy** on the full 401-entry LoCoMo-Plus benchmark — the
-highest reported score, outperforming Gemini-2.5-Pro (45.72%) by 15.9 points.
+**93.3% judge accuracy** on the full 401-entry LoCoMo-Plus benchmark — the
+highest reported score, outperforming Gemini-2.5-Pro (45.7%) by 47.6 points.
+**Recall accuracy: 98.5%** — the architecture retrieves the correct memory
+in all but 6 of 401 entries.
 
 | System | Model | LoCoMo-Plus Accuracy |
 |--------|-------|---------------------|
@@ -23,23 +25,34 @@ highest reported score, outperforming Gemini-2.5-Pro (45.72%) by 15.9 points.
 | SeCom | Various | 42.6% |
 | GPT-4.1 | GPT-4.1 (full context) | 43.6% |
 | Gemini-2.5-Pro | Gemini-2.5-Pro (1M ctx) | 45.7% |
-| **Kumiho Cognitive Memory** | **GPT-4o-mini + GPT-4o** | **61.6%** |
+| **Kumiho (GPT-4o-mini answer)** | **GPT-4o-mini** | **~88%** |
+| **Kumiho (GPT-4o answer)** | **GPT-4o** | **93.3%** |
 
-Total cost for the full 401-entry run: **<$8** using GPT-4o-mini for
-summarization/reformulation and GPT-4o for answer generation.
+Total cost for the full 401-entry run: **<$12** using GPT-4o-mini for
+consolidation, event extraction, prospective indexing, reformulation, and
+judging. GPT-4o for answer generation only.
 
 #### By Constraint Type
 
-| Type | Accuracy | Description |
-|------|----------|-------------|
-| Causal | 73.3% | Cause-effect reasoning |
-| State | 73.0% | State-change tracking |
-| Goal | 51.0% | Goal/intention inference |
-| Value | 49.0% | Value/belief inference |
+| Type | GPT-4o Accuracy | GPT-4o-mini Accuracy | Description |
+|------|-----------------|----------------------|-------------|
+| Causal | 96.0% | 96.0% | Cause-effect reasoning |
+| State | 96.0% | 95.0% | State-change tracking |
+| Value | 96.0% | ~89% | Value/belief inference |
+| Goal | 85.0% | ~73% | Goal/intention inference |
+
+#### Key Architectural Innovations
+
+- **Prospective indexing** — generates future-facing implications at write time,
+  bridging the cue-trigger semantic gap
+- **Event extraction** — preserves causal chains that narrative summarization drops
+- **Sibling relevance filtering** — embedding-based quality control over retrieved context
+- **Model-decoupled architecture** — recall accuracy (98.5%) is invariant to answer
+  model choice; end-to-end accuracy scales with model reasoning capacity
 
 See [docs/AI_Cognitive_memory_LoCoMo_Plus_benchmark.md](../docs/AI_Cognitive_memory_LoCoMo_Plus_benchmark.md)
-for the full analysis including time-gap breakdown, failure analysis, and paper
-integration notes.
+for the full analysis including failure taxonomy, model comparison, time-gap
+breakdown, and paper integration notes.
 
 ### LoCoMo (Level-1 Conversational QA)
 

@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import string
+import threading
 import time
 import uuid
 from collections import Counter
@@ -27,10 +28,28 @@ import backoff
 import numpy as np
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
+# OpenAI SDK exceptions (uses httpx internally)
+try:
+    from openai import APIError as OpenAIAPIError
+    from openai import APIConnectionError as OpenAIConnectionError
+    from openai import APITimeoutError as OpenAITimeoutError
+    from openai import RateLimitError as OpenAIRateLimitError
+    from openai import InternalServerError as OpenAIInternalServerError
+    _OPENAI_ERRORS: tuple = (
+        OpenAIAPIError, OpenAIConnectionError, OpenAITimeoutError,
+        OpenAIRateLimitError, OpenAIInternalServerError,
+    )
+except ImportError:
+    _OPENAI_ERRORS = ()
+
 # Network error types that warrant retry in adapter methods
-_NETWORK_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+_NETWORK_ERRORS = (
+    OSError, RequestsConnectionError, ConnectionError, TimeoutError,
+    *_OPENAI_ERRORS,
+)
 _MAX_ADAPTER_RETRIES = 5
 _ADAPTER_RETRY_BASE = 5  # seconds
+_CALL_TIMEOUT = 120  # seconds — per SDK call timeout
 
 logger = logging.getLogger("kumiho_eval")
 
@@ -186,20 +205,26 @@ async def generate_answer(
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
     user_msg = (
-        f"Based on the following memory context, answer the question.\n\n"
-        f"Context:\n{context}\n\nQuestion: {question}\n\n"
-        f"Answer concisely with exact information from the context."
+        f"Based on the following memory context, respond to the message.\n\n"
+        f"Memory context:\n{context}\n\nMessage: {question}\n\n"
+        f"Respond naturally, grounding your answer in the specific details "
+        f"from the memory context above. Be concise (2-4 sentences)."
     )
-    resp = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-            {"role": "user", "content": user_msg},
-        ],
-        max_tokens=max_tokens,
-        temperature=0.0,
-    )
-    return resp.choices[0].message.content.strip()
+    for _answer_attempt in range(3):
+        resp = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+                {"role": "user", "content": user_msg},
+            ],
+            max_tokens=max_tokens,
+            temperature=0.0,
+        )
+        text = (resp.choices[0].message.content or "").strip()
+        if text:
+            return text
+        logger.warning("Empty response from %s (attempt %d/3), retrying", model, _answer_attempt + 1)
+    return text  # return empty after 3 tries rather than loop forever
 
 
 # ---------------------------------------------------------------------------
@@ -223,12 +248,14 @@ class BenchmarkConfig:
     redis_url: str | None = None
     output_dir: str = "./results"
     max_samples: int | None = None
+    start_at: int = 0  # Skip entries before this index (e.g. 201 for cog-201)
     consolidation_threshold: int = 20
     recall_limit: int = 10
     recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
     entry_concurrency: int = 1  # How many entries to process in parallel (pipeline parallelism)
     graph_augmented: bool = False  # Follow edges from recalled memories to discover related ones
+    sibling_similarity_threshold: float = 0.30  # Min cosine similarity for siblings (0=off)
 
 
 @dataclass
@@ -417,16 +444,20 @@ class KumihoMemoryAdapter:
         result["ingest_ms"] = (time.perf_counter() - t0) * 1000
         return result
 
-    async def _retry_network(self, coro_func, *args, **kwargs) -> Any:
+    async def _retry_network(self, coro_func, *args, timeout: float = _CALL_TIMEOUT, **kwargs) -> Any:
         """
         Call an async function with retry on transient network errors.
 
+        Each attempt is wrapped in asyncio.wait_for with *timeout* seconds
+        to prevent indefinite hangs from unresponsive servers.
         Uses exponential backoff: 5s, 10s, 20s, 40s, 80s.
         """
         last_err: Exception | None = None
         for attempt in range(1, _MAX_ADAPTER_RETRIES + 1):
             try:
-                return await coro_func(*args, **kwargs)
+                return await asyncio.wait_for(
+                    coro_func(*args, **kwargs), timeout=timeout,
+                )
             except _NETWORK_ERRORS as e:
                 last_err = e
                 if attempt < _MAX_ADAPTER_RETRIES:
@@ -628,47 +659,95 @@ class KumihoMemoryAdapter:
         ])
 
         # --- Strategy A: Edge traversal via kumiho SDK ---
+        # kumiho.get_revision / rev.get_edges are *synchronous* gRPC calls
+        # that can hang indefinitely on Windows.  Neither asyncio.wait_for
+        # nor asyncio.wait reliably timeout these calls because the Windows
+        # ProactorEventLoop doesn't process timer callbacks while to_thread
+        # futures are pending.  We use a bare daemon thread + threading.Event
+        # with an OS-level timeout (WaitForSingleObject) which is guaranteed
+        # to return regardless of asyncio state.
+        _GRAPH_TRAVERSAL_TIMEOUT = 30  # seconds
+
         graph_found = 0
-        for mem in memories[:5]:  # Top-5 to avoid explosion
-            kref_str = mem.get("kref", "")
-            if not kref_str:
-                continue
+        graph_augmented_results: list[dict] = []
+
+        def _sync_graph_traverse() -> int:
+            """Run all sync gRPC calls in a plain thread."""
+            found = 0
+            for mem in memories[:5]:
+                kref_str = mem.get("kref", "")
+                if not kref_str:
+                    continue
+                try:
+                    rev = kumiho.get_revision(kref_str)
+                    edges = rev.get_edges(direction=kumiho.BOTH)
+                    for edge in edges:
+                        if edge.edge_type not in edge_filter:
+                            continue
+                        connected_uri = (
+                            edge.target_kref.uri
+                            if edge.source_kref.uri == kref_str
+                            else edge.source_kref.uri
+                        )
+                        if not connected_uri or connected_uri in seen_krefs:
+                            continue
+                        seen_krefs.add(connected_uri)
+                        try:
+                            connected_rev = kumiho.get_revision(connected_uri)
+                            graph_augmented_results.append({
+                                "kref": connected_uri,
+                                "title": connected_rev.metadata.get("title", ""),
+                                "summary": connected_rev.metadata.get("summary", ""),
+                                "content": connected_rev.metadata.get("content", ""),
+                                "score": 0.0,
+                                "graph_augmented": True,
+                                "edge_type": edge.edge_type,
+                                "from_kref": kref_str,
+                            })
+                            found += 1
+                        except Exception as e:
+                            logger.debug("Failed to fetch connected revision %s: %s", connected_uri, e)
+                except Exception as e:
+                    logger.debug("Failed to get edges for %s: %s", kref_str, e)
+            return found
+
+        # Run in a daemon thread with OS-level timeout via threading.Event
+        _done_event = threading.Event()
+        _traverse_result: list[int] = []  # mutable container for thread result
+
+        def _worker():
             try:
-                rev = kumiho.get_revision(kref_str)
-                edges = rev.get_edges(direction=kumiho.BOTH)
-                for edge in edges:
-                    if edge.edge_type not in edge_filter:
-                        continue
-                    # Pick the other end of the edge
-                    connected_uri = (
-                        edge.target_kref.uri
-                        if edge.source_kref.uri == kref_str
-                        else edge.source_kref.uri
-                    )
-                    if not connected_uri or connected_uri in seen_krefs:
-                        continue
-                    seen_krefs.add(connected_uri)
-                    try:
-                        connected_rev = kumiho.get_revision(connected_uri)
-                        augmented.append({
-                            "kref": connected_uri,
-                            "title": connected_rev.metadata.get("title", ""),
-                            "summary": connected_rev.metadata.get("summary", ""),
-                            "content": connected_rev.metadata.get("content", ""),
-                            "score": 0.0,
-                            "graph_augmented": True,
-                            "edge_type": edge.edge_type,
-                            "from_kref": kref_str,
-                        })
-                        graph_found += 1
-                    except Exception as e:
-                        logger.debug("Failed to fetch connected revision %s: %s", connected_uri, e)
+                _traverse_result.append(_sync_graph_traverse())
             except Exception as e:
-                logger.debug("Failed to get edges for %s: %s", kref_str, e)
+                logger.debug("Graph traversal thread error: %s", e)
+            finally:
+                _done_event.set()
+
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+
+        # Poll the event from the event loop — does NOT consume thread pool
+        # threads (unlike asyncio.to_thread which can starve when many
+        # concurrent entries hold pool threads in edge-creation waits).
+        _deadline = time.monotonic() + _GRAPH_TRAVERSAL_TIMEOUT
+        while not _done_event.is_set():
+            if time.monotonic() >= _deadline:
+                break
+            await asyncio.sleep(0.5)
+        completed = _done_event.is_set()
+
+        if completed and _traverse_result:
+            graph_found = _traverse_result[0]
+            augmented.extend(graph_augmented_results)
+        else:
+            logger.warning(
+                "\033[1;33mGraph traversal timed out after %ds — falling back to semantic recall\033[0m",
+                _GRAPH_TRAVERSAL_TIMEOUT,
+            )
 
         # --- Strategy B: Multi-hop semantic recall (fallback if no edges found) ---
         if graph_found == 0 and max_hops >= 1:
-            logger.info("No graph edges found, falling back to multi-hop semantic recall")
+            logger.debug("No graph edges found, falling back to multi-hop semantic recall")
             secondary_terms = []
             for mem in memories[:5]:
                 title = mem.get("title", "")
@@ -763,7 +842,7 @@ class KumihoMemoryAdapter:
         if not queries:
             return []
 
-        logger.info(
+        logger.debug(
             "Edge discovery for %s: generated %d implication queries (space_paths=%s)",
             revision_kref, len(queries), space_paths,
         )
@@ -796,7 +875,7 @@ class KumihoMemoryAdapter:
                     }
 
         if not candidates:
-            logger.info("Edge discovery: no candidates above threshold %.2f", min_score)
+            logger.debug("Edge discovery: no candidates above threshold %.2f", min_score)
             return []
 
         # Step 3: Create edges to top-N candidates
@@ -804,60 +883,98 @@ class KumihoMemoryAdapter:
             candidates.values(), key=lambda c: c["score"], reverse=True,
         )[:max_edges]
 
-        # Get the source revision object once (with retry for rate limits)
-        source_rev = None
-        for attempt in range(1, 4):
-            try:
-                source_rev = kumiho.get_revision(revision_kref)
-                break
-            except Exception as e:
-                if "RESOURCE_EXHAUSTED" in str(e) and attempt < 3:
-                    await asyncio.sleep(0.05 * attempt)
-                else:
-                    logger.warning("Failed to get source revision %s: %s", revision_kref, e)
-                    return []
+        # Get the source revision, create edges — all sync gRPC calls.
+        # Same daemon-thread + threading.Event pattern as Strategy A in
+        # recall_with_graph_augmentation.  asyncio.wait / asyncio.wait_for
+        # do NOT reliably timeout asyncio.to_thread on Windows.
+        _EDGE_CREATION_TIMEOUT = 60  # seconds
 
-        created_edges: list[dict[str, Any]] = []
-        for cand in sorted_candidates:
-            target_kref = cand["memory"].get("kref", "")
-            # Retry loop for rate-limited edge creation (server marks
-            # CreateEdge as "expensive" — 10 req/s, burst 20).
+        _edge_results: list[dict[str, Any]] = []
+
+        def _sync_create_edges() -> list[dict[str, Any]]:
+            """Run all sync gRPC edge-creation calls in a plain thread."""
+            source_rev = None
             for attempt in range(1, 4):
                 try:
-                    target_rev = kumiho.get_revision(target_kref)
-                    source_rev.create_edge(
-                        target_rev,
-                        edge_type,
-                        metadata={
-                            "reason": f"LLM implication: {cand['query'][:100]}",
-                            "score": str(round(cand["score"], 3)),
-                        },
-                    )
-                    created_edges.append({
-                        "source": revision_kref,
-                        "target": target_kref,
-                        "edge_type": edge_type,
-                        "query": cand["query"],
-                        "score": cand["score"],
-                    })
-                    logger.info(
-                        "Created edge %s → %s (type=%s, query=%r, score=%.3f)",
-                        revision_kref, target_kref, edge_type,
-                        cand["query"][:60], cand["score"],
-                    )
-                    break  # success
+                    source_rev = kumiho.get_revision(revision_kref)
+                    break
                 except Exception as e:
-                    err_str = str(e)
-                    if "RESOURCE_EXHAUSTED" in err_str and attempt < 3:
-                        wait_ms = 50 * attempt  # 50ms, 100ms
-                        logger.debug(
-                            "Rate limited on edge %s → %s (attempt %d), retrying in %dms",
-                            revision_kref, target_kref, attempt, wait_ms,
-                        )
-                        await asyncio.sleep(wait_ms / 1000)
+                    if "RESOURCE_EXHAUSTED" in str(e) and attempt < 3:
+                        time.sleep(0.05 * attempt)
                     else:
-                        logger.warning("Failed to create edge %s → %s: %s", revision_kref, target_kref, e)
-                        break
+                        logger.warning("Failed to get source revision %s: %s", revision_kref, e)
+                        return []
+
+            edges_out: list[dict[str, Any]] = []
+            for cand in sorted_candidates:
+                target_kref = cand["memory"].get("kref", "")
+                for attempt in range(1, 4):
+                    try:
+                        target_rev = kumiho.get_revision(target_kref)
+                        source_rev.create_edge(
+                            target_rev,
+                            edge_type,
+                            metadata={
+                                "reason": f"LLM implication: {cand['query'][:100]}",
+                                "score": str(round(cand["score"], 3)),
+                            },
+                        )
+                        edges_out.append({
+                            "source": revision_kref,
+                            "target": target_kref,
+                            "edge_type": edge_type,
+                            "query": cand["query"],
+                            "score": cand["score"],
+                        })
+                        logger.debug(
+                            "Created edge %s → %s (type=%s, query=%r, score=%.3f)",
+                            revision_kref, target_kref, edge_type,
+                            cand["query"][:60], cand["score"],
+                        )
+                        break  # success
+                    except Exception as e:
+                        err_str = str(e)
+                        if "RESOURCE_EXHAUSTED" in err_str and attempt < 3:
+                            wait_ms = 50 * attempt
+                            logger.debug(
+                                "Rate limited on edge %s → %s (attempt %d), retrying in %dms",
+                                revision_kref, target_kref, attempt, wait_ms,
+                            )
+                            time.sleep(wait_ms / 1000)
+                        else:
+                            logger.warning("Failed to create edge %s → %s: %s", revision_kref, target_kref, e)
+                            break
+            return edges_out
+
+        _edge_done = threading.Event()
+
+        def _edge_worker():
+            try:
+                _edge_results.extend(_sync_create_edges())
+            except Exception as e:
+                logger.debug("Edge creation thread error: %s", e)
+            finally:
+                _edge_done.set()
+
+        t = threading.Thread(target=_edge_worker, daemon=True)
+        t.start()
+
+        # Poll — same pattern as graph traversal, avoids thread pool starvation
+        _edge_deadline = time.monotonic() + _EDGE_CREATION_TIMEOUT
+        while not _edge_done.is_set():
+            if time.monotonic() >= _edge_deadline:
+                break
+            await asyncio.sleep(0.5)
+        completed = _edge_done.is_set()
+
+        if completed:
+            created_edges = list(_edge_results)
+        else:
+            logger.warning(
+                "\033[1;33mEdge creation timed out after %ds for %s\033[0m",
+                _EDGE_CREATION_TIMEOUT, revision_kref,
+            )
+            created_edges = []
 
         return created_edges
 
@@ -921,17 +1038,88 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         if self._manager:
             await self._manager.close()
 
-    def build_recalled_context(self, memories: list[dict[str, Any]]) -> str:
+    # -----------------------------------------------------------------
+    # Embedding-based sibling relevance scoring
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _embed_texts(
+        texts: list[str],
+        api_key: str | None,
+        model: str = "text-embedding-3-small",
+    ) -> np.ndarray:
+        """Batch-embed texts via OpenAI and return an (N, dim) numpy array."""
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+        resp = client.embeddings.create(input=texts, model=model)
+        return np.array([item.embedding for item in resp.data])
+
+    @staticmethod
+    def _cosine_similarities(query_vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+        """Cosine similarity between a single query vector and a matrix of rows."""
+        norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(query_vec)
+        norms = np.where(norms == 0, 1e-9, norms)
+        return matrix @ query_vec / norms
+
+    def _filter_siblings_by_embedding(
+        self,
+        siblings: list[dict[str, Any]],
+        query: str,
+        threshold: float,
+    ) -> list[dict[str, Any]]:
+        """Keep only siblings whose embedding similarity to *query* exceeds *threshold*."""
+        if not siblings or not query or threshold <= 0:
+            return siblings
+
+        sib_texts = []
+        for sib in siblings:
+            t = sib.get("title", "")
+            s = sib.get("summary", "")
+            sib_texts.append(f"{t}: {s}" if t else s)
+
+        try:
+            all_texts = [query] + sib_texts
+            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
+            query_vec = embeddings[0]
+            sib_matrix = embeddings[1:]
+            scores = self._cosine_similarities(query_vec, sib_matrix)
+
+            kept = []
+            for i, sib in enumerate(siblings):
+                if scores[i] >= threshold:
+                    kept.append(sib)
+            logger.debug(
+                "Sibling embedding filter: %d/%d kept (threshold=%.2f, scores=%s)",
+                len(kept), len(siblings), threshold,
+                [f"{s:.3f}" for s in scores],
+            )
+            return kept
+        except Exception as e:
+            logger.warning("Sibling embedding filter failed, keeping all: %s", e)
+            return siblings
+
+    # -----------------------------------------------------------------
+    # Context builder
+    # -----------------------------------------------------------------
+
+    def build_recalled_context(
+        self,
+        memories: list[dict[str, Any]],
+        query: str = "",
+    ) -> str:
         """
         Build text context from recalled memories based on recall_mode.
 
         - "full": includes artifact content (raw conversation text) — lossless
         - "summarized": only title + summary — lossy, comparable to Mem0/Graphiti
 
-        For stacked items with sibling revisions, the siblings' summaries
-        are appended so the LLM sees the full conversation progression
-        without each revision consuming a separate recall slot.
+        When *query* is provided and ``sibling_similarity_threshold > 0``,
+        sibling revisions are filtered by embedding cosine similarity to the
+        query so only semantically relevant siblings reach the answer model.
         """
+        threshold = self.config.sibling_similarity_threshold
+
         texts = []
         for mem in memories:
             title = mem.get("title", "")
@@ -943,11 +1131,21 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             elif summary:
                 texts.append(f"{title}: {summary}" if title else summary)
 
-            # Unfold sibling revisions (conversation progression)
-            for sib in mem.get("sibling_revisions", []):
+            # Unfold sibling revisions — optionally filtered by relevance
+            siblings = mem.get("sibling_revisions", [])
+            if siblings and query and threshold > 0:
+                siblings = self._filter_siblings_by_embedding(
+                    siblings, query, threshold,
+                )
+
+            for sib in siblings:
                 sib_title = sib.get("title", "")
                 sib_summary = sib.get("summary", "")
-                if sib_summary:
+                sib_content = sib.get("content", "")
+
+                if self.config.recall_mode == "full" and sib_content:
+                    texts.append(sib_content[:4000])
+                elif sib_summary:
                     texts.append(
                         f"{sib_title}: {sib_summary}" if sib_title else sib_summary
                     )

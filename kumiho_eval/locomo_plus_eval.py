@@ -38,13 +38,17 @@ from .common import (
     BenchmarkConfig,
     EvalResult,
     KumihoMemoryAdapter,
+    _OPENAI_ERRORS,
     compute_aggregate_metrics,
     generate_answer,
     save_results,
 )
 
-_RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
-MAX_ENTRY_RETRIES = 3
+_RETRYABLE_ERRORS = (
+    OSError, RequestsConnectionError, ConnectionError, TimeoutError,
+    *_OPENAI_ERRORS,
+)
+MAX_ENTRY_RETRIES = 5
 RETRY_BASE_DELAY = 10
 
 logger = logging.getLogger("kumiho_eval.locomo_plus")
@@ -60,6 +64,59 @@ LOCOMO_BASE_DATA = DATA_DIR / "locomo10.json"
 
 def _checkpoint_path(output_dir: Path) -> Path:
     return output_dir / "_checkpoint.jsonl"
+
+
+def _check_ingestion_complete(user_space: str) -> bool:
+    """Check if ingestion is complete by looking for a tagged ingest.status item."""
+    import kumiho
+    try:
+        item = kumiho.get_item(f"kref://{user_space}/ingest.status")
+        rev = item.get_revision_by_tag("complete")
+        return rev is not None
+    except Exception:
+        return False
+
+
+def _hard_delete_space(user_space: str) -> None:
+    """Hard-delete a user space and all its items/revisions/artifacts.
+
+    Used to clean up partial ingestion before re-ingesting from scratch.
+    """
+    import kumiho
+    try:
+        kumiho.get_client().delete_space(path=user_space, force=True)
+        logger.info(
+            "\033[31m[cleanup] Hard-deleted partial ingestion space: %s\033[0m",
+            user_space,
+        )
+    except Exception as e:
+        # Space may not exist yet — that's fine
+        logger.debug("delete_space(%s) skipped: %s", user_space, e)
+
+
+def _mark_ingestion_complete(user_space: str, entry_id: str, session_count: int) -> None:
+    """Mark ingestion complete by creating/updating an ingest.status item with a tagged revision."""
+    import kumiho
+    client = kumiho.get_client()
+    try:
+        client.create_item(
+            parent_path=user_space,
+            item_name="ingest",
+            kind="status",
+        )
+    except Exception:
+        pass  # Item may already exist
+
+    try:
+        item = kumiho.get_item(f"kref://{user_space}/ingest.status")
+        rev = item.create_revision(metadata={
+            "entry_id": entry_id,
+            "session_count": str(session_count),
+            "timestamp": str(time.time()),
+        })
+        rev.tag("complete")
+    except Exception as e:
+        logger.warning("Failed to mark ingestion complete for %s: %s", entry_id, e)
 
 
 def _load_checkpoint(output_dir: Path) -> tuple[list[EvalResult], set[str]]:
@@ -479,8 +536,12 @@ async def evaluate_locomo_plus(
     plus_data = load_locomo_plus(data_path)
     base_data = load_locomo_base(base_path)
 
+    # Build (original_index, entry) pairs so cog-IDs stay correct after slicing
+    indexed_data = list(enumerate(plus_data))
+    if config.start_at:
+        indexed_data = [(i, e) for i, e in indexed_data if i >= config.start_at]
     if config.max_samples:
-        plus_data = plus_data[:config.max_samples]
+        indexed_data = indexed_data[:config.max_samples]
 
     adapter = KumihoMemoryAdapter(config)
     output_dir = Path(config.output_dir) / "locomo_plus"
@@ -491,7 +552,8 @@ async def evaluate_locomo_plus(
     else:
         all_results, completed_ids = [], set()
 
-    logger.info("LoCoMo-Plus: %d cognitive entries, %d base conversations", len(plus_data), len(base_data))
+    logger.info("LoCoMo-Plus: %d cognitive entries (%d selected), %d base conversations",
+                 len(plus_data), len(indexed_data), len(base_data))
 
     # Session-level semaphore (limits concurrent ingestion RPCs to kumiho-server)
     session_sem = asyncio.Semaphore(config.concurrency)
@@ -499,7 +561,8 @@ async def evaluate_locomo_plus(
     entry_sem = asyncio.Semaphore(max(1, config.entry_concurrency))
     # Lock for thread-safe checkpoint writes and result list appends
     checkpoint_lock = asyncio.Lock()
-    pbar = tqdm(total=len(plus_data) - len(completed_ids), desc="LoCoMo-Plus")
+    selected_ids = {f"cog-{i}" for i, _ in indexed_data}
+    pbar = tqdm(total=len(selected_ids - completed_ids), desc="LoCoMo-Plus")
 
     async def _process_entry(ei: int, entry: dict) -> None:
         """Process a single cognitive entry end-to-end."""
@@ -538,58 +601,103 @@ async def evaluate_locomo_plus(
                 # We still construct it here for recall scoping.
                 user_space = f"{config.project_name}/personal/{user_id}"
 
-                # --- Phase 1: Ingest all sessions (parallel) ---
+                # --- Phase 1: Ingest all sessions ---
+                # Check if ingestion already completed for this entry
+                # by looking for a tagged ingest.status item in the
+                # user's space. This prevents duplicate ingestion on
+                # resume and handles partial ingestion correctly.
                 t_ingest = time.perf_counter()
-
-                # Exclude trigger session from ingestion — it's the query
-                ingest_sessions = [
-                    s for s in stitched_sessions
-                    if not s.get("is_trigger")
-                ]
-
-                async def _ingest_one(session: dict) -> str | None:
-                    async with session_sem:
-                        messages = _session_to_messages(session, speaker_a)
-                        if not messages:
-                            return None
-                        result = await adapter.ingest_session(
-                            user_id=user_id,
-                            session_messages=messages,
-                            context="personal",
-                        )
-                        sid = result.get("session_id")
-                        if sid:
-                            try:
-                                cons = await adapter.consolidate(
-                                    sid,
-                                    user_id=user_id,
-                                    context="personal",
-                                )
-                                # Post-consolidation: discover & create edges
-                                if config.graph_augmented and cons.get("success"):
-                                    store_res = cons.get("store_result", {})
-                                    rev_kref = store_res.get("revision_kref", "")
-                                    summary = cons.get("summary", "")
-                                    if rev_kref and summary:
-                                        try:
-                                            await adapter.discover_and_link_edges(
-                                                rev_kref, summary,
-                                            )
-                                        except Exception as e:
-                                            logger.debug("Edge discovery failed: %s", e)
-                            except Exception as e:
-                                logger.warning("Consolidation failed: %s", e)
-                        return sid
-
-                ingest_results = await asyncio.gather(
-                    *[_ingest_one(s) for s in ingest_sessions],
-                    return_exceptions=True,
+                ingestion_skipped = await asyncio.to_thread(
+                    _check_ingestion_complete, user_space,
                 )
-                for r in ingest_results:
-                    if isinstance(r, _RETRYABLE_ERRORS):
-                        raise r
+                if ingestion_skipped:
+                    logger.info(
+                        "\033[36m[%s] Ingestion skipped — ingest.status tagged complete\033[0m",
+                        entry_id,
+                    )
+
+                if not ingestion_skipped:
+                    # Partial ingestion detected (or fresh start) — hard-delete
+                    # the space to wipe any stale items/revisions/artifacts
+                    # before re-ingesting from scratch.
+                    await asyncio.to_thread(_hard_delete_space, user_space)
+
+                    # Separate cue session from base sessions to avoid race
+                    # conditions. Base sessions are ingested in parallel, then
+                    # the cue session (which carries the critical evidence) is
+                    # consolidated sequentially to guarantee it lands in the
+                    # graph before recall.
+
+                    # Exclude trigger session from ingestion — it's the query
+                    all_ingest = [
+                        s for s in stitched_sessions
+                        if not s.get("is_trigger")
+                    ]
+                    base_sessions = [s for s in all_ingest if not s.get("is_cue")]
+                    cue_sessions = [s for s in all_ingest if s.get("is_cue")]
+
+                    async def _ingest_one(session: dict) -> str | None:
+                        async with session_sem:
+                            messages = _session_to_messages(session, speaker_a)
+                            if not messages:
+                                return None
+                            result = await adapter.ingest_session(
+                                user_id=user_id,
+                                session_messages=messages,
+                                context="personal",
+                            )
+                            sid = result.get("session_id")
+                            if sid:
+                                try:
+                                    cons = await adapter.consolidate(
+                                        sid,
+                                        user_id=user_id,
+                                        context="personal",
+                                    )
+                                    # Post-consolidation: discover & create edges
+                                    if config.graph_augmented and cons.get("success"):
+                                        store_res = cons.get("store_result", {})
+                                        rev_kref = store_res.get("revision_kref", "")
+                                        summary = cons.get("summary", "")
+                                        if rev_kref and summary:
+                                            try:
+                                                await adapter.discover_and_link_edges(
+                                                    rev_kref, summary,
+                                                )
+                                            except Exception as e:
+                                                logger.debug("Edge discovery failed: %s", e)
+                                except Exception as e:
+                                    logger.warning("Consolidation failed for %s: %s", entry_id, e)
+                            return sid
+
+                    # Phase 1a: Base sessions in parallel
+                    ingest_results = await asyncio.gather(
+                        *[_ingest_one(s) for s in base_sessions],
+                        return_exceptions=True,
+                    )
+                    for r in ingest_results:
+                        if isinstance(r, _RETRYABLE_ERRORS):
+                            raise r
+
+                    # Phase 1b: Cue session(s) sequentially — critical evidence
+                    for cue_s in cue_sessions:
+                        cue_r = await _ingest_one(cue_s)
+                        if isinstance(cue_r, Exception) and isinstance(cue_r, _RETRYABLE_ERRORS):
+                            raise cue_r
+
+                    # Mark ingestion complete in the graph
+                    total_sessions = len(base_sessions) + len(cue_sessions)
+                    await asyncio.to_thread(
+                        _mark_ingestion_complete, user_space, entry_id, total_sessions,
+                    )
 
                 ingest_ms = (time.perf_counter() - t_ingest) * 1000
+                logger.info(
+                    "\033[36m[%s] Ingest %s (%.0fs)\033[0m",
+                    entry_id,
+                    "skipped" if ingestion_skipped else "done",
+                    ingest_ms / 1000,
+                )
 
                 # --- Phase 2: Recall using trigger query ---
                 trigger_text = " ".join(
@@ -610,8 +718,14 @@ async def evaluate_locomo_plus(
                         space_paths=[user_space],
                     )
                 recall_ms = (time.perf_counter() - t_recall) * 1000
+                logger.info(
+                    "\033[1;33m★★★ [%s] RECALL done — %d memories, %.1fs\033[0m",
+                    entry_id, len(memories), recall_ms / 1000,
+                )
 
-                recalled_context = adapter.build_recalled_context(memories)
+                recalled_context = adapter.build_recalled_context(
+                    memories, query=trigger_text,
+                )
 
                 # --- Phase 3: Generate response ---
                 # Match LoCoMo-Plus INSTRUCTION_COGNITIVE (utils.py)
@@ -619,7 +733,8 @@ async def evaluate_locomo_plus(
                     "This is a memory-aware dialogue setting. "
                     "You are continuing or reflecting on a prior conversation. "
                     "Show that you are aware of the relevant memory or context "
-                    "from your past interactions when responding."
+                    "from the evidence when you respond; your answer should "
+                    "naturally connect to or acknowledge that context."
                 )
 
                 t_answer = time.perf_counter()
@@ -632,6 +747,10 @@ async def evaluate_locomo_plus(
                     max_tokens=256,
                 )
                 answer_ms = (time.perf_counter() - t_answer) * 1000
+                logger.info(
+                    "\033[1;35m◆◆◆ [%s] ANSWER done — model=%s, %.1fs\033[0m",
+                    entry_id, config.answer_model, answer_ms / 1000,
+                )
 
                 # --- Phase 4: Cognitive judge ---
                 # Paper judge only sees evidence + prediction (no trigger)
@@ -640,6 +759,12 @@ async def evaluate_locomo_plus(
                     prediction=prediction,
                     model=config.judge_model,
                     api_key=config.openai_api_key,
+                )
+
+                # Count total revisions seen (top-level + siblings)
+                total_revisions = len(memories) + sum(
+                    len(m.get("sibling_revisions", []))
+                    for m in memories
                 )
 
                 result = EvalResult(
@@ -661,12 +786,21 @@ async def evaluate_locomo_plus(
                         "time_gap_days": parse_time_gap(time_gap),
                         "base_conv_idx": ei % len(base_data),
                         "memories_recalled": len(memories),
+                        "total_revisions_seen": total_revisions,
                         "judge_reason": judge_reason,
                     },
                 )
                 async with checkpoint_lock:
                     all_results.append(result)
                     _save_checkpoint_line(output_dir, result)
+
+                verdict = "\033[1;32m✅ PASS\033[0m" if judge_ok else "\033[1;31m❌ FAIL\033[0m"
+                logger.info(
+                    "\033[1m%s\033[0m \033[1;37m[%s]\033[0m %s | gap=%s (%dd) | recall=%.1fs answer=%.1fs | mems=%d",
+                    verdict, entry_id, relation_type, time_gap,
+                    parse_time_gap(time_gap), recall_ms / 1000, answer_ms / 1000,
+                    len(memories),
+                )
                 pbar.update(1)
 
                 last_error = None
@@ -688,7 +822,32 @@ async def evaluate_locomo_plus(
                     )
 
         if last_error is not None:
-            logger.error("Skipping entry %s due to persistent errors", entry_id)
+            logger.error(
+                "\033[1;31m⛔ [%s] SKIPPED — exhausted %d retries: %s\033[0m",
+                entry_id, MAX_ENTRY_RETRIES, type(last_error).__name__,
+            )
+            # Checkpoint the failure so resume won't re-attempt endlessly
+            fail_result = EvalResult(
+                question_id=entry_id,
+                question="",
+                question_type="cognitive/error",
+                ground_truth="",
+                prediction="",
+                recalled_context="",
+                f1_score=0.0,
+                judge_score=False,
+                exact_match=False,
+                latency_ingest_ms=0.0,
+                latency_recall_ms=0.0,
+                latency_answer_ms=0.0,
+                metadata={
+                    "error": f"{type(last_error).__name__}: {last_error}",
+                    "attempts": MAX_ENTRY_RETRIES,
+                },
+            )
+            async with checkpoint_lock:
+                all_results.append(fail_result)
+                _save_checkpoint_line(output_dir, fail_result)
             pbar.update(1)
 
     try:
@@ -698,13 +857,29 @@ async def evaluate_locomo_plus(
                 await _process_entry(ei, entry)
 
         pending = [
-            (ei, entry) for ei, entry in enumerate(plus_data)
+            (ei, entry) for ei, entry in indexed_data
             if f"cog-{ei}" not in completed_ids
         ]
-        await asyncio.gather(
+        gather_results = await asyncio.gather(
             *[_sem_entry(ei, entry) for ei, entry in pending],
             return_exceptions=True,
         )
+
+        # Log any silently-swallowed exceptions so entries don't vanish
+        dropped = 0
+        for (ei, _entry), result in zip(pending, gather_results):
+            if isinstance(result, BaseException):
+                entry_id = f"cog-{ei}"
+                logger.error(
+                    "Entry %s failed with unhandled exception: %s: %s",
+                    entry_id, type(result).__name__, result,
+                )
+                dropped += 1
+        if dropped:
+            logger.warning(
+                "%d entries dropped due to unhandled exceptions (see errors above)",
+                dropped,
+            )
     finally:
         pbar.close()
         await adapter.cleanup()
@@ -803,6 +978,8 @@ def main():
     parser.add_argument("--base-data", type=str, default=None, help="Path to locomo10.json")
     parser.add_argument("--output", type=str, default="./results")
     parser.add_argument("--max-samples", type=int, default=None, help="Limit entries")
+    parser.add_argument("--start-at", type=int, default=0,
+                        help="Start at entry index (e.g. --start-at 201 for cog-201)")
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
     parser.add_argument("--judge-model", type=str, default="gpt-4o-mini")
     parser.add_argument("--recall-limit", type=int, default=10)
@@ -828,6 +1005,7 @@ def main():
         judge_model=args.judge_model,
         output_dir=args.output,
         max_samples=args.max_samples,
+        start_at=args.start_at,
         recall_limit=args.recall_limit,
         recall_mode=args.recall_mode,
         concurrency=args.concurrency,
