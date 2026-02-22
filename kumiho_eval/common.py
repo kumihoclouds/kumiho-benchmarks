@@ -342,6 +342,8 @@ class BenchmarkConfig:
     sibling_top_k: int = 0  # Max siblings to keep after scoring (0=unlimited, use threshold only)
     context_top_k: int = 0  # Global cap on revisions in final context (0=unlimited)
     stack_revisions: bool = True  # True = stack similar sessions; False = one item per session
+    two_pass_rerank: bool = False  # Re-rank siblings with focused embeddings (title+summary only)
+    sibling_score_fields: list[str] | None = None  # Server-side focused scoring fields (e.g. ["title", "summary"])
 
 
 @dataclass
@@ -459,6 +461,7 @@ class KumihoMemoryAdapter:
             recall_mode=self.config.recall_mode,
             sibling_similarity_threshold=self.config.sibling_similarity_threshold,
             sibling_top_k=self.config.sibling_top_k,
+            sibling_score_fields=self.config.sibling_score_fields,
         )
 
         self._initialised = True
@@ -1275,6 +1278,80 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             return siblings
 
     # -----------------------------------------------------------------
+    # Two-pass re-ranking
+    # -----------------------------------------------------------------
+
+    def rerank_memories(
+        self,
+        memories: list[dict[str, Any]],
+        query: str,
+    ) -> list[dict[str, Any]]:
+        """Two-pass re-ranking: replace server-scored ``_score`` on siblings
+        with focused cosine similarity computed from **title+summary only**.
+
+        Pass 1 (already done): server recall + server sibling scoring used
+        enriched SEMANTIC_KEYS embeddings (title, summary, implications,
+        events) to cast a wide net.
+
+        Pass 2 (this method): re-score every sibling using client-side
+        ``text-embedding-3-small`` on *only* ``title: summary`` text.
+        This strips implications/events from the scoring signal so the
+        most directly relevant revision ranks highest.
+
+        The returned memories have updated ``_score`` values on their
+        ``sibling_revisions``; ``build_recalled_context`` picks the
+        correct top-K downstream.
+        """
+        if not query:
+            return memories
+
+        # Collect all sibling revisions across all memories
+        all_sibs: list[dict[str, Any]] = []
+        for mem in memories:
+            for sib in mem.get("sibling_revisions", []):
+                all_sibs.append(sib)
+
+        if not all_sibs:
+            return memories
+
+        # Build focused text for each sibling (title + summary, no implications)
+        sib_texts = []
+        for sib in all_sibs:
+            t = sib.get("title", "")
+            s = sib.get("summary", "")
+            sib_texts.append(f"{t}: {s}" if t else (s or t or ""))
+
+        try:
+            all_texts = [query] + sib_texts
+            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
+            query_vec = embeddings[0]
+            sib_matrix = embeddings[1:]
+            scores = self._cosine_similarities(query_vec, sib_matrix)
+
+            # Write focused scores back onto siblings
+            for i, sib in enumerate(all_sibs):
+                old_score = sib.get("_score", 0.0)
+                sib["_score"] = float(scores[i])
+                logger.debug(
+                    "Two-pass rerank: %s — %.3f → %.3f",
+                    sib.get("title", "?")[:50],
+                    old_score,
+                    sib["_score"],
+                )
+
+            logger.info(
+                "Two-pass rerank: re-scored %d siblings "
+                "(top: %.3f, bottom: %.3f)",
+                len(all_sibs),
+                float(scores.max()) if len(scores) else 0,
+                float(scores.min()) if len(scores) else 0,
+            )
+        except Exception as e:
+            logger.warning("Two-pass rerank failed, keeping original scores: %s", e)
+
+        return memories
+
+    # -----------------------------------------------------------------
     # Context builder
     # -----------------------------------------------------------------
 
@@ -1303,12 +1380,10 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             siblings = mem.get("sibling_revisions", [])
 
             if siblings:
-                # With stacking, the primary memory is the *item-level*
-                # shell (latest revision's generic title/summary).  Its
-                # recall score (~3.0+) is on a different scale than sibling
-                # _scores (cosine 0-1), so including it would always make
-                # it dominate the top-K.  Skip it — the siblings ARE the
-                # individually scored revisions we want.
+                # Siblings now include ALL revisions (including the
+                # published/primary one) — the LLM reranker decides which
+                # are relevant.  Skip the primary entry to avoid double-
+                # counting; its data is in the sibling list if selected.
                 for sib in siblings:
                     all_revisions.append({
                         "title": sib.get("title", ""),

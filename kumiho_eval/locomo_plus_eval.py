@@ -856,6 +856,10 @@ async def evaluate_locomo_plus(
                     entry_id, len(memories), recall_ms / 1000,
                 )
 
+                # Two-pass re-ranking: replace server scores with focused embeddings
+                if config.two_pass_rerank:
+                    memories = adapter.rerank_memories(memories, trigger_text)
+
                 recalled_context = adapter.build_recalled_context(
                     memories, query=trigger_text,
                 )
@@ -1178,6 +1182,10 @@ def main():
                         help="Global cap on revisions in final context (0=unlimited)")
     parser.add_argument("--no-stack", action="store_true",
                         help="Disable revision stacking (one item per session)")
+    parser.add_argument("--two-pass", action="store_true",
+                        help="Two-pass search: re-rank siblings with focused embeddings (title+summary only)")
+    parser.add_argument("--score-fields", nargs="+", default=None,
+                        help="Server-side focused scoring fields (e.g. --score-fields title summary)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -1198,6 +1206,8 @@ def main():
         sibling_top_k=args.sibling_top_k,
         context_top_k=getattr(args, "context_top_k", 0),
         stack_revisions=not args.no_stack,
+        two_pass_rerank=args.two_pass,
+        sibling_score_fields=args.score_fields,
     )
 
     asyncio.run(evaluate_locomo_plus(

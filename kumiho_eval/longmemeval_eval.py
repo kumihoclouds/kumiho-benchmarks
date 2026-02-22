@@ -31,6 +31,7 @@ from .common import (
     BenchmarkConfig,
     EvalResult,
     KumihoMemoryAdapter,
+    _OPENAI_ERRORS,
     compute_aggregate_metrics,
     generate_answer,
     print_metrics_table,
@@ -45,6 +46,7 @@ _RETRYABLE_ERRORS = (
     RequestsConnectionError,
     ConnectionError,
     TimeoutError,
+    *_OPENAI_ERRORS,
 )
 
 logger = logging.getLogger("kumiho_eval.longmemeval")
@@ -394,7 +396,24 @@ async def _process_single_question(
             sid = result.get("session_id")
             if sid:
                 try:
-                    await adapter.consolidate(sid)
+                    cons = await adapter.consolidate(
+                        sid,
+                        user_id=user_id,
+                        context="personal",
+                        stack_revisions=config.stack_revisions,
+                    )
+                    # Post-consolidation edge discovery
+                    if config.graph_augmented and cons.get("success"):
+                        store_res = cons.get("store_result", {})
+                        rev_kref = store_res.get("revision_kref", "")
+                        summary = cons.get("summary", "")
+                        if rev_kref and summary:
+                            try:
+                                await adapter.discover_and_link_edges(
+                                    rev_kref, summary,
+                                )
+                            except Exception as e:
+                                logger.debug("Edge discovery failed: %s", e)
                 except Exception as e:
                     logger.warning("Consolidation failed: %s", e)
             return sid
@@ -413,11 +432,23 @@ async def _process_single_question(
     ingest_ms = (time.perf_counter() - t_ingest_start) * 1000
 
     # --- Phase 2: Recall & answer ---
+    # Scope recall to this question's user space
+    user_space = f"{config.project_name}/personal/{user_id}"
+
     t_recall = time.perf_counter()
-    memories = await adapter.recall(question, limit=config.recall_limit)
+    if config.graph_augmented:
+        memories = await adapter.recall_with_graph_augmentation(
+            question, limit=config.recall_limit,
+            space_paths=[user_space],
+        )
+    else:
+        memories = await adapter.recall(
+            question, limit=config.recall_limit,
+            space_paths=[user_space],
+        )
     recall_ms = (time.perf_counter() - t_recall) * 1000
 
-    recalled_context = adapter.build_recalled_context(memories)
+    recalled_context = adapter.build_recalled_context(memories, query=question)
 
     # Determine system prompt based on question type
     is_abstention = "_abs" in q_id
@@ -692,6 +723,18 @@ def main():
     parser.add_argument("--project", type=str, default="benchmark-longmemeval")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
+    parser.add_argument("--no-graph-augmented", action="store_true",
+                        help="Disable graph-augmented recall (fall back to vector-only search)")
+    parser.add_argument("--sibling-threshold", type=float, default=0.10,
+                        help="Sibling similarity threshold (0=budget mode, 0.10=lenient, 0.30=strict)")
+    parser.add_argument("--sibling-top-k", type=int, default=3,
+                        help="Max siblings to keep after scoring (0=unlimited)")
+    parser.add_argument("--context-top-k", type=int, default=5,
+                        help="Global cap on revisions in final context (0=unlimited)")
+    parser.add_argument("--no-stack", action="store_true",
+                        help="Disable revision stacking (one item per session)")
+    parser.add_argument("--entry-concurrency", type=int, default=1,
+                        help="How many entries to process in parallel")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -705,6 +748,12 @@ def main():
         recall_limit=args.recall_limit,
         concurrency=args.concurrency,
         recall_mode=args.recall_mode,
+        graph_augmented=not args.no_graph_augmented,
+        sibling_similarity_threshold=args.sibling_threshold,
+        sibling_top_k=args.sibling_top_k,
+        context_top_k=args.context_top_k,
+        stack_revisions=not args.no_stack,
+        entry_concurrency=args.entry_concurrency,
     )
 
     asyncio.run(evaluate_longmemeval(
