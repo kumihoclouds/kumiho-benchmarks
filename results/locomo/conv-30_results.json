@@ -1,0 +1,2338 @@
+[
+  {
+    "question_id": "conv-30_q0",
+    "question": "When Jon has lost his job as a banker?",
+    "question_type": "temporal",
+    "ground_truth": "19 January, 2023",
+    "prediction": "19 January 2023",
+    "recalled_context": "Jon's journey towards starting a dance business: On 9 July 2023, Jon expressed excitement about being reached out to by fashion editors and shared his determination to go full-time with his business idea after losing his job. He is currently learning marketing and analytics tools to advance his business. Jon is also enthusiastic about mentoring aspiring dancers and values the support from his community, including Gina, who encourages him to keep pursuing his dreams despite the challenges. Throug",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3062.788499999442,
+    "latency_answer_ms": 940.8026000019163,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q1",
+    "question": "When Gina has lost her job at Door Dash?",
+    "question_type": "temporal",
+    "ground_truth": "January, 2023",
+    "prediction": "January 2023",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2992.496199993184,
+    "latency_answer_ms": 1618.9558999903966,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q2",
+    "question": "How do Jon and Gina both like to destress?",
+    "question_type": "single-hop",
+    "ground_truth": "by dancing",
+    "prediction": "Dance",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2689.1352999955416,
+    "latency_answer_ms": 1161.3233999960357,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:7",
+        "D1:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q3",
+    "question": "What do Jon and Gina both have in common?",
+    "question_type": "multi-hop",
+    "ground_truth": "They lost their jobs and decided to start their own businesses.",
+    "prediction": "Lost their jobs.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.4615384615384615,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3584.6203999972204,
+    "latency_answer_ms": 1115.9276999969734,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:2",
+        "D1:3",
+        "D1:4",
+        "D2:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q4",
+    "question": "Why did Jon decide to start his dance studio?",
+    "question_type": "single-hop",
+    "ground_truth": "He lost his job and decided to start his own business to share his passion.",
+    "prediction": "Lost his job.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.35294117647058826,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4311.158800002886,
+    "latency_answer_ms": 1269.6171999996295,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:2",
+        "D1:4"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q5",
+    "question": "What Jon thinks the ideal dance studio should look like?",
+    "question_type": "multi-hop",
+    "ground_truth": "By the water, with natural light and Marley flooring",
+    "prediction": "Natural light, Marley flooring",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.28571428571428575,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2984.6182000037516,
+    "latency_answer_ms": 978.8095999974757,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:20",
+        "D2:4",
+        "D2:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q6",
+    "question": "When is Jon's group performing at a festival?",
+    "question_type": "temporal",
+    "ground_truth": "February, 2023",
+    "prediction": "February 2023",
+    "recalled_context": "Jon and Gina discuss their passions and support each other: On 8 February 2023, Jon congratulated Gina on her new fashion piece, noting the growth of her store and sharing his successful performance at a festival where he received compliments for his dance moves. Jon expressed his passion for running his dance studio and the fulfillment he feels seeing his students progress. Gina mentioned her collaboration with a local artist for unique designs in her online store, inspired by a fashion magazin",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3572.062700011884,
+    "latency_answer_ms": 1522.9824999987613,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:24"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q7",
+    "question": "When did Gina launch an ad campaign for her store?",
+    "question_type": "temporal",
+    "ground_truth": "29 January, 2023",
+    "prediction": "Around 21 July 2023",
+    "recalled_context": "Gina's store launch and Jon's networking efforts: On 21 June 2023, Jon congratulated Gina on her new store, which features unique pieces. Gina revealed that her hoodie is from a limited edition collection she launched last week, showcasing her creativity. Jon shared that he attended networking events to advance his career after losing his job. Both encouraged each other, with Gina offering support for Jon's efforts. Jon emphasized the importance of writing his plans down to stay motivated, while",
+    "f1_score": 0.28571428571428575,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3379.832599996007,
+    "latency_answer_ms": 1288.4636999951908,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q8",
+    "question": "When was Jon in Paris?",
+    "question_type": "temporal",
+    "ground_truth": "28 January 2023",
+    "prediction": "28 January 2023",
+    "recalled_context": "Jon's dance studio search and Gina's store success: On 29 January 2023, Jon congratulated Gina on her store, acknowledging her hard work. Gina expressed excitement about seeing her vision come to life. Jon mentioned he is searching for a location for his dance studio, focusing on essential features like natural light and flooring quality. He specifically desires Marley flooring, known for its grip and ease of maintenance, which is optimal for dance studios. Jon's search has been a blend of excit",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4313.664700006484,
+    "latency_answer_ms": 1092.7746000088518,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q9",
+    "question": "Which city have both Jean and John visited?",
+    "question_type": "multi-hop",
+    "ground_truth": "Rome",
+    "prediction": "Rome",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6763.961000004201,
+    "latency_answer_ms": 1072.747199999867,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:5",
+        "D15:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q10",
+    "question": "When did Gina team up with a local artist for some cool designs?",
+    "question_type": "temporal",
+    "ground_truth": "February, 2023",
+    "prediction": "8 February 2023",
+    "recalled_context": "Jon and Gina discuss their passions and support each other: On 8 February 2023, Jon congratulated Gina on her new fashion piece, noting the growth of her store and sharing his successful performance at a festival where he received compliments for his dance moves. Jon expressed his passion for running his dance studio and the fulfillment he feels seeing his students progress. Gina mentioned her collaboration with a local artist for unique designs in her online store, inspired by a fashion magazin",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3551.8212000024505,
+    "latency_answer_ms": 887.3586999980034,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D5:5"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q11",
+    "question": "When did Gina get her tattoo?",
+    "question_type": "temporal",
+    "ground_truth": "A few years ago",
+    "prediction": "8 February 2023",
+    "recalled_context": "Jon and Gina discuss their passions and support each other: On 8 February 2023, Jon congratulated Gina on her new fashion piece, noting the growth of her store and sharing his successful performance at a festival where he received compliments for his dance moves. Jon expressed his passion for running his dance studio and the fulfillment he feels seeing his students progress. Gina mentioned her collaboration with a local artist for unique designs in her online store, inspired by a fashion magazin",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4176.521300003515,
+    "latency_answer_ms": 1086.8788999941899,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D5:15"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q12",
+    "question": "When did Jon start to go to the gym?",
+    "question_type": "temporal",
+    "ground_truth": "March, 2023",
+    "prediction": "16 March 2023",
+    "recalled_context": "Jon and Gina support each other's business journeys: On 16 March 2023, Jon shared that he started hitting the gym to manage his busy schedule while pursuing his venture. Gina revealed she lost her job at Door Dash but had launched her online clothes store, combining her passion for fashion and dance. Jon expressed admiration for Gina's entrepreneurial spirit and noted he is also facing challenges in starting his own business. They both discussed the ups and downs of entrepreneurship and the impo",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3203.2177000073716,
+    "latency_answer_ms": 887.5951000081841,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D6:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q13",
+    "question": "When did Gina open her online clothing store?",
+    "question_type": "temporal",
+    "ground_truth": "16 March, 2023",
+    "prediction": "16 March 2023",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4334.773499998846,
+    "latency_answer_ms": 1084.0310999919893,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D6:6"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q14",
+    "question": "When did Jon start expanding his studio's social media presence?",
+    "question_type": "temporal",
+    "ground_truth": "April, 2023",
+    "prediction": "3 April 2023",
+    "recalled_context": "Jon and Gina support each other's entrepreneurial journeys: On 16 June 2023, Jon shared his excitement about being mentored by a business professional, which motivated him to pursue his dreams. Gina, who has established an online clothing store after losing her job, discussed her struggles but remains determined. She advised Jon on marketing strategies, including using social media and working with influencers, which he started implementing by posting dance videos. They encouraged each other to ",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3529.2950000002747,
+    "latency_answer_ms": 1265.8931000041775,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:13"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q15",
+    "question": "When did Jon host a dance competition?",
+    "question_type": "temporal",
+    "ground_truth": "May, 2023",
+    "prediction": "May 2023",
+    "recalled_context": "Jon shuts down bank account; Gina promotes her online store.: On 3 April 2023, Jon informed Gina that he had to shut down his bank account as a difficult decision to help his business grow. Despite the challenges, he remained positive and focused on the future. Gina shared that she is offering new promotions for her online store to attract customers, emphasizing her motivation driven by her passions for dance and fashion. She plans to collaborate with fashion bloggers and influencers to expand h",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3503.4847000060836,
+    "latency_answer_ms": 1137.7567000017734,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:13"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q16",
+    "question": "When did Jon go to a fair to get more exposure for his dance studio?",
+    "question_type": "temporal",
+    "ground_truth": "24 April, 2023",
+    "prediction": "24 April 2023",
+    "recalled_context": "Jon and Gina share business experiences and support each other: On 24 April 2023, Jon attended a fair to promote his studio, which was both stressful and rewarding, yielding potential leads. He acknowledged the difficulty of starting a business and the importance of self-confidence. Gina congratulated Jon and shared her experience starting her own online clothing store after losing her job, which she found both challenging and rewarding. The conversation shifted to motivation, with Gina suggesti",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4339.2655000061495,
+    "latency_answer_ms": 1030.8707999938633,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D10:1"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q17",
+    "question": "Why did Gina decide to start her own clothing store?",
+    "question_type": "multi-hop",
+    "ground_truth": "She always loved fashion trends and finding unique pieces and she lost her job so decided it was time to start her own business.",
+    "prediction": "Lost her job.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.24000000000000002,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3298.0820999946445,
+    "latency_answer_ms": 1036.5136000036728,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D6:8",
+        "D1:3"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q18",
+    "question": "Do Jon and Gina start businesses out of what they love?",
+    "question_type": "multi-hop",
+    "ground_truth": "Yes",
+    "prediction": "Yes, dance and fashion.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4849.334200000158,
+    "latency_answer_ms": 1140.8338000037475,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:4",
+        "D6:8"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-30_q19",
+    "question": "When did Gina interview for a design internship?",
+    "question_type": "temporal",
+    "ground_truth": "10 May, 2023",
+    "prediction": "10 May 2023",
+    "recalled_context": "Jon is opening a dance studio after losing his job: On 11 May 2023, Jon shared updates about his progress on opening his own dance studio, a dream he pursued after losing his job. Gina expressed admiration for his determination and offered encouragement. Jon highlighted his love for dance, which has been a source of stress relief since childhood. He aims to create a welcoming environment for others to express themselves through dance. Additionally, Gina mentioned having a design internship inter",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3155.747799988603,
+    "latency_answer_ms": 1006.5482000063639,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D11:14"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q20",
+    "question": "When did Gina get accepted for the design internship?",
+    "question_type": "temporal",
+    "ground_truth": "27 May, 2023",
+    "prediction": "27 May 2023",
+    "recalled_context": "Jon is opening a dance studio after losing his job: On 11 May 2023, Jon shared updates about his progress on opening his own dance studio, a dream he pursued after losing his job. Gina expressed admiration for his determination and offered encouragement. Jon highlighted his love for dance, which has been a source of stress relief since childhood. He aims to create a welcoming environment for others to express themselves through dance. Additionally, Gina mentioned having a design internship inter",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2982.294699992053,
+    "latency_answer_ms": 1119.344299993827,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q21",
+    "question": "When did Jon start reading \"The Lean Startup\"?",
+    "question_type": "temporal",
+    "ground_truth": "May, 2023",
+    "prediction": "27 May 2023",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6905.9925000037765,
+    "latency_answer_ms": 1146.3636999978917,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q22",
+    "question": "When did Gina develop a video presentation to teach how to style her fashion pieces? ",
+    "question_type": "temporal",
+    "ground_truth": "June, 2023",
+    "prediction": "Around 23 July 2023",
+    "recalled_context": "Jon's journey towards starting a dance business: On 9 July 2023, Jon expressed excitement about being reached out to by fashion editors and shared his determination to go full-time with his business idea after losing his job. He is currently learning marketing and analytics tools to advance his business. Jon is also enthusiastic about mentoring aspiring dancers and values the support from his community, including Gina, who encourages him to keep pursuing his dreams despite the challenges. Throug",
+    "f1_score": 0.3333333333333333,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2843.6206999904243,
+    "latency_answer_ms": 1002.4643999931868,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D13:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q23",
+    "question": "How did Gina promote her clothes store?",
+    "question_type": "multi-hop",
+    "ground_truth": "worked with an artist to make unique fashion pieces, made limited-edition sweatshirts, got some new offers and promotions for online store, developed a video presentation showing how to style her pieces",
+    "prediction": "Networking, social media, influencers.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4949.133200003416,
+    "latency_answer_ms": 4025.4622000065865,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D5:5",
+        "D16:3",
+        "D8:4",
+        "D13:4"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q24",
+    "question": "Which events has Jon participated in to promote his business venture?",
+    "question_type": "multi-hop",
+    "ground_truth": "fair, networking events, dance competition",
+    "prediction": "Business fair, networking event",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.5555555555555555,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3252.721400000155,
+    "latency_answer_ms": 1116.6130000056,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D10:1",
+        "D16:6",
+        "D8:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q25",
+    "question": "What does Jon's dance studio offer?",
+    "question_type": "multi-hop",
+    "ground_truth": "one-on-one metoring and training to dancers,  workshops and classes to local schools and centers",
+    "prediction": "Dance classes, workshops, mentoring",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.14285714285714285,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4047.195199993439,
+    "latency_answer_ms": 1062.6629000034882,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D13:7",
+        "D8:13"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q26",
+    "question": "When did Jon receive mentorship to promote his venture?",
+    "question_type": "temporal",
+    "ground_truth": "15 June, 2023",
+    "prediction": "15 June 2023",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5305.533899998409,
+    "latency_answer_ms": 1090.0187000079313,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D14:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q27",
+    "question": "Did Jon and Gina both participate in dance competitions?",
+    "question_type": "multi-hop",
+    "ground_truth": "Yes",
+    "prediction": "Yes.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4765.873800002737,
+    "latency_answer_ms": 1121.5342999930726,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:14",
+        "D14:14",
+        "D1:16",
+        "D1:17",
+        "D9:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q28",
+    "question": "When was Jon in Rome?",
+    "question_type": "temporal",
+    "ground_truth": "June 2023",
+    "prediction": "June 12, 2023",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4358.758699992904,
+    "latency_answer_ms": 1218.609200004721,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:1"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q29",
+    "question": "Which cities has Jon visited?",
+    "question_type": "multi-hop",
+    "ground_truth": "Paris, Rome",
+    "prediction": "Rome, Paris",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5048.778900003526,
+    "latency_answer_ms": 1108.7009999901056,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:4",
+        "D15:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q30",
+    "question": "When Jon is planning to open his dance studio?",
+    "question_type": "temporal",
+    "ground_truth": "20 June, 2023",
+    "prediction": "20 June 2023",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4250.06370000483,
+    "latency_answer_ms": 1616.7811000050278,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:5"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q31",
+    "question": "How long did it take for Jon to open his studio?",
+    "question_type": "multi-hop",
+    "ground_truth": "six months",
+    "prediction": "5 months",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3243.0502000061097,
+    "latency_answer_ms": 1408.3544999884907,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:2",
+        "D15:13"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q32",
+    "question": "When did Gina design a limited collection of hoodies?",
+    "question_type": "temporal",
+    "ground_truth": "June 2023",
+    "prediction": "14 June 2023",
+    "recalled_context": "Gina's store launch and Jon's networking efforts: On 21 June 2023, Jon congratulated Gina on her new store, which features unique pieces. Gina revealed that her hoodie is from a limited edition collection she launched last week, showcasing her creativity. Jon shared that he attended networking events to advance his career after losing his job. Both encouraged each other, with Gina offering support for Jon's efforts. Jon emphasized the importance of writing his plans down to stay motivated, while",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5926.303699990967,
+    "latency_answer_ms": 933.1874000054086,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D16:3"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q33",
+    "question": "When did Jon visit networking events for his store?",
+    "question_type": "temporal",
+    "ground_truth": "20 June, 2023",
+    "prediction": "20 June 2023",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3045.0138000014704,
+    "latency_answer_ms": 1026.9033999938983,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D16:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q34",
+    "question": "When did Gina start being recognized by fashion editors?",
+    "question_type": "temporal",
+    "ground_truth": "July 2023",
+    "prediction": "9 July 2023",
+    "recalled_context": "Jon's journey towards starting a dance business: On 9 July 2023, Jon expressed excitement about being reached out to by fashion editors and shared his determination to go full-time with his business idea after losing his job. He is currently learning marketing and analytics tools to advance his business. Jon is also enthusiastic about mentoring aspiring dancers and values the support from his community, including Gina, who encourages him to keep pursuing his dreams despite the challenges. Throug",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3005.9501999930944,
+    "latency_answer_ms": 1072.6695000048494,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D17:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q35",
+    "question": "When did Jon start learning marketing and analytics tools?",
+    "question_type": "temporal",
+    "ground_truth": "July, 2023",
+    "prediction": "9 July 2023",
+    "recalled_context": "Jon's journey towards starting a dance business: On 9 July 2023, Jon expressed excitement about being reached out to by fashion editors and shared his determination to go full-time with his business idea after losing his job. He is currently learning marketing and analytics tools to advance his business. Jon is also enthusiastic about mentoring aspiring dancers and values the support from his community, including Gina, who encourages him to keep pursuing his dreams despite the challenges. Throug",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2978.2501999870874,
+    "latency_answer_ms": 1157.638799995766,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D17:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q36",
+    "question": "When did Jon and Gina decide to collaborate to create dance content?",
+    "question_type": "temporal",
+    "ground_truth": "21 July 2023",
+    "prediction": "21 July 2023",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3015.948099986417,
+    "latency_answer_ms": 989.4237999978941,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:18"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q37",
+    "question": "When did Gina mention Shia Labeouf?",
+    "question_type": "temporal",
+    "ground_truth": " 23 July, 2023",
+    "prediction": "23 July 2023",
+    "recalled_context": "Supportive conversation between Jon and Gina about dance studio: On 23 July 2023, Jon communicated with Gina about his busy schedule, including rehearsing and working on business plans for his upcoming dance studio. Gina encouraged Jon, recalling the famous motivational phrase by Shia Labeouf, emphasizing the importance of a creative space for dancers. Jon expressed his excitement about welcoming dancers of all ages and backgrounds to his studio. Gina's words of encouragement were a significant ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2922.683999990113,
+    "latency_answer_ms": 934.7655000019586,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D19:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q38",
+    "question": "When did Gina go to a dance class with a group of friends?",
+    "question_type": "temporal",
+    "ground_truth": "21 July 2023",
+    "prediction": "27 January 2023",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.3333333333333333,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6967.449200004921,
+    "latency_answer_ms": 1655.2880999952322,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D19:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q39",
+    "question": "What is Gina's favorite style of dance?",
+    "question_type": "single-hop",
+    "ground_truth": "Contemporary",
+    "prediction": "Contemporary",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4752.003399989917,
+    "latency_answer_ms": 1001.9368999928702,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:9"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q40",
+    "question": "What is Jon's favorite style of dance?",
+    "question_type": "single-hop",
+    "ground_truth": "Contemporary",
+    "prediction": "Contemporary",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3154.1260999947554,
+    "latency_answer_ms": 1123.6455000034766,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q41",
+    "question": "What was Gina's favorite dancing memory?",
+    "question_type": "single-hop",
+    "ground_truth": "Winning first place at a regionals dance competition",
+    "prediction": "Winning regional competition at 15.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3449.5348000054946,
+    "latency_answer_ms": 1395.8079000003636,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:17"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q42",
+    "question": "What kind of dance piece did Gina's team perform to win first place?",
+    "question_type": "single-hop",
+    "ground_truth": "\"Finding Freedom\"",
+    "prediction": "Contemporary dance",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4385.854100008146,
+    "latency_answer_ms": 1204.546399996616,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:19"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q43",
+    "question": "What do the dancers in the photo represent?",
+    "question_type": "single-hop",
+    "ground_truth": "They are performing at the festival",
+    "prediction": "Jon's dance studio success",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4606.881900006556,
+    "latency_answer_ms": 999.645200005034,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:25"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q44",
+    "question": "What does Gina say about the dancers in the photo?",
+    "question_type": "single-hop",
+    "ground_truth": "They look graceful",
+    "prediction": "No information provided.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3093.5014999995474,
+    "latency_answer_ms": 1049.0797999955248,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:26"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q45",
+    "question": "What is Jon's attitude towards being part of the dance festival?",
+    "question_type": "single-hop",
+    "ground_truth": "Glad",
+    "prediction": "Excited and motivated",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3176.408100000117,
+    "latency_answer_ms": 974.6353999944404,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:28"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q46",
+    "question": "What kind of flooring is Jon looking for in his dance studio?",
+    "question_type": "single-hop",
+    "ground_truth": "Marley flooring",
+    "prediction": "Marley flooring",
+    "recalled_context": "Jon's dance studio search and Gina's store success: On 29 January 2023, Jon congratulated Gina on her store, acknowledging her hard work. Gina expressed excitement about seeing her vision come to life. Jon mentioned he is searching for a location for his dance studio, focusing on essential features like natural light and flooring quality. He specifically desires Marley flooring, known for its grip and ease of maintenance, which is optimal for dance studios. Jon's search has been a blend of excit",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3337.8136999963317,
+    "latency_answer_ms": 1531.021700007841,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q47",
+    "question": "What did Gina find for her clothing store on 1 February, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "The perfect spot for her store",
+    "prediction": "Wholesalers' reply",
+    "recalled_context": "Jon and Gina discuss their entrepreneurial pursuits: On 1 February 2023, Jon shares his ongoing passion for dance and his search for a location to open a dance studio. Gina responds positively, sharing that she received a reply from wholesalers that allows her to expand her clothing store, which she feels excited about. She mentions that she designed the store to be cozy and inviting, highlighting the selection of comfortable furniture and a chandelier for aesthetic appeal. They both express sup",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3096.589099994162,
+    "latency_answer_ms": 961.5029999986291,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q48",
+    "question": "What did Gina design for her store?",
+    "question_type": "single-hop",
+    "ground_truth": "the space, furniture, and decor",
+    "prediction": "Cozy and inviting atmosphere",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3512.0590000005905,
+    "latency_answer_ms": 1053.849000003538,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q49",
+    "question": "What did Gina want her customers to feel in her store?",
+    "question_type": "single-hop",
+    "ground_truth": "cozy and comfortable",
+    "prediction": "Comfortable and cozy",
+    "recalled_context": "Gina's store launch and Jon's networking efforts: On 21 June 2023, Jon congratulated Gina on her new store, which features unique pieces. Gina revealed that her hoodie is from a limited edition collection she launched last week, showcasing her creativity. Jon shared that he attended networking events to advance his career after losing his job. Both encouraged each other, with Gina offering support for Jon's efforts. Jon emphasized the importance of writing his plans down to stay motivated, while",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2915.6381000066176,
+    "latency_answer_ms": 1042.7100000088103,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:6",
+        "D3:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q50",
+    "question": "What did Jon say about Gina's progress with her store?",
+    "question_type": "single-hop",
+    "ground_truth": "hard work's paying off",
+    "prediction": "He congratulated her.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5093.921599996975,
+    "latency_answer_ms": 995.2033999870764,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q51",
+    "question": "What made Gina choose the furniture and decor for her store?",
+    "question_type": "single-hop",
+    "ground_truth": "personal style and customer comfort",
+    "prediction": "Cozy and inviting design",
+    "recalled_context": "Jon and Gina discuss their entrepreneurial pursuits: On 1 February 2023, Jon shares his ongoing passion for dance and his search for a location to open a dance studio. Gina responds positively, sharing that she received a reply from wholesalers that allows her to expand her clothing store, which she feels excited about. She mentions that she designed the store to be cozy and inviting, highlighting the selection of comfortable furniture and a chandelier for aesthetic appeal. They both express sup",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3828.945699991891,
+    "latency_answer_ms": 989.9992999999085,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q52",
+    "question": "What did Jon say about creating a special experience for customers?",
+    "question_type": "single-hop",
+    "ground_truth": "It's the key to making them feel welcome and coming back",
+    "prediction": "Brand identity and customer relationships",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3027.3316000093473,
+    "latency_answer_ms": 1030.2602000010666,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:9"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q53",
+    "question": "What did Gina say about creating an experience for her customers?",
+    "question_type": "single-hop",
+    "ground_truth": "making them want to come back",
+    "prediction": "Cozy and inviting store",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6184.702399987145,
+    "latency_answer_ms": 915.5290999915451,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q54",
+    "question": "How is Gina's store doing?",
+    "question_type": "single-hop",
+    "ground_truth": "The store is doing great.",
+    "prediction": "Gina's store is new.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2978.8400000106776,
+    "latency_answer_ms": 1064.841699990211,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D4:2"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q55",
+    "question": "What does Gina's tattoo symbolize?",
+    "question_type": "single-hop",
+    "ground_truth": "Freedom and expressing herself through dance",
+    "prediction": "Freedom and self-expression",
+    "recalled_context": "Jon and Gina discuss their passions and support each other: On 8 February 2023, Jon congratulated Gina on her new fashion piece, noting the growth of her store and sharing his successful performance at a festival where he received compliments for his dance moves. Jon expressed his passion for running his dance studio and the fulfillment he feels seeing his students progress. Gina mentioned her collaboration with a local artist for unique designs in her online store, inspired by a fashion magazin",
+    "f1_score": 0.28571428571428575,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5094.3502000009175,
+    "latency_answer_ms": 940.6053999991855,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D5:15"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q56",
+    "question": "What did Jon and Gina compare their entrepreneurial journeys to?",
+    "question_type": "single-hop",
+    "ground_truth": "dancing together and supporting each other",
+    "prediction": "Challenges and rewards",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4933.992999998736,
+    "latency_answer_ms": 1151.7108999978518,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D6:15",
+        "D6:16"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q57",
+    "question": "What advice does Gina give to Jon about running a successful business?",
+    "question_type": "single-hop",
+    "ground_truth": "build relationships with customers, create a strong brand image, stay positive",
+    "prediction": "Networking and marketing strategies.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4775.9283000050345,
+    "latency_answer_ms": 1004.4900000066264,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D7:5"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q58",
+    "question": "Why did Jon shut down his bank account?",
+    "question_type": "single-hop",
+    "ground_truth": "for his business",
+    "prediction": "To help his business grow.",
+    "recalled_context": "Jon shuts down bank account; Gina promotes her online store.: On 3 April 2023, Jon informed Gina that he had to shut down his bank account as a difficult decision to help his business grow. Despite the challenges, he remained positive and focused on the future. Gina shared that she is offering new promotions for her online store to attract customers, emphasizing her motivation driven by her passions for dance and fashion. She plans to collaborate with fashion bloggers and influencers to expand h",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4546.406999987084,
+    "latency_answer_ms": 1068.686800004798,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:1"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q59",
+    "question": "Why did Gina combine her clothing business with dance?",
+    "question_type": "single-hop",
+    "ground_truth": "she is passionate about dance and fashion",
+    "prediction": "Passion for fashion and dance.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.6,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3405.4080999922007,
+    "latency_answer_ms": 976.5421000047354,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:8"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q60",
+    "question": "What does Jon's dance make him?",
+    "question_type": "single-hop",
+    "ground_truth": "happy",
+    "prediction": "Motivated and inspired",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3032.1686000097543,
+    "latency_answer_ms": 1029.5814999990398,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D9:5"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q61",
+    "question": "What did Gina receive from a dance contest?",
+    "question_type": "single-hop",
+    "ground_truth": "a trophy",
+    "prediction": "First place",
+    "recalled_context": "Jon's determination to succeed in business and dance: In a conversation on 4 February 2023, Jon shares with Gina that he is working hard on his business despite facing obstacles. He expresses determination to find a suitable location for a dance studio, which he believes is crucial for his success. Jon also mentions preparing for a dance competition happening next month, where he hopes to showcase his skills. Throughout the exchange, Gina provides encouragement, emphasizing Jon's talent and pass",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3469.50239999569,
+    "latency_answer_ms": 1186.8499999982305,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D9:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q62",
+    "question": "How does Gina stay confident in her business?",
+    "question_type": "single-hop",
+    "ground_truth": "By reminding herself of her successes and progress, having a support system, and focusing on why she started",
+    "prediction": "Reflecting on personal goals.",
+    "recalled_context": "Jon and Gina support each other's entrepreneurial journeys: On 16 June 2023, Jon shared his excitement about being mentored by a business professional, which motivated him to pursue his dreams. Gina, who has established an online clothing store after losing her job, discussed her struggles but remains determined. She advised Jon on marketing strategies, including using social media and working with influencers, which he started implementing by posting dance videos. They encouraged each other to ",
+    "f1_score": 0.10526315789473685,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3152.526299993042,
+    "latency_answer_ms": 1025.054600002477,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D10:8"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q63",
+    "question": "What kind of professional experience did Gina get accepted for on May 23, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "fashion internship",
+    "prediction": "Fashion internship",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3163.506299999426,
+    "latency_answer_ms": 1515.724799988675,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q64",
+    "question": "Where is Gina's fashion internship?",
+    "question_type": "single-hop",
+    "ground_truth": "fashion department of an international company",
+    "prediction": "International company",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 0.5714285714285715,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2935.0915999966674,
+    "latency_answer_ms": 1380.3555000049528,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q65",
+    "question": "What book is Jon currently reading?",
+    "question_type": "single-hop",
+    "ground_truth": "The Lean Startup",
+    "prediction": "'The Lean Startup'",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2513.2225999986986,
+    "latency_answer_ms": 1000.5982000002405,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q66",
+    "question": "What is Jon offering to the dancers at his dance studio?",
+    "question_type": "single-hop",
+    "ground_truth": "One-on-one mentoring and training",
+    "prediction": "One-on-one mentoring",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2843.798300003982,
+    "latency_answer_ms": 835.9999999956926,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D13:7"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q67",
+    "question": "How does Jon use the clipboard with a notepad attached to it?",
+    "question_type": "single-hop",
+    "ground_truth": "To set goals, track achievements, and find areas for improvement",
+    "prediction": "Documenting business ideas",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4817.4883000028785,
+    "latency_answer_ms": 940.5607999942731,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D13:11"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q68",
+    "question": "What does Jon tell Gina he won't do?",
+    "question_type": "single-hop",
+    "ground_truth": "quit",
+    "prediction": "Give up",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 7908.924700008356,
+    "latency_answer_ms": 994.1191999969305,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D14:17"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q69",
+    "question": "What did Jon take a trip to Rome for?",
+    "question_type": "single-hop",
+    "ground_truth": "To clear his mind",
+    "prediction": "To clear his mind",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3904.694400000153,
+    "latency_answer_ms": 998.306199995568,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:1"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q70",
+    "question": "What is Jon working on opening?",
+    "question_type": "single-hop",
+    "ground_truth": "a dance studio",
+    "prediction": "Dance studio",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5740.118999994593,
+    "latency_answer_ms": 1057.2233999992022,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:3"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q71",
+    "question": "How does Gina describe the studio that Jon has opened?",
+    "question_type": "single-hop",
+    "ground_truth": "amazing",
+    "prediction": "Exciting and joyful",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5270.174799996312,
+    "latency_answer_ms": 1312.4894999928074,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q72",
+    "question": "How does Jon feel about the opening night of his dance studio?",
+    "question_type": "single-hop",
+    "ground_truth": "excited",
+    "prediction": "Excited and reflective",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3691.1359000077937,
+    "latency_answer_ms": 1006.2449999968521,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:7"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q73",
+    "question": "How does Gina describe the feeling that dance brings?",
+    "question_type": "single-hop",
+    "ground_truth": "magical",
+    "prediction": "Important part of mental health.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2930.1783999981126,
+    "latency_answer_ms": 1142.2715000080643,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q74",
+    "question": "What does Jon plan to do at the grand opening of his dance studio?",
+    "question_type": "single-hop",
+    "ground_truth": "savor all the good vibes",
+    "prediction": "Celebrate with friends",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2707.8327999915928,
+    "latency_answer_ms": 999.0937999973539,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:9"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q75",
+    "question": "What does Gina say to Jon about the grand opening?",
+    "question_type": "single-hop",
+    "ground_truth": "Let's live it up and make some great memories",
+    "prediction": "Congratulations and excitement",
+    "recalled_context": "Jon's dance studio opening tomorrow: On June 19, 2023, Jon shared with Gina that he is still working on his business and recently took a trip to Rome to clear his mind. He mentioned that the official opening night of his dance studio is tomorrow, June 20, 2023. Gina congratulated Jon on the progress he has made and expressed her excitement for the upcoming launch. Throughout their conversation, they reflected on the hard work Jon has put into the studio and the joy it brings, with both looking f",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3196.0545999900205,
+    "latency_answer_ms": 1023.0507000087528,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:12"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q76",
+    "question": "What is the general sentiment about the upcoming grand opening?",
+    "question_type": "single-hop",
+    "ground_truth": "excitement",
+    "prediction": "Excitement and anticipation",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3926.8331000057515,
+    "latency_answer_ms": 931.9691999990027,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:18",
+        "D15:19"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-30_q77",
+    "question": "What did Gina make a limited edition line of?",
+    "question_type": "single-hop",
+    "ground_truth": "Hoodies",
+    "prediction": "Hoodies",
+    "recalled_context": "Gina's store launch and Jon's networking efforts: On 21 June 2023, Jon congratulated Gina on her new store, which features unique pieces. Gina revealed that her hoodie is from a limited edition collection she launched last week, showcasing her creativity. Jon shared that he attended networking events to advance his career after losing his job. Both encouraged each other, with Gina offering support for Jon's efforts. Jon emphasized the importance of writing his plans down to stay motivated, while",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 7252.2865000064485,
+    "latency_answer_ms": 1096.7433000041638,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D16:3"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q78",
+    "question": "According to Gina, what makes Jon a perfect mentor and guide?",
+    "question_type": "single-hop",
+    "ground_truth": "His positivity and determination",
+    "prediction": "Positivity and determination",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5703.763599987724,
+    "latency_answer_ms": 977.6122000039322,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D17:7"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-30_q79",
+    "question": "What temporary job did Jon take to cover expenses?",
+    "question_type": "adversarial",
+    "ground_truth": "Not mentioned",
+    "prediction": "No information available.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3205.4943999974057,
+    "latency_answer_ms": 1002.0610000065062,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q80",
+    "question": "What plans does Jon have after receiving advice at the networking event?",
+    "question_type": "single-hop",
+    "ground_truth": "Sprucing up his business plan, tweaking his pitch to investors, and working on an online platform.",
+    "prediction": "Adjust business plan, develop online platform.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.4,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3473.0238000047393,
+    "latency_answer_ms": 986.289400010719,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:10"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q81",
+    "question": "What offer does Gina make to Jon regarding social media?",
+    "question_type": "single-hop",
+    "ground_truth": "Helping with making content and managing his social media accounts.",
+    "prediction": "Help with marketing strategies",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 0.30769230769230765,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5595.962100007455,
+    "latency_answer_ms": 1142.6872999873012,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:13"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q82",
+    "question": "What is Jon's favorite style of painting?",
+    "question_type": "adversarial",
+    "ground_truth": "Contemporary",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 5859.563000005437,
+    "latency_answer_ms": 853.680300002452,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q83",
+    "question": "What was Jon's favorite dancing memory?",
+    "question_type": "adversarial",
+    "ground_truth": "Winning first place at a regionals dance competition",
+    "prediction": "No information available.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4575.491199997487,
+    "latency_answer_ms": 1096.8408999906387,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:17"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q84",
+    "question": "What kind of dance piece did Jon's team perform to win first place?",
+    "question_type": "adversarial",
+    "ground_truth": "\"Finding Freedom\"",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4239.492400010931,
+    "latency_answer_ms": 1049.3217000039294,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:19"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q85",
+    "question": "What is Gina's attitude towards participating in the dance festival?",
+    "question_type": "adversarial",
+    "ground_truth": "Glad",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2722.751099994639,
+    "latency_answer_ms": 1082.3254000133602,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D1:28"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q86",
+    "question": "What kind of flooring is Gina looking for in her dance studio?",
+    "question_type": "adversarial",
+    "ground_truth": "Marley flooring",
+    "prediction": "No information available.",
+    "recalled_context": "Jon's dance studio search and Gina's store success: On 29 January 2023, Jon congratulated Gina on her store, acknowledging her hard work. Gina expressed excitement about seeing her vision come to life. Jon mentioned he is searching for a location for his dance studio, focusing on essential features like natural light and flooring quality. He specifically desires Marley flooring, known for its grip and ease of maintenance, which is optimal for dance studios. Jon's search has been a blend of excit",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6159.839699990698,
+    "latency_answer_ms": 1025.5257999961032,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D2:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q87",
+    "question": "What did Jon find for his clothing store on 1 February, 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "The perfect spot for her store",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss their entrepreneurial pursuits: On 1 February 2023, Jon shares his ongoing passion for dance and his search for a location to open a dance studio. Gina responds positively, sharing that she received a reply from wholesalers that allows her to expand her clothing store, which she feels excited about. She mentions that she designed the store to be cozy and inviting, highlighting the selection of comfortable furniture and a chandelier for aesthetic appeal. They both express sup",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3314.6618000027956,
+    "latency_answer_ms": 1041.7822000017622,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q88",
+    "question": "What did Jon design for his store?",
+    "question_type": "adversarial",
+    "ground_truth": "the space, furniture, and decor",
+    "prediction": "No information available.",
+    "recalled_context": "Jon is opening a dance studio after losing his job: On 11 May 2023, Jon shared updates about his progress on opening his own dance studio, a dream he pursued after losing his job. Gina expressed admiration for his determination and offered encouragement. Jon highlighted his love for dance, which has been a source of stress relief since childhood. He aims to create a welcoming environment for others to express themselves through dance. Additionally, Gina mentioned having a design internship inter",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3984.4494000135455,
+    "latency_answer_ms": 1310.4355999967083,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q89",
+    "question": "What did Jon want his customers to feel in her store?",
+    "question_type": "adversarial",
+    "ground_truth": "cozy and comfortable",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss their entrepreneurial pursuits: On 1 February 2023, Jon shares his ongoing passion for dance and his search for a location to open a dance studio. Gina responds positively, sharing that she received a reply from wholesalers that allows her to expand her clothing store, which she feels excited about. She mentions that she designed the store to be cozy and inviting, highlighting the selection of comfortable furniture and a chandelier for aesthetic appeal. They both express sup",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3007.3076999979094,
+    "latency_answer_ms": 1105.3187000070466,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:6",
+        "D3:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q90",
+    "question": "What made Jon choose the furniture and decor for his store?",
+    "question_type": "adversarial",
+    "ground_truth": "personal style and customer comfort",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss their entrepreneurial pursuits: On 1 February 2023, Jon shares his ongoing passion for dance and his search for a location to open a dance studio. Gina responds positively, sharing that she received a reply from wholesalers that allows her to expand her clothing store, which she feels excited about. She mentions that she designed the store to be cozy and inviting, highlighting the selection of comfortable furniture and a chandelier for aesthetic appeal. They both express sup",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4468.781900010072,
+    "latency_answer_ms": 1006.9851000007475,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D3:6"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q91",
+    "question": "How is Jon's store doing?",
+    "question_type": "adversarial",
+    "ground_truth": "The store is doing great.",
+    "prediction": "No information available.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3407.2103000071365,
+    "latency_answer_ms": 940.3892999980599,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D4:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q92",
+    "question": "What does Jon's tattoo symbolize?",
+    "question_type": "adversarial",
+    "ground_truth": "Freedom and expressing himself through dance",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss their passions and support each other: On 8 February 2023, Jon congratulated Gina on her new fashion piece, noting the growth of her store and sharing his successful performance at a festival where he received compliments for his dance moves. Jon expressed his passion for running his dance studio and the fulfillment he feels seeing his students progress. Gina mentioned her collaboration with a local artist for unique designs in her online store, inspired by a fashion magazin",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2823.5023000015644,
+    "latency_answer_ms": 1048.69989999861,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D5:15"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-30_q93",
+    "question": "Why did Gina shut down her bank account?",
+    "question_type": "adversarial",
+    "ground_truth": "for her business",
+    "prediction": "No information available.",
+    "recalled_context": "Jon shuts down bank account; Gina promotes her online store.: On 3 April 2023, Jon informed Gina that he had to shut down his bank account as a difficult decision to help his business grow. Despite the challenges, he remained positive and focused on the future. Gina shared that she is offering new promotions for her online store to attract customers, emphasizing her motivation driven by her passions for dance and fashion. She plans to collaborate with fashion bloggers and influencers to expand h",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3995.6502999993972,
+    "latency_answer_ms": 929.9399999872549,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:1"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-30_q94",
+    "question": "Why did Jon combine his clothing business with dance?",
+    "question_type": "adversarial",
+    "ground_truth": "he is passionate about dance and fashion",
+    "prediction": "No information available.",
+    "recalled_context": "Jon prepares for his dance studio with Gina's support: On 13 June 2023, Jon expressed his gratitude to Gina for her support as he prepares for his dance studio. He is focused on providing dance classes, workshops, and one-on-one mentoring to help dancers reach their full potential. Jon shared that he uses a system to stay organized, set goals, and track achievements, also visualizing his goals through a whiteboard where he color-codes his progress. Gina encourages him to stay positive and keep p",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3039.510499991593,
+    "latency_answer_ms": 996.016499993857,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D8:8"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q95",
+    "question": "What did Gina receive from a dance contest?",
+    "question_type": "adversarial",
+    "ground_truth": "a trophy",
+    "prediction": "Gina won first place in a regional dance competition at age fifteen.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 7967.651899991324,
+    "latency_answer_ms": 1151.713800005382,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D9:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q96",
+    "question": "What kind of professional experience did Jon get accepted for on May 23, 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "fashion internship",
+    "prediction": "No information available.",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4482.430200005183,
+    "latency_answer_ms": 928.1009000114864,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q97",
+    "question": "Where is Gina's HR internship?",
+    "question_type": "adversarial",
+    "ground_truth": "fashion department of an international company",
+    "prediction": "No information available.",
+    "recalled_context": "Jon is opening a dance studio after losing his job: On 11 May 2023, Jon shared updates about his progress on opening his own dance studio, a dream he pursued after losing his job. Gina expressed admiration for his determination and offered encouragement. Jon highlighted his love for dance, which has been a source of stress relief since childhood. He aims to create a welcoming environment for others to express themselves through dance. Additionally, Gina mentioned having a design internship inter",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3975.92579999764,
+    "latency_answer_ms": 1389.9367999983951,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q98",
+    "question": "Where is Jon's fashion internship?",
+    "question_type": "adversarial",
+    "ground_truth": "fashion department of an international company",
+    "prediction": "No information available.",
+    "recalled_context": "Jon is opening a dance studio after losing his job: On 11 May 2023, Jon shared updates about his progress on opening his own dance studio, a dream he pursued after losing his job. Gina expressed admiration for his determination and offered encouragement. Jon highlighted his love for dance, which has been a source of stress relief since childhood. He aims to create a welcoming environment for others to express themselves through dance. Additionally, Gina mentioned having a design internship inter",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 6348.717100001522,
+    "latency_answer_ms": 1519.7723000019323,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q99",
+    "question": "What book is Gina currently reading?",
+    "question_type": "adversarial",
+    "ground_truth": "The Lean Startup",
+    "prediction": "No information available.",
+    "recalled_context": "Gina starts fashion internship, Jon works on business plan: On 27 May 2023, Gina shared her excitement about securing a part-time internship in the fashion department of an international company, expressing both enthusiasm and nervousness about the upcoming change. Jon congratulated her and mentioned he was reading 'The Lean Startup' to gather tips for his own dance studio business. They discussed how Jon's reading inspired him to build an efficient business through customer feedback. He also sh",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3284.6302000107244,
+    "latency_answer_ms": 943.1471999996575,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D12:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q100",
+    "question": "How does Gina use the clipboard with a notepad attached to it?",
+    "question_type": "adversarial",
+    "ground_truth": "To set goals, track achievements, and find areas for improvement",
+    "prediction": "No information available.",
+    "recalled_context": "Jon's dance studio search and Gina's store success: On 29 January 2023, Jon congratulated Gina on her store, acknowledging her hard work. Gina expressed excitement about seeing her vision come to life. Jon mentioned he is searching for a location for his dance studio, focusing on essential features like natural light and flooring quality. He specifically desires Marley flooring, known for its grip and ease of maintenance, which is optimal for dance studios. Jon's search has been a blend of excit",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3256.059199993615,
+    "latency_answer_ms": 967.3233999928925,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D13:11"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q101",
+    "question": "What did Jon take a trip to Barcelona for?",
+    "question_type": "adversarial",
+    "ground_truth": "To clear his mind",
+    "prediction": "No information available.",
+    "recalled_context": "Jon and Gina discuss job loss and dance studio plans: On 20 January 2023, Jon shared with Gina that he lost his job as a banker the previous day, but he plans to start a dance studio fueled by his passion for dancing. Gina also revealed she lost her job at Door Dash earlier that month. They both expressed their love for contemporary dance, planning to attend a dance class together next Friday. Jon shared a fond memory of his dance crew winning first place at a local competition the previous year",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 2995.905000003404,
+    "latency_answer_ms": 836.8282000010367,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D15:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q102",
+    "question": "What did Jon make a limited edition line of?",
+    "question_type": "adversarial",
+    "ground_truth": "Hoodies",
+    "prediction": "No information available.",
+    "recalled_context": "Gina's store launch and Jon's networking efforts: On 21 June 2023, Jon congratulated Gina on her new store, which features unique pieces. Gina revealed that her hoodie is from a limited edition collection she launched last week, showcasing her creativity. Jon shared that he attended networking events to advance his career after losing his job. Both encouraged each other, with Gina offering support for Jon's efforts. Jon emphasized the importance of writing his plans down to stay motivated, while",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3666.442800007644,
+    "latency_answer_ms": 977.6154999999562,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D16:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-30_q103",
+    "question": "What temporary job did Gina take to cover expenses?",
+    "question_type": "adversarial",
+    "ground_truth": "Not mentioned",
+    "prediction": "No information available.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 3139.116300008027,
+    "latency_answer_ms": 1020.3836000000592,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:2"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-30_q104",
+    "question": "What plans does Gina have after receiving advice at the networking event?",
+    "question_type": "adversarial",
+    "ground_truth": "Sprucing up her business plan, tweaking her pitch to investors, and working on an online platform.",
+    "prediction": "No information available.",
+    "recalled_context": "Jon seeks support for his dance studio: On 21 July 2023, Jon congratulated Gina on her new clothing store and shared that his dance studio is struggling but he remains optimistic. He has started a temporary job to cover expenses while looking for investors. Gina advised him on networking, which he has found beneficial, and he expressed that he met some investors at a recent networking event that motivated him. Jon is adjusting his business plan and developing an online platform for the dance stu",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 10731.704410526283,
+    "latency_recall_ms": 4336.447399997269,
+    "latency_answer_ms": 992.2433000028832,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-30",
+      "evidence": [
+        "D18:10"
+      ],
+      "memories_recalled": 8
+    }
+  }
+]

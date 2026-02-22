@@ -64,7 +64,7 @@ breakdown, and paper integration notes.
 
 ### LoCoMo (Original QA Benchmark)
 
-**0.533 overall F1** on all 1,986 questions across 10 conversations —
+**0.565 overall F1** on all 1,986 questions across 10 conversations —
 the highest score we are aware of on the official LoCoMo token-level F1 metric
 as of February 2026. Achieved in **summarized mode** (title + summary only,
 no raw conversation artifacts), demonstrating that the graph's metadata layer
@@ -88,22 +88,22 @@ and Memobase's published evaluation
 | Mem0 | 0.387 | 0.286 | 0.489 | 0.477 | ~0.40 | arXiv 2504.19413 |
 | Mem0-Graph | 0.381 | 0.243 | 0.516 | 0.493 | ~0.40 | arXiv 2504.19413 |
 | Memobase | 0.463 | 0.229 | 0.642 | 0.516 | — | GitHub |
-| **Kumiho** | **0.423** | **0.314** | **0.493** | **0.262** | **0.533** | This work |
+| **Kumiho** | **0.462** | **0.355** | **0.533** | **0.290** | **0.565** | This work |
 
-*Kumiho's overall includes adversarial category (0.966 F1, n=446) which most
+*Kumiho's overall includes adversarial category (0.975 F1, n=446) which most
 baselines do not report separately. Excluding adversarial, Kumiho's F1 across
-the four standard categories is 0.407.*
+the four standard categories is 0.447.*
 
 #### Per-Category Breakdown
 
 | Category | Count | F1 |
 | -------- | ----: | --: |
-| Single-hop | 841 | 0.423 |
-| Multi-hop | 282 | 0.314 |
-| Temporal | 321 | 0.493 |
-| Open-domain | 96 | 0.262 |
-| Adversarial | 446 | 0.966 |
-| **Overall** | **1,986** | **0.533** |
+| Single-hop | 841 | 0.462 |
+| Multi-hop | 282 | 0.355 |
+| Temporal | 321 | 0.533 |
+| Open-domain | 96 | 0.290 |
+| Adversarial | 446 | 0.975 |
+| **Overall** | **1,986** | **0.565** |
 
 Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge --graph-augmented (default)`
 

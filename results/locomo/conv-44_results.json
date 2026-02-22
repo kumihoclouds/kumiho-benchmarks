@@ -1,0 +1,3558 @@
+[
+  {
+    "question_id": "conv-44_q0",
+    "question": "Which year did Audrey adopt the first three of her dogs?",
+    "question_type": "temporal",
+    "ground_truth": "2020",
+    "prediction": "Before 2023",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6427.78170001111,
+    "latency_answer_ms": 1127.5328999909107,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:7"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q1",
+    "question": "When did Andrew start his new job as a financial analyst?",
+    "question_type": "temporal",
+    "ground_truth": "The week before March 27, 2023",
+    "prediction": "20 March 2023",
+    "recalled_context": "Audrey updates Andrew on her dogs and hikes: On 27 March 2023, Andrew shared that he started a new job as a Financial Analyst the previous week. Audrey congratulated him and showed off new collars and tags for her three dogs, Pepper, Precious, and Panda, whom she has had for three years. She mentioned that they frequently explore parks and trails in the city, which brings her immense joy. Although Andrew does not have pets, he expressed admiration for birds, especially eagles. They discussed hik",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7161.57860000385,
+    "latency_answer_ms": 1732.42709999613,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:2"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q2",
+    "question": "What kind of indoor activities has Andrew pursued with his girlfriend?",
+    "question_type": "multi-hop",
+    "ground_truth": "boardgames, volunteering at pet shelter, wine tasting, growing flowers",
+    "prediction": "Discovering new places to eat.",
+    "recalled_context": "Discussion about nature, city life, and a pastry party: In a conversation between Andrew and Audrey on 16 April 2023, they discussed the positive effects of nature and how it's a form of rejuvenation for both of them. Audrey shared that walking her dogs in the park helps her recharge, while Andrew lamented the challenges of city living and missing nature. They talked about discovering new places to eat in the city, specifically an awesome cafe with pastries, which sparked a plan for a pastry par",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4841.116800002055,
+    "latency_answer_ms": 955.4061999951955,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:1",
+        "D23:1",
+        "D25:1",
+        "D19:15"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q3",
+    "question": "What kind of places have Andrew and his girlfriend checked out around the city?",
+    "question_type": "multi-hop",
+    "ground_truth": "cafes, new places to eat, open space for hikes, pet shelter, wine tasting event, park",
+    "prediction": "New places to eat",
+    "recalled_context": "Discussion about nature, city life, and a pastry party: In a conversation between Andrew and Audrey on 16 April 2023, they discussed the positive effects of nature and how it's a form of rejuvenation for both of them. Audrey shared that walking her dogs in the park helps her recharge, while Andrew lamented the challenges of city living and missing nature. They talked about discovering new places to eat in the city, specifically an awesome cafe with pastries, which sparked a plan for a pastry par",
+    "f1_score": 0.16666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3113.046200000099,
+    "latency_answer_ms": 881.9420000072569,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:1",
+        "D3:11",
+        "D4:2",
+        "D6:1",
+        "D13:1",
+        "D23:3",
+        "D25:1",
+        "D27:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q4",
+    "question": "When did Audrey make muffins for herself?",
+    "question_type": "temporal",
+    "ground_truth": "The week of April 3rd to 9th",
+    "prediction": "13 October 2023",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7172.019600009662,
+    "latency_answer_ms": 1052.3429000022588,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:18"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q5",
+    "question": "When did Audrey see a hummingbird?",
+    "question_type": "temporal",
+    "ground_truth": "first week of May 2023",
+    "prediction": "26 April 2023",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 0.25,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8302.193800001987,
+    "latency_answer_ms": 1034.569299998111,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D4:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q6",
+    "question": "When did Audrey adopt Pixie?",
+    "question_type": "temporal",
+    "ground_truth": "around April 2, 2023",
+    "prediction": "2 April 2023",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.8571428571428571,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5831.225399990217,
+    "latency_answer_ms": 971.6027000104077,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:1"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q7",
+    "question": "How many years passed between Audrey adopting Pixie and her other three dogs?",
+    "question_type": "temporal",
+    "ground_truth": "three years",
+    "prediction": "Approximately 3 years.",
+    "recalled_context": "Audrey adopts a puppy named Pixie: On 2 April 2023, Audrey informed Andrew that they adopted a puppy named Pixie, who is fitting in great with their other dog, Pepper. Pixie took a few days to adjust but is now friends with Pepper and enjoys playing in the house. Andrew expressed interest in getting a dog as well and sought advice on finding dog-friendly accommodations. Audrey recommended using websites with filters to locate such places, which helped them find their home. The conversation concl",
+    "f1_score": 0.4,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5264.251699991291,
+    "latency_answer_ms": 1128.449299998465,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:1",
+        "D1:7"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q8",
+    "question": "Did Andrew have a pet dog during March 2023?",
+    "question_type": "temporal",
+    "ground_truth": "No",
+    "prediction": "No, before 8 July 2023.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.33333333333333337,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3910.0504999951227,
+    "latency_answer_ms": 1115.267599991057,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q9",
+    "question": "What kind of classes or groups has Audrey joined to take better care of her dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "positive reinforcement training workshop to bond with pets, dog training course, agility training course, grooming course, dog-owners group",
+    "prediction": "Dog owners group",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.14666666666666667,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 12248.833599995123,
+    "latency_answer_ms": 1035.6511999998474,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:2",
+        "D10:1",
+        "D14:2",
+        "D16:6",
+        "D27:2"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q10",
+    "question": "When did Audrey's positive reinforcement training course for dogs take place?",
+    "question_type": "temporal",
+    "ground_truth": "June, 2023",
+    "prediction": "June 2023",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6905.44589998899,
+    "latency_answer_ms": 990.1752000005217,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:2"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q11",
+    "question": "When did Andrew go rock climbing?",
+    "question_type": "temporal",
+    "ground_truth": "June 11, 2023",
+    "prediction": "13 June 2023",
+    "recalled_context": "Andrew's rock climbing experience and future outdoor plans: On 13 June 2023, Andrew shared his positive rock climbing experience with Audrey, expressing pride in reaching the top and describing the stunning view. He mentioned feeling accomplished and supported by friends, which prompted him to consider more outdoor activities like kayaking and bungee jumping. Audrey then invited Andrew to join her at a park for dog walking, stating it was a pleasant spot and that her dogs enjoy the outings. Andr",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4361.147999996319,
+    "latency_answer_ms": 1019.0523000055691,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D8:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q12",
+    "question": "What outdoor activities has Andrew done other than hiking in nature?",
+    "question_type": "multi-hop",
+    "ground_truth": "rock climbing, fishing, camping",
+    "prediction": "Rock climbing",
+    "recalled_context": "Andrew's rock climbing experience and future outdoor plans: On 13 June 2023, Andrew shared his positive rock climbing experience with Audrey, expressing pride in reaching the top and describing the stunning view. He mentioned feeling accomplished and supported by friends, which prompted him to consider more outdoor activities like kayaking and bungee jumping. Audrey then invited Andrew to join her at a park for dog walking, stating it was a pleasant spot and that her dogs enjoy the outings. Andr",
+    "f1_score": 0.3333333333333333,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5894.220599991968,
+    "latency_answer_ms": 1006.610800002818,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D8:1",
+        "D17:1",
+        "D14:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q13",
+    "question": "When did Audrey move to a new place?",
+    "question_type": "temporal",
+    "ground_truth": "June 2023",
+    "prediction": "26 June 2023",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3097.3263000050792,
+    "latency_answer_ms": 1642.5617999921087,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D9:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q14",
+    "question": "What is something that Andrew really misses while working in the city?",
+    "question_type": "multi-hop",
+    "ground_truth": "being in nature",
+    "prediction": "Nature",
+    "recalled_context": "Audrey updates Andrew on her dogs and hikes: On 27 March 2023, Andrew shared that he started a new job as a Financial Analyst the previous week. Audrey congratulated him and showed off new collars and tags for her three dogs, Pepper, Precious, and Panda, whom she has had for three years. She mentioned that they frequently explore parks and trails in the city, which brings her immense joy. Although Andrew does not have pets, he expressed admiration for birds, especially eagles. They discussed hik",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5151.555799995549,
+    "latency_answer_ms": 1549.6812000055797,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:7",
+        "D9:20"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q15",
+    "question": "What is a shared frustration regarding dog ownership for Audrey and Andrew?",
+    "question_type": "multi-hop",
+    "ground_truth": "Not being able to find pet friendly spots.",
+    "prediction": "Finding pet-friendly places",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.18181818181818182,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6533.379800006514,
+    "latency_answer_ms": 1124.6810000011465,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D7:8",
+        "D10:5"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q16",
+    "question": "When is Andrew going to go hiking with Audrey?",
+    "question_type": "temporal",
+    "ground_truth": "August",
+    "prediction": "Next month (August 2023)",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.4,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7734.0764999971725,
+    "latency_answer_ms": 1074.430399996345,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D11:7"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q17",
+    "question": "How many times did Audrey and Andew plan to hike together?",
+    "question_type": "multi-hop",
+    "ground_truth": "three times",
+    "prediction": "Three times.",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 2969.8319000017364,
+    "latency_answer_ms": 1182.3344000004,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D11:7",
+        "D24:13",
+        "D26:20"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q18",
+    "question": "Where did Audrey get Pixie from?",
+    "question_type": "multi-hop",
+    "ground_truth": "breeder",
+    "prediction": "Adopted",
+    "recalled_context": "Audrey adopts a puppy named Pixie: On 2 April 2023, Audrey informed Andrew that they adopted a puppy named Pixie, who is fitting in great with their other dog, Pepper. Pixie took a few days to adjust but is now friends with Pepper and enjoys playing in the house. Andrew expressed interest in getting a dog as well and sought advice on finding dog-friendly accommodations. Audrey recommended using websites with filters to locate such places, which helped them find their home. The conversation concl",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3006.214099994395,
+    "latency_answer_ms": 1240.2542000054382,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D11:4",
+        "D2:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q19",
+    "question": "What is an indoor activity that Andrew would enjoy doing while make his dog happy?",
+    "question_type": "open-domain",
+    "ground_truth": "cook dog treats",
+    "prediction": "Puzzles",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7003.775199991651,
+    "latency_answer_ms": 1031.0662999982014,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D10:12",
+        "D12:1"
+      ],
+      "memories_recalled": 2
+    }
+  },
+  {
+    "question_id": "conv-44_q20",
+    "question": "Which meat does Audrey prefer eating more than others?",
+    "question_type": "open-domain",
+    "ground_truth": "chicken",
+    "prediction": "The context does not specify Audrey's meat preference.",
+    "recalled_context": "Audrey updates Andrew on her dogs and hikes: On 27 March 2023, Andrew shared that he started a new job as a Financial Analyst the previous week. Audrey congratulated him and showed off new collars and tags for her three dogs, Pepper, Precious, and Panda, whom she has had for three years. She mentioned that they frequently explore parks and trails in the city, which brings her immense joy. Although Andrew does not have pets, he expressed admiration for birds, especially eagles. They discussed hik",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9612.567000003764,
+    "latency_answer_ms": 1579.6564999909606,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D10:13",
+        "D10:23"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q21",
+    "question": "What are the classes that Audrey took for her dogs to?",
+    "question_type": "multi-hop",
+    "ground_truth": "Positive reinforcement training class for bonding, dog training course, agility class",
+    "prediction": "Dog training course",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.40740740740740744,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6293.874399998458,
+    "latency_answer_ms": 1410.9827999927802,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4",
+        "D10:1",
+        "D14:2"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q22",
+    "question": "Where did Andrew go during the first weekend of August 2023?",
+    "question_type": "temporal",
+    "ground_truth": "camping with girlfriend",
+    "prediction": "Nature reserve, 19 August 2023",
+    "recalled_context": "Audrey learns dog grooming skills in August 2023: In August 2023, Audrey completed a dog grooming course, enhancing her ability to care for her pets. She expressed happiness in grooming her dogs, which brought her closer to them, and shared that they looked cute post-grooming. During the conversation, she offered Andrew tips on dog grooming, which includes being patient and attentive to sensitive areas. Andrew expressed interest in learning grooming techniques and mentioned his weekend plans to ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5754.548600001726,
+    "latency_answer_ms": 1134.9159999954281,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:1"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q23",
+    "question": "What are some problems that Andrew faces before he adopted Toby?",
+    "question_type": "multi-hop",
+    "ground_truth": "Finding the right dog and pet-friendly apartments close to open spaces",
+    "prediction": "Anxious about pet care.",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11411.685900005978,
+    "latency_answer_ms": 1213.8487999909557,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:12",
+        "D5:3",
+        "D5:5",
+        "D5:7"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q24",
+    "question": "Did Audrey and Andrew grow up with a pet dog?",
+    "question_type": "multi-hop",
+    "ground_truth": "Yes",
+    "prediction": "Yes, Audrey did.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4089.997899995069,
+    "latency_answer_ms": 1127.7562000032049,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:16",
+        "D13:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q25",
+    "question": "When did Andrew and his girlfriend go fishing?",
+    "question_type": "temporal",
+    "ground_truth": "weekend before August 24, 2023",
+    "prediction": "Andrew and his girlfriend never went fishing.",
+    "recalled_context": "Audrey shares about her pets and bonding with dogs: In a conversation on 24 August 2023, Audrey revealed that she has never been fishing, instead recalling a peaceful moment spent at a picturesque lake in the mountains with friends. She discussed the importance of regular grooming to keep her dogs looking good, mentioning daily brushing, baths, and nail trims as crucial to their health and happiness. The bond she has with her dogs brings her happiness and she takes the responsibility of their ca",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5135.756200004835,
+    "latency_answer_ms": 1180.166799997096,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D17:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q26",
+    "question": "What is the biggest stressor in Andrew's life besides not being able to hike frequently?",
+    "question_type": "multi-hop",
+    "ground_truth": "work",
+    "prediction": "Finding a dog-friendly place.",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6930.410700006178,
+    "latency_answer_ms": 978.9976999891223,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:3",
+        "D16:1",
+        "D18:1",
+        "D10:16"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q27",
+    "question": "How does Andrew feel about his current work?",
+    "question_type": "multi-hop",
+    "ground_truth": "Stressful",
+    "prediction": "Financial Analyst satisfaction",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9602.174499988905,
+    "latency_answer_ms": 1542.125499996473,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:3",
+        "D16:1",
+        "D18:1",
+        "D10:16"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q28",
+    "question": "What is something that Audrey often dresses up her dogs with?",
+    "question_type": "multi-hop",
+    "ground_truth": "Hats",
+    "prediction": "Collars and tags",
+    "recalled_context": "Audrey and Andrew discuss pets and recent outdoor activities: On 1 June 2023, Audrey took her dogs to the park, where they played without leashes, bringing her joy and peace. Last week, she also hiked at a national park and reached a beautiful peak during sunset, capturing photos of the stunning scenery. Andrew is currently searching for a pet-friendly place to adopt a dog but is facing challenges finding suitable options in the city. Audrey encouraged him, offering to help him with his search b",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4332.295600004727,
+    "latency_answer_ms": 1129.2861999972956,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D4:23",
+        "D4:25",
+        "D19:6"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q29",
+    "question": "What are the names of Audrey's dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Pepper, Precious, Panda, and Pixie",
+    "prediction": "Pepper, Pixie, Precious, Panda",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 2934.209600003669,
+    "latency_answer_ms": 1069.5503000024473,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:7",
+        "D2:1",
+        "D19:12"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q30",
+    "question": "When is Andrew planning to go to the beach with his girlfriend?",
+    "question_type": "temporal",
+    "ground_truth": "November 2023",
+    "prediction": "November 2023",
+    "recalled_context": "Audrey and Andrew discuss beach outing and nature: On 4 October 2023, Audrey shared her recent experience of taking her dogs to the beach, describing it as fun to see them playing in the ocean. Andrew mentioned that he hasn't been to the beach in a while due to work-life balance challenges, expressing a sense of missing nature. Audrey suggested that Andrew could appreciate nature by getting plants for his home or visiting parks on weekends. Andrew agreed he should get more plants for peace at ho",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3457.180600002175,
+    "latency_answer_ms": 1057.4685000028694,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q31",
+    "question": "What has Andrew done with his dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Taking walks and hiking",
+    "prediction": "Adopted Buddy and Scout.",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4247.4668999930145,
+    "latency_answer_ms": 1342.389400000684,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:27",
+        "D24:8"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q32",
+    "question": "What kind of tattoo does Audrey have on her arm?",
+    "question_type": "multi-hop",
+    "ground_truth": "Tattoos of her four dogs.",
+    "prediction": "Tattoo of her four dogs",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3592.056199995568,
+    "latency_answer_ms": 1387.0827999926405,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:26",
+        "D15:1",
+        "D23:20"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q33",
+    "question": "What can Andrew potentially do to improve his stress and accomodate his living situation with his dogs?",
+    "question_type": "open-domain",
+    "ground_truth": "Change to a hybrid or remote job so he can move away from the city to the suburbs to have a larger living space and be closer to nature.",
+    "prediction": "Go hiking, find parks.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7684.812699997565,
+    "latency_answer_ms": 996.3234999886481,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:3",
+        "D18:1",
+        "D21:5"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q34",
+    "question": "How many months passed between Andrew adopting Toby and Buddy?",
+    "question_type": "temporal",
+    "ground_truth": "three months",
+    "prediction": "3 months",
+    "recalled_context": "Audrey and Andrew discuss new pets and hiking plans: On 19 October 2023, Audrey shared her excitement about buying dog toys at a pet store last Monday and how happy her dogs were with them. Andrew responded with news of adopting a new dog, named Buddy, from a shelter, who is adjusting to his new home and his companion, Toby. They both expressed joy about the companionship pets bring and shared their favorite activities, such as walks and exploring new hiking trails. Audrey looked forward to a hi",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3461.6875000065193,
+    "latency_answer_ms": 1114.6560999914072,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1",
+        "D24:2"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q35",
+    "question": "What are the names of Andrew's dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Toby, Scout, Buddy",
+    "prediction": "Scout, Toby, Buddy",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3420.962399992277,
+    "latency_answer_ms": 1031.554800007143,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1",
+        "D24:6",
+        "D28:8"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q36",
+    "question": "What are some foods that Audrey likes eating?",
+    "question_type": "multi-hop",
+    "ground_truth": "chicken pot pie, chicken roast, blueberry muffins, sushi",
+    "prediction": "Sushi",
+    "recalled_context": "Discussion about dogs and finding pet-friendly housing: On 6 May 2023, Audrey and Andrew discussed the joys of meeting new puppies and the importance of considering living space and exercise needs when selecting a dog breed. Andrew, living in an apartment, noted that a smaller dog would be best for him and mentioned having difficulty finding a pet-friendly place to live, while he is searching in neighborhoods near parks or woods. Audrey shared her experience of taking her dogs on road trips to n",
+    "f1_score": 0.25,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5431.283399986569,
+    "latency_answer_ms": 1128.5977000079583,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:18",
+        "D10:13",
+        "D10:23",
+        "D25:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q37",
+    "question": "When did Audrey get into an accident in the park?",
+    "question_type": "temporal",
+    "ground_truth": "between October 19 and 24, 2023",
+    "prediction": "17 October 2023",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6943.136999994749,
+    "latency_answer_ms": 1537.2803999925964,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:2"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q38",
+    "question": "When did Andrew and his girlfriend go on a wine tasting trip?",
+    "question_type": "temporal",
+    "ground_truth": "the weekend before October 24, 2023",
+    "prediction": "Not mentioned",
+    "recalled_context": "Discussion about dogs and finding pet-friendly housing: On 6 May 2023, Audrey and Andrew discussed the joys of meeting new puppies and the importance of considering living space and exercise needs when selecting a dog breed. Andrew, living in an apartment, noted that a smaller dog would be best for him and mentioned having difficulty finding a pet-friendly place to live, while he is searching in neighborhoods near parks or woods. Audrey shared her experience of taking her dogs on road trips to n",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4072.8306000091834,
+    "latency_answer_ms": 1091.320599996834,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:1"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q39",
+    "question": "What did Audrey get wtih having so many dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Companionship",
+    "prediction": "Happiness and responsibility",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7550.523099998827,
+    "latency_answer_ms": 1145.9568999998737,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:15",
+        "D23:18"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q40",
+    "question": "What is a good place for dogs to run around freely and meet new friends?",
+    "question_type": "multi-hop",
+    "ground_truth": "The dog park",
+    "prediction": "Dog park",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8489.758299998357,
+    "latency_answer_ms": 1125.8074999932433,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D4:25",
+        "D14:2",
+        "D23:10"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q41",
+    "question": "What are the breeds of Audrey's dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Mongrel mixed with Lab for Pepper and Panda. Mongrel mixed with Chihuahua for Precious and Pixie.",
+    "prediction": "Lab mixes, Chihuahua mixes",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.25,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5368.519600000582,
+    "latency_answer_ms": 1584.2283999954816,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:12",
+        "D26:13"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q42",
+    "question": "What technique is Audrey using to discipline her dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Positive reinforcement",
+    "prediction": "Positive reinforcement",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10574.387100001331,
+    "latency_answer_ms": 1457.7213000011398,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4",
+        "D26:5"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q43",
+    "question": "Which US state do Audrey and Andrew potentially live in?",
+    "question_type": "open-domain",
+    "ground_truth": "Minnesota",
+    "prediction": "California",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11445.395799994003,
+    "latency_answer_ms": 1402.2299000062048,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D11:9"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q44",
+    "question": "Which national park could Audrey and Andrew be referring to in their conversations?",
+    "question_type": "open-domain",
+    "ground_truth": "Voyageurs National Park",
+    "prediction": "Unspecified national park",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11391.702299995814,
+    "latency_answer_ms": 905.094800007646,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D5:8",
+        "D11:9"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q45",
+    "question": "How many pets will Andrew have, as of December 2023?",
+    "question_type": "temporal",
+    "ground_truth": "three",
+    "prediction": "Three dogs (as of 22 November 2023)",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.25,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8554.117699997732,
+    "latency_answer_ms": 1135.8569000003627,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1",
+        "D24:2",
+        "D28:6"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q46",
+    "question": "How many pets did Andrew have, as of September 2023?",
+    "question_type": "temporal",
+    "ground_truth": "one",
+    "prediction": "Two dogs (Toby, Buddy)",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11373.424999997951,
+    "latency_answer_ms": 1721.7197000136366,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1",
+        "D24:2"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q47",
+    "question": "How many months passed between Andrew adopting Buddy and Scout",
+    "question_type": "temporal",
+    "ground_truth": "one month",
+    "prediction": "1 month",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6581.555999990087,
+    "latency_answer_ms": 944.463399995584,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D24:2",
+        "D28:6"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q48",
+    "question": "What does Andrew view his pets as?",
+    "question_type": "multi-hop",
+    "ground_truth": "Family",
+    "prediction": "Companions",
+    "recalled_context": "Audrey and Andrew discuss pets and recent outdoor activities: On 1 June 2023, Audrey took her dogs to the park, where they played without leashes, bringing her joy and peace. Last week, she also hiked at a national park and reached a beautiful peak during sunset, capturing photos of the stunning scenery. Andrew is currently searching for a pet-friendly place to adopt a dog but is facing challenges finding suitable options in the city. Audrey encouraged him, offering to help him with his search b",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7226.358300002175,
+    "latency_answer_ms": 1165.453699999489,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D15:14",
+        "D28:18"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q49",
+    "question": "What does Audrey view her pets as?",
+    "question_type": "multi-hop",
+    "ground_truth": "Family",
+    "prediction": "Important in her life",
+    "recalled_context": "Audrey shares about her pets and bonding with dogs: In a conversation on 24 August 2023, Audrey revealed that she has never been fishing, instead recalling a peaceful moment spent at a picturesque lake in the mountains with friends. She discussed the importance of regular grooming to keep her dogs looking good, mentioning daily brushing, baths, and nail trims as crucial to their health and happiness. The bond she has with her dogs brings her happiness and she takes the responsibility of their ca",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3586.7732999904547,
+    "latency_answer_ms": 1124.920000002021,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D15:15",
+        "D23:18"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q50",
+    "question": "What is a skill that Audrey learned to take care of her dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "Grooming",
+    "prediction": "Dog grooming",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5873.006199995871,
+    "latency_answer_ms": 898.4035000030417,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D16:2",
+        "D17:4"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q51",
+    "question": "What items has Audrey bought or made for her dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "dog tags, toys, dog beds, collars",
+    "prediction": "Agility equipment, toys, tattoo",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 0.25,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11770.528499997454,
+    "latency_answer_ms": 1081.1193999979878,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:2",
+        "D9:5",
+        "D18:10",
+        "D24:1"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q52",
+    "question": "What is something that Andrew could do to make birdwatching hobby to fit in his city schedule?",
+    "question_type": "open-domain",
+    "ground_truth": "Install a bird feeder outside where he can see the birds without going outdoors.",
+    "prediction": "Bring binoculars and notebook.",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8791.552099995897,
+    "latency_answer_ms": 1158.7978000025032,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:5",
+        "D20:21",
+        "D23:1",
+        "D1:14"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q53",
+    "question": "What is a career that Andrew could potentially pursue with his love for animals and nature?",
+    "question_type": "open-domain",
+    "ground_truth": "Park ranger or a similar position working for the National Park Services.",
+    "prediction": "Pet shelter volunteer coordinator",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6148.880700013251,
+    "latency_answer_ms": 1208.2068000017898,
+    "metadata": {
+      "category": 3,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:18",
+        "D3:1",
+        "D5:7",
+        "D8:27"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q54",
+    "question": "What activity do Audrey's dogs like to do in the dog park?",
+    "question_type": "multi-hop",
+    "ground_truth": "Play fetch with ball and frisbee, run around and meet other dogs",
+    "prediction": "Play fetch and Frisbee",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.37499999999999994,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11328.377099998761,
+    "latency_answer_ms": 1578.8837000000058,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D4:21",
+        "D10:7",
+        "D13:8",
+        "D23:14",
+        "D27:12"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q55",
+    "question": "When did Andrew make his dogs a fun indoor area?",
+    "question_type": "temporal",
+    "ground_truth": "few days before November 22, 2023",
+    "prediction": "26 June 2023",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 0.2222222222222222,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6542.332400000305,
+    "latency_answer_ms": 1045.490799995605,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D28:12"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q56",
+    "question": "Has Andrew moved into a new apartment for his dogs?",
+    "question_type": "multi-hop",
+    "ground_truth": "No",
+    "prediction": "No.",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11625.316500008921,
+    "latency_answer_ms": 1041.5321000036784,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D5:5",
+        "D28:12"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q57",
+    "question": "When did Andrew adopt Scout?",
+    "question_type": "temporal",
+    "ground_truth": "few days before November 2023",
+    "prediction": "November 2023",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.5714285714285715,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9025.21859999979,
+    "latency_answer_ms": 1107.0045000087703,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D28:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q58",
+    "question": "What did Audrey eat for dinner on October 24, 2023?",
+    "question_type": "temporal",
+    "ground_truth": "sushi",
+    "prediction": "Sushi",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10674.0201000066,
+    "latency_answer_ms": 996.5413000027183,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:14"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q59",
+    "question": "How long has it been since Andrew adopted his first pet, as of November 2023?",
+    "question_type": "temporal",
+    "ground_truth": "4 months",
+    "prediction": "4 months",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5318.929899993236,
+    "latency_answer_ms": 1167.5413000048138,
+    "metadata": {
+      "category": 2,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q60",
+    "question": "How many dogs does Andrew have?",
+    "question_type": "multi-hop",
+    "ground_truth": "3",
+    "prediction": "Three dogs.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7811.143200000515,
+    "latency_answer_ms": 1050.7347999955527,
+    "metadata": {
+      "category": 1,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D12:1",
+        "D24:2",
+        "D28:6"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q61",
+    "question": "Which specific type of bird mesmerizes Andrew?",
+    "question_type": "single-hop",
+    "ground_truth": "Eagles",
+    "prediction": "Eagles",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7166.080100010731,
+    "latency_answer_ms": 1038.3492000109982,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:16"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q62",
+    "question": "What did Andrew express missing about exploring nature trails with his family's dog?",
+    "question_type": "single-hop",
+    "ground_truth": "The peaceful moments",
+    "prediction": "Nature and outdoor activities.",
+    "recalled_context": "Audrey and Andrew discuss beach outing and nature: On 4 October 2023, Audrey shared her recent experience of taking her dogs to the beach, describing it as fun to see them playing in the ocean. Andrew mentioned that he hasn't been to the beach in a while due to work-life balance challenges, expressing a sense of missing nature. Audrey suggested that Andrew could appreciate nature by getting plants for his home or visiting parks on weekends. Andrew agreed he should get more plants for peace at ho",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4204.143800001475,
+    "latency_answer_ms": 1161.6829999984475,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D2:18"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q63",
+    "question": "What kind of pastries did Andrew and his girlfriend have at the cafe?",
+    "question_type": "single-hop",
+    "ground_truth": "croissants, muffins, and tarts",
+    "prediction": "Delicious pastries",
+    "recalled_context": "Discussion about nature, city life, and a pastry party: In a conversation between Andrew and Audrey on 16 April 2023, they discussed the positive effects of nature and how it's a form of rejuvenation for both of them. Audrey shared that walking her dogs in the park helps her recharge, while Andrew lamented the challenges of city living and missing nature. They talked about discovering new places to eat in the city, specifically an awesome cafe with pastries, which sparked a plan for a pastry par",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10794.82489998918,
+    "latency_answer_ms": 877.7157000004081,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:17"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q64",
+    "question": "What kind of flowers does Audrey have a tattoo of?",
+    "question_type": "single-hop",
+    "ground_truth": "sunflowers",
+    "prediction": "Four dogs",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5881.1381999985315,
+    "latency_answer_ms": 1020.513800001936,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:26"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q65",
+    "question": "What does Audrey do during dog playdates in the park?",
+    "question_type": "single-hop",
+    "ground_truth": "chat with people while dogs make new friends",
+    "prediction": "Play fetch",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9995.268800004851,
+    "latency_answer_ms": 1162.4023000040324,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D4:21"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q66",
+    "question": "What type of dog was Andrew looking to adopt based on his living space?",
+    "question_type": "single-hop",
+    "ground_truth": "smaller dog",
+    "prediction": "Smaller dog",
+    "recalled_context": "Discussion about dogs and finding pet-friendly housing: On 6 May 2023, Audrey and Andrew discussed the joys of meeting new puppies and the importance of considering living space and exercise needs when selecting a dog breed. Andrew, living in an apartment, noted that a smaller dog would be best for him and mentioned having difficulty finding a pet-friendly place to live, while he is searching in neighborhoods near parks or woods. Audrey shared her experience of taking her dogs on road trips to n",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6514.43830000062,
+    "latency_answer_ms": 1062.0233999943594,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D5:3"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q67",
+    "question": "Where does Andrew want to live to give their dog a large, open space to run around?",
+    "question_type": "single-hop",
+    "ground_truth": "near a park or woods",
+    "prediction": "Near a park or woods",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3397.982599999523,
+    "latency_answer_ms": 1091.0691000026418,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D5:7"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q68",
+    "question": "Why did Audrey sign up for a workshop about bonding with pets?",
+    "question_type": "single-hop",
+    "ground_truth": "Strengthen the bond with her pets",
+    "prediction": "To strengthen dog bonds.",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.4444444444444445,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10118.703600004665,
+    "latency_answer_ms": 1098.6203999927966,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:2"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q69",
+    "question": "How did Audrey hear about the workshop on bonding with pets?",
+    "question_type": "single-hop",
+    "ground_truth": "Saw a workshop flyer at the local pet store",
+    "prediction": "Flyer at pet store",
+    "recalled_context": "Audrey plans to attend a pet bonding workshop: On 11 May 2023, Audrey shared that she has been busy taking care of her four dogs and signed up for a workshop next month focused on bonding with pets. She found out about the workshop through a flyer at her local pet store, which featured positive reinforcement training. Audrey is excited about learning new training techniques to strengthen her bond with her dogs and believes they will learn quickly due to their love for rewards. Andrew encouraged ",
+    "f1_score": 0.7272727272727273,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11101.256499998271,
+    "latency_answer_ms": 1037.9316000035033,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q70",
+    "question": "What type of training was the workshop Audrey signed up for in May 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Positive reinforcement training",
+    "prediction": "Positive reinforcement training",
+    "recalled_context": "Audrey plans to attend a pet bonding workshop: On 11 May 2023, Audrey shared that she has been busy taking care of her four dogs and signed up for a workshop next month focused on bonding with pets. She found out about the workshop through a flyer at her local pet store, which featured positive reinforcement training. Audrey is excited about learning new training techniques to strengthen her bond with her dogs and believes they will learn quickly due to their love for rewards. Andrew encouraged ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9798.651400007657,
+    "latency_answer_ms": 1832.716500008246,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q71",
+    "question": "How did Audrey describe she dog he met at the pet store?",
+    "question_type": "single-hop",
+    "ground_truth": "Friendly and playful",
+    "prediction": "Audrey didn't describe a dog.",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11412.698599990108,
+    "latency_answer_ms": 1133.1522000109544,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q72",
+    "question": "Why did Audrey think positive reinforcement training is important for pets?",
+    "question_type": "single-hop",
+    "ground_truth": "To have pets learn how to behave in a positive way",
+    "prediction": "Strengthen bond with pets",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.14285714285714288,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6978.812500005006,
+    "latency_answer_ms": 1081.1023999995086,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:12"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q73",
+    "question": "What challenge is Andrew facing in their search for a pet?",
+    "question_type": "single-hop",
+    "ground_truth": "Finding a pet-friendly spot in the city",
+    "prediction": "Finding pet-friendly housing",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10090.55160000571,
+    "latency_answer_ms": 966.6232000017771,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D7:8"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q74",
+    "question": "How does Andrew feel about their search for a pet-friendly place?",
+    "question_type": "single-hop",
+    "ground_truth": "Discouraged but determined",
+    "prediction": "Challenging and ongoing.",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6116.067999988445,
+    "latency_answer_ms": 1152.5720000063302,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D7:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q75",
+    "question": "What outdoor activities does Andrew plan on trying after the rock climbing class?",
+    "question_type": "single-hop",
+    "ground_truth": "kayaking and bungee jumping",
+    "prediction": "Kayaking, bungee jumping",
+    "recalled_context": "Andrew's rock climbing experience and future outdoor plans: On 13 June 2023, Andrew shared his positive rock climbing experience with Audrey, expressing pride in reaching the top and describing the stunning view. He mentioned feeling accomplished and supported by friends, which prompted him to consider more outdoor activities like kayaking and bungee jumping. Audrey then invited Andrew to join her at a park for dog walking, stating it was a pleasant spot and that her dogs enjoy the outings. Andr",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6208.857000005082,
+    "latency_answer_ms": 1075.3604999918025,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D8:7"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q76",
+    "question": "How long does Audrey typically walk her dogs for?",
+    "question_type": "single-hop",
+    "ground_truth": "about an hour",
+    "prediction": "About an hour",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6214.644799998496,
+    "latency_answer_ms": 1011.2870000011753,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D8:14"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q77",
+    "question": "What did Audrey set up in the backyard for their dogs on June 26, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "a doggy play area with agility stuff and toys",
+    "prediction": "Doggy play area",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 0.6,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10581.502899993211,
+    "latency_answer_ms": 1010.4961000033654,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D9:5"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q78",
+    "question": "What did Audrey and her friends stumble across during a hike a few years back, as mentioned on June 26, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "a stunning lake in the mountains",
+    "prediction": "A peaceful lake.",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 0.3333333333333333,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9709.40750000591,
+    "latency_answer_ms": 1319.275400004699,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D9:23"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q79",
+    "question": "What is Audrey's favorite recipe that she shares with Andrew on 3 July, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Chicken Pot Pie",
+    "prediction": "Chicken Pot Pie",
+    "recalled_context": "Dog training and cooking hobbies discussed: Audrey is taking a dog training course which is challenging but rewarding, and she reports that her four dogs, all 3-year-old mutts (two Jack Russell mixes and two Chihuahua mixes), are doing well since they had a doggy playdate on 30 June 2023. Andrew is struggling to find dog-friendly rental spots and has been exploring new hobbies, particularly cooking, to cope with the situation. Audrey shares her love for cooking and mentions her favorite recipe, ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4769.30220000213,
+    "latency_answer_ms": 1121.2750999984564,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D10:13"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q80",
+    "question": "What dish is one of Audrey's favorite dishes that includes garlic and is shared with Andrew on 3 July, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Roasted Chicken",
+    "prediction": "Chicken Pot Pie",
+    "recalled_context": "Dog training and cooking hobbies discussed: Audrey is taking a dog training course which is challenging but rewarding, and she reports that her four dogs, all 3-year-old mutts (two Jack Russell mixes and two Chihuahua mixes), are doing well since they had a doggy playdate on 30 June 2023. Andrew is struggling to find dog-friendly rental spots and has been exploring new hobbies, particularly cooking, to cope with the situation. Audrey shares her love for cooking and mentions her favorite recipe, ",
+    "f1_score": 0.4,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 12606.257099992945,
+    "latency_answer_ms": 976.583199997549,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D10:23"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q81",
+    "question": "What did Andrew and his GF do on the Monday before July 24, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "volunteered at a pet shelter",
+    "prediction": "Visited a farm.",
+    "recalled_context": "Dog training and cooking hobbies discussed: Audrey is taking a dog training course which is challenging but rewarding, and she reports that her four dogs, all 3-year-old mutts (two Jack Russell mixes and two Chihuahua mixes), are doing well since they had a doggy playdate on 30 June 2023. Andrew is struggling to find dog-friendly rental spots and has been exploring new hobbies, particularly cooking, to cope with the situation. Audrey shares her love for cooking and mentions her favorite recipe, ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10288.458299997728,
+    "latency_answer_ms": 1345.57119999954,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q82",
+    "question": "What is the name of Audrey's childhood dog?",
+    "question_type": "single-hop",
+    "ground_truth": "Max",
+    "prediction": "Max",
+    "recalled_context": "Discussion about the joys of volunteering and pet ownership: In the conversation on 27 July 2023, Audrey and Andrew discussed their experiences with pets, focusing on Andrew's volunteering at a pet shelter. Andrew shared his happiness in helping animals, while Audrey expressed her deep connection with her four pets, describing their unique personalities. She reminisced about her childhood dog, Max, highlighting the close bond they shared during long walks and conversations. Both acknowledged the",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8566.12459999451,
+    "latency_answer_ms": 1051.8445000052452,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q83",
+    "question": "What special memories does Audrey have with her childhood dog, Max?",
+    "question_type": "single-hop",
+    "ground_truth": "Long walks in the neighborhood, exploring new paths, sharing worries and hopes",
+    "prediction": "No specific memories mentioned.",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11504.957600001944,
+    "latency_answer_ms": 1297.057900010259,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q84",
+    "question": "What are some of the personalities of Audrey's four fur babies?",
+    "question_type": "single-hop",
+    "ground_truth": "oldest is relaxed, second is playful, third can be naughty but loves cuddles, youngest is full of life",
+    "prediction": "Lab mixes, Chihuahua mixes",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10766.231999994488,
+    "latency_answer_ms": 980.4653000028338,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:6"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q85",
+    "question": "What type of classes did Audrey start with her pups recently on 4 August, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Agility classes",
+    "prediction": "Dog training classes",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.4,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7485.064799999236,
+    "latency_answer_ms": 1114.0383999882033,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:2"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q86",
+    "question": "How often does Audrey take her pups to the park for practice?",
+    "question_type": "single-hop",
+    "ground_truth": "Twice a week",
+    "prediction": "Once a week.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9987.105199994403,
+    "latency_answer_ms": 945.2240999962669,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:4"
+      ],
+      "memories_recalled": 2
+    }
+  },
+  {
+    "question_id": "conv-44_q87",
+    "question": "How long did the trail hike that Audrey went on with her pups take?",
+    "question_type": "single-hop",
+    "ground_truth": "Two hours",
+    "prediction": "Not specified",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3624.323399999412,
+    "latency_answer_ms": 968.8258999958634,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:8"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q88",
+    "question": "What advice did Audrey give to Andrew regarding grooming Toby?",
+    "question_type": "single-hop",
+    "ground_truth": "Grooming slowly and gently, paying attention to sensitive areas like ears and paws. And remember to stay patient and positive throughout the grooming process.",
+    "prediction": "Be patient and attentive.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.18181818181818182,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11319.458500001929,
+    "latency_answer_ms": 1161.4830000035,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D16:8"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q89",
+    "question": "What is essential to keep the dogs looking good according to Audrey?",
+    "question_type": "single-hop",
+    "ground_truth": "Daily brushing, regular baths, nail trims, and lots of love",
+    "prediction": "Daily brushing, regular baths, nail trims",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.8,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9957.347399991704,
+    "latency_answer_ms": 1126.104299997678,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D17:4"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q90",
+    "question": "What did Audrey organize with the neighbors' dogs?",
+    "question_type": "single-hop",
+    "ground_truth": "a doggy playdate",
+    "prediction": "Doggy playdate",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8362.395399992238,
+    "latency_answer_ms": 1032.9779000021517,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:6"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q91",
+    "question": "What did Audrey do to give her dogs extra comfort as the weather cooled down?",
+    "question_type": "single-hop",
+    "ground_truth": "Got new beds for them",
+    "prediction": "Bought new beds",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 0.5,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10575.060599992867,
+    "latency_answer_ms": 945.1981999882264,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:10"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q92",
+    "question": "How does Audrey describe the new beds for her dogs?",
+    "question_type": "single-hop",
+    "ground_truth": "Super cozy and comfy",
+    "prediction": "Increased comfort",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4455.631399992853,
+    "latency_answer_ms": 1010.8636999939336,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:12"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q93",
+    "question": "How did Audrey calm down her dog after the leash incident?",
+    "question_type": "single-hop",
+    "ground_truth": "Petted, hugged, spoke calmly and slowly walked the dog",
+    "prediction": "Strengthened the bond.",
+    "recalled_context": "Audrey's dog incident and gardening update: On 24 September 2023, Audrey recounted a troubling event where one of her dogs pulled so hard on the leash that it broke, causing her to chase after the pup to prevent it from running off. She successfully caught her dog, which made her reflect on the bond they share. Audrey frequently trains her dogs by teaching them commands like sit, stay, shake, and roll over, emphasizing the importance of trust and patience in their relationship. She mentioned hav",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9701.601699998719,
+    "latency_answer_ms": 973.725400006515,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q94",
+    "question": "How often does Audrey take her dogs for walks?",
+    "question_type": "single-hop",
+    "ground_truth": "Multiple times a day",
+    "prediction": "Once a week.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8022.675200001686,
+    "latency_answer_ms": 1130.6743000022834,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:10"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q95",
+    "question": "What kind of flowers does Audrey take care of?",
+    "question_type": "single-hop",
+    "ground_truth": "Peruvian Lilies",
+    "prediction": "Peruvian Lilies",
+    "recalled_context": "Audrey's dog incident and gardening update: On 24 September 2023, Audrey recounted a troubling event where one of her dogs pulled so hard on the leash that it broke, causing her to chase after the pup to prevent it from running off. She successfully caught her dog, which made her reflect on the bond they share. Audrey frequently trains her dogs by teaching them commands like sit, stay, shake, and roll over, emphasizing the importance of trust and patience in their relationship. She mentioned hav",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5560.354799992638,
+    "latency_answer_ms": 922.3927999992156,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:20"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q96",
+    "question": "What did Andrew learn from reading books about ecological systems?",
+    "question_type": "single-hop",
+    "ground_truth": "about animals, plants, and ecosystems and how they work together",
+    "prediction": "Reducing carbon footprint",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5806.5769000095315,
+    "latency_answer_ms": 1512.5063000014052,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:25"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q97",
+    "question": "What did Andrew suggest as a way to reduce carbon footprint?",
+    "question_type": "single-hop",
+    "ground_truth": "biking or using public transport",
+    "prediction": "Biking",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 0.33333333333333337,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8340.472800002317,
+    "latency_answer_ms": 1026.2163000006694,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:33"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q98",
+    "question": "How does Andrew suggest helping the planet while also training the body?",
+    "question_type": "single-hop",
+    "ground_truth": "by biking",
+    "prediction": "Biking",
+    "recalled_context": "Discussion about nature, city life, and a pastry party: In a conversation between Andrew and Audrey on 16 April 2023, they discussed the positive effects of nature and how it's a form of rejuvenation for both of them. Audrey shared that walking her dogs in the park helps her recharge, while Andrew lamented the challenges of city living and missing nature. They talked about discovering new places to eat in the city, specifically an awesome cafe with pastries, which sparked a plan for a pastry par",
+    "f1_score": 0.6666666666666666,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5225.117099995259,
+    "latency_answer_ms": 953.0822000087937,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:35"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q99",
+    "question": "What did Audrey do with her pups over the weekend before 4th October, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Took them to the beach",
+    "prediction": "Took them to the beach.",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11723.084299999755,
+    "latency_answer_ms": 1649.759499996435,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D21:2"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q100",
+    "question": "What was the reason Audrey couldn't walk her dogs for a period of time?",
+    "question_type": "single-hop",
+    "ground_truth": "Knee injury",
+    "prediction": "Knee injury",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5024.212200005422,
+    "latency_answer_ms": 2071.5148000017507,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q101",
+    "question": "What type of jewelry does Audrey make?",
+    "question_type": "single-hop",
+    "ground_truth": "Jewelry made from recycled objects",
+    "prediction": "Recycled jewelry",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 0.5714285714285715,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9877.0005999977,
+    "latency_answer_ms": 1032.9878000047756,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:5"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q102",
+    "question": "Why does Audrey make jewelry out of recycled objects?",
+    "question_type": "single-hop",
+    "ground_truth": "To show love for creativity and sustainability",
+    "prediction": "Personal fulfillment, part-time business.",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11975.825400004396,
+    "latency_answer_ms": 1127.4651999992784,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:5"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q103",
+    "question": "What organization does Audrey donate a portion of his profits to?",
+    "question_type": "single-hop",
+    "ground_truth": "Animal shelter",
+    "prediction": "Animal shelter",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11852.847100002691,
+    "latency_answer_ms": 986.1815000040224,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:7"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q104",
+    "question": "How does Audrey help out the animal shelter?",
+    "question_type": "single-hop",
+    "ground_truth": "By donating a portion of his profits frmo selling jwelery",
+    "prediction": "Monthly donations",
+    "recalled_context": "Discussion about the joys of volunteering and pet ownership: In the conversation on 27 July 2023, Audrey and Andrew discussed their experiences with pets, focusing on Andrew's volunteering at a pet shelter. Andrew shared his happiness in helping animals, while Audrey expressed her deep connection with her four pets, describing their unique personalities. She reminisced about her childhood dog, Max, highlighting the close bond they shared during long walks and conversations. Both acknowledged the",
+    "f1_score": 0.1818181818181818,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9779.101799998898,
+    "latency_answer_ms": 1050.3250999900047,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:9"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q105",
+    "question": "What type of games do Audrey's dogs like to play at the park?",
+    "question_type": "single-hop",
+    "ground_truth": "Fetch and Frisbee",
+    "prediction": "Fetch and Frisbee",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7984.110299992608,
+    "latency_answer_ms": 925.3366999910213,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:14"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q106",
+    "question": "What did Audrey make to thank her neighbors?",
+    "question_type": "single-hop",
+    "ground_truth": "Goodies",
+    "prediction": "Dog treats",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11674.645499995677,
+    "latency_answer_ms": 1159.957999989274,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:2"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q107",
+    "question": "How do Audrey's dogs react to snow?",
+    "question_type": "single-hop",
+    "ground_truth": "Confused",
+    "prediction": "Dislike snow",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11558.784199994989,
+    "latency_answer_ms": 1079.5416999899317,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:12"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q108",
+    "question": "How does Audrey describe her dogs' response to snow?",
+    "question_type": "single-hop",
+    "ground_truth": "They definitely prefer nice, sunny days in the grass.",
+    "prediction": "Dislike snow",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 12368.825100013055,
+    "latency_answer_ms": 975.938399991719,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:12"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q109",
+    "question": "What kind of experiences are Audrey's dogs the best companions for?",
+    "question_type": "single-hop",
+    "ground_truth": "Exploring the great outdoors",
+    "prediction": "Hiking and exploring nature.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.3333333333333333,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10925.541400007205,
+    "latency_answer_ms": 934.7297999920556,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:24"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q110",
+    "question": "What activity do Andrew and Buddy enjoy doing together?",
+    "question_type": "single-hop",
+    "ground_truth": "Walking",
+    "prediction": "Exploring new hiking trails",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 12526.934100009385,
+    "latency_answer_ms": 1058.5147999954643,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D24:8"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q111",
+    "question": "What do Andrew and Buddy like doing on walks?",
+    "question_type": "single-hop",
+    "ground_truth": "Checking out new hiking trails",
+    "prediction": "Exploring parks",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5929.392300007748,
+    "latency_answer_ms": 1142.3752999980934,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D24:10"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q112",
+    "question": "What cuisine did Andrew recently try at a new spot in town?",
+    "question_type": "single-hop",
+    "ground_truth": "sushi",
+    "prediction": "Sushi",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4192.005600008997,
+    "latency_answer_ms": 1063.6027000000468,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:3"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q113",
+    "question": "Which type of sushi did Audrey suggest trying first to someone new to sushi?",
+    "question_type": "single-hop",
+    "ground_truth": "California or salmon roll",
+    "prediction": "California and salmon rolls",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 0.8571428571428571,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 2929.541399993468,
+    "latency_answer_ms": 1093.860200009658,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q114",
+    "question": "What type of date is Andrew going on Sunday?",
+    "question_type": "single-hop",
+    "ground_truth": "picnic date",
+    "prediction": "Dog park meetup",
+    "recalled_context": "Audrey and Andrew discuss new pets and hiking plans: On 19 October 2023, Audrey shared her excitement about buying dog toys at a pet store last Monday and how happy her dogs were with them. Andrew responded with news of adopting a new dog, named Buddy, from a shelter, who is adjusting to his new home and his companion, Toby. They both expressed joy about the companionship pets bring and shared their favorite activities, such as walks and exploring new hiking trails. Audrey looked forward to a hi",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3585.1803999976255,
+    "latency_answer_ms": 965.0802000105614,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D26:20"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q115",
+    "question": "What did Andrew and Audrey plan to do on the Saturday after October 28, 2023?",
+    "question_type": "single-hop",
+    "ground_truth": "Go hiking",
+    "prediction": "Hike on 4 November 2023",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.28571428571428575,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3983.1582000042545,
+    "latency_answer_ms": 1197.7994000044418,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D26:20"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q116",
+    "question": "What aspect of autumn does Andrew find beautiful?",
+    "question_type": "single-hop",
+    "ground_truth": "The autumn colors",
+    "prediction": "Vibrant moments with dogs",
+    "recalled_context": "Audrey and Andrew plan a dog-friendly hike: On 8 July 2023, Audrey expressed delight over a recent picnic and a walk with her dogs, which made her happy. Andrew shared his desire to have a dog but noted the difficulty in finding a suitable place and breed. Audrey mentioned finding a nearby breeder for her dogs and acknowledged the challenge of locating dog-friendly areas. They decided to plan a dog hike for the following month, discussing the safety of the trail and the excitement of letting the",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7261.187600000994,
+    "latency_answer_ms": 1051.6715999983717,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D26:36"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q117",
+    "question": "What did Audrey do in November 2023 to better take care of her dogs?",
+    "question_type": "single-hop",
+    "ground_truth": "Joined a dog owners group",
+    "prediction": "Joined a dog owners group",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9376.833399990574,
+    "latency_answer_ms": 1185.1156000047922,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D27:2"
+      ],
+      "memories_recalled": 2
+    }
+  },
+  {
+    "question_id": "conv-44_q118",
+    "question": "How often does Audrey meet up with other dog owners for tips and playdates?",
+    "question_type": "single-hop",
+    "ground_truth": "Once a week",
+    "prediction": "Once a week",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": false,
+    "exact_match": true,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 11753.248599998187,
+    "latency_answer_ms": 1521.5005000063684,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D27:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q119",
+    "question": "What did Audrey share to show ways to keep dogs active in the city?",
+    "question_type": "single-hop",
+    "ground_truth": "photography of a basket full of stuffed animals",
+    "prediction": "Puzzles, hide-and-seek",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6670.887000000221,
+    "latency_answer_ms": 883.144400009769,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D27:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q120",
+    "question": "What type of activities does Audrey suggest for mental stimulation of the dogs?",
+    "question_type": "single-hop",
+    "ground_truth": "puzzles, training, hide-and-seek",
+    "prediction": "Puzzles, hide-and-seek",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 0.8571428571428571,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3525.7472999946913,
+    "latency_answer_ms": 1610.083300009137,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D27:14"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q121",
+    "question": "What is Andrew planning to do with Scout, Toby, and Buddy?",
+    "question_type": "single-hop",
+    "ground_truth": "Take them to a nearby park",
+    "prediction": "Take them to a park.",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 0.888888888888889,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4479.576899990207,
+    "latency_answer_ms": 1104.3040999938967,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D28:10"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q122",
+    "question": "What did Andrew get for Scout to create a safe and fun space for them?",
+    "question_type": "single-hop",
+    "ground_truth": "essentials like a bed, toys, and puppy pads",
+    "prediction": "Leash",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 0.0,
+    "judge_score": false,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3341.689100008807,
+    "latency_answer_ms": 969.8919000074966,
+    "metadata": {
+      "category": 4,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D28:12"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q123",
+    "question": "Which specific type of bird mesmerizes Audrey?",
+    "question_type": "adversarial",
+    "ground_truth": "Eagles",
+    "prediction": "No information available.",
+    "recalled_context": "Plans for hiking and birdwatching discussed: On 1 October 2023, Audrey and Andrew expressed excitement about their upcoming hike with dogs planned for next month. Audrey shared that she recently took her dogs to a nearby dog park last Saturday, where they had a great time playing in a spacious, grassy area. Andrew mentioned his appreciation for nature and the need to get away from urban life. They discussed birdwatching and Audrey is currently using a book on bird watching guides. Andrew offered",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7552.531499997713,
+    "latency_answer_ms": 993.3487000089372,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D1:16"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q124",
+    "question": "What kind of flowers does Andrew have a tattoo of?",
+    "question_type": "adversarial",
+    "ground_truth": "sunflowers",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3535.1966000016546,
+    "latency_answer_ms": 961.2007999967318,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D3:26"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q125",
+    "question": "What type of dog was Audrey looking to adopt based on her living space?",
+    "question_type": "adversarial",
+    "ground_truth": "smaller dog",
+    "prediction": "No information available.",
+    "recalled_context": "Discussion about dogs and finding pet-friendly housing: On 6 May 2023, Audrey and Andrew discussed the joys of meeting new puppies and the importance of considering living space and exercise needs when selecting a dog breed. Andrew, living in an apartment, noted that a smaller dog would be best for him and mentioned having difficulty finding a pet-friendly place to live, while he is searching in neighborhoods near parks or woods. Audrey shared her experience of taking her dogs on road trips to n",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7888.024699990638,
+    "latency_answer_ms": 1123.0213999951957,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D5:3"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q126",
+    "question": "Why did Audrey sign up for a workshop about car maintenance?",
+    "question_type": "adversarial",
+    "ground_truth": "Strengthen the bond with her pets",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey plans to attend a pet bonding workshop: On 11 May 2023, Audrey shared that she has been busy taking care of her four dogs and signed up for a workshop next month focused on bonding with pets. She found out about the workshop through a flyer at her local pet store, which featured positive reinforcement training. Audrey is excited about learning new training techniques to strengthen her bond with her dogs and believes they will learn quickly due to their love for rewards. Andrew encouraged ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 6594.563000006019,
+    "latency_answer_ms": 927.1274000057019,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:2"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q127",
+    "question": "How did Andrew hear about the workshop on bonding with pets?",
+    "question_type": "adversarial",
+    "ground_truth": "Saw a workshop flyer at the local pet store",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey plans to attend a pet bonding workshop: On 11 May 2023, Audrey shared that she has been busy taking care of her four dogs and signed up for a workshop next month focused on bonding with pets. She found out about the workshop through a flyer at her local pet store, which featured positive reinforcement training. Audrey is excited about learning new training techniques to strengthen her bond with her dogs and believes they will learn quickly due to their love for rewards. Andrew encouraged ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8279.59330000158,
+    "latency_answer_ms": 1137.1425999968778,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q128",
+    "question": "What type of training was the workshop Andrew signed up for in May 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "Positive reinforcement training",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey plans to attend a pet bonding workshop: On 11 May 2023, Audrey shared that she has been busy taking care of her four dogs and signed up for a workshop next month focused on bonding with pets. She found out about the workshop through a flyer at her local pet store, which featured positive reinforcement training. Audrey is excited about learning new training techniques to strengthen her bond with her dogs and believes they will learn quickly due to their love for rewards. Andrew encouraged ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3041.2535999930697,
+    "latency_answer_ms": 1164.2261000088183,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 3
+    }
+  },
+  {
+    "question_id": "conv-44_q129",
+    "question": "How did Andrew describe the dog he met at the pet store?",
+    "question_type": "adversarial",
+    "ground_truth": "Friendly and playful",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5238.513300006161,
+    "latency_answer_ms": 983.7261000066064,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D6:4"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q130",
+    "question": "What challenge is Audrey facing in their search for a pet?",
+    "question_type": "adversarial",
+    "ground_truth": "Finding a pet-friendly spot in the city",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey updates Andrew on her dogs and hikes: On 27 March 2023, Andrew shared that he started a new job as a Financial Analyst the previous week. Audrey congratulated him and showed off new collars and tags for her three dogs, Pepper, Precious, and Panda, whom she has had for three years. She mentioned that they frequently explore parks and trails in the city, which brings her immense joy. Although Andrew does not have pets, he expressed admiration for birds, especially eagles. They discussed hik",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3617.4616999924183,
+    "latency_answer_ms": 1070.6528000009712,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D7:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q131",
+    "question": "What indoor activities does Andrew plan on trying after the rock climbing class?",
+    "question_type": "adversarial",
+    "ground_truth": "kayaking and bungee jumping",
+    "prediction": "No information available.",
+    "recalled_context": "Andrew's rock climbing experience and future outdoor plans: On 13 June 2023, Andrew shared his positive rock climbing experience with Audrey, expressing pride in reaching the top and describing the stunning view. He mentioned feeling accomplished and supported by friends, which prompted him to consider more outdoor activities like kayaking and bungee jumping. Audrey then invited Andrew to join her at a park for dog walking, stating it was a pleasant spot and that her dogs enjoy the outings. Andr",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3880.7024999987334,
+    "latency_answer_ms": 1056.3340999942739,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D8:7"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q132",
+    "question": "What did Andrew set up in the backyard for their dogs on June 26, 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "a doggy play area with agility stuff and toys",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey moves to a new home with a backyard: On 26 June 2023, Audrey shared that she had moved to a new home with a bigger backyard for her dogs. She set up a doggy play area in the backyard equipped with agility equipment and toys, which her dogs enjoy immensely. Andrew expressed happiness for Audrey and discussed a local doggy daycare with a large indoor play area. They both appreciated the joy that pets bring to life and shared their love for nature. Audrey reminisced about a hiking trip a few",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4649.897199997213,
+    "latency_answer_ms": 1048.5058999911416,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D9:5"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q133",
+    "question": "What did Audrey and her GF do on the Monday before July 24, 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "volunteered at a pet shelter",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey shares about her dogs and tattoo.: On 16 August 2023, Audrey informed Andrew that she got a tattoo of her four dogs, which hold significant meaning to her. Andrew shared that he recently visited a farm with his girlfriend to get fresh vegetables for dinner. They discussed whether Audrey would get more dogs but concluded that four is enough for now, given the attention each dog requires. Audrey recounted a chaotic vet visit for her dogs, stating she would take them individually next time. ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3684.6137999964412,
+    "latency_answer_ms": 1137.7454000030411,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:1"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q134",
+    "question": "What is the name of Andrew's childhood dog?",
+    "question_type": "adversarial",
+    "ground_truth": "Max",
+    "prediction": "No information available.",
+    "recalled_context": "Discussion about the joys of volunteering and pet ownership: In the conversation on 27 July 2023, Audrey and Andrew discussed their experiences with pets, focusing on Andrew's volunteering at a pet shelter. Andrew shared his happiness in helping animals, while Audrey expressed her deep connection with her four pets, describing their unique personalities. She reminisced about her childhood dog, Max, highlighting the close bond they shared during long walks and conversations. Both acknowledged the",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7554.712000011932,
+    "latency_answer_ms": 1034.4420000037644,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:8"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q135",
+    "question": "What special memories does Andrew have with his childhood dog, Max?",
+    "question_type": "adversarial",
+    "ground_truth": "Long walks in the neighborhood, exploring new paths, sharing worries and hopes",
+    "prediction": "No information available.",
+    "recalled_context": "Discussion about the joys of volunteering and pet ownership: In the conversation on 27 July 2023, Audrey and Andrew discussed their experiences with pets, focusing on Andrew's volunteering at a pet shelter. Andrew shared his happiness in helping animals, while Audrey expressed her deep connection with her four pets, describing their unique personalities. She reminisced about her childhood dog, Max, highlighting the close bond they shared during long walks and conversations. Both acknowledged the",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 8921.06860000058,
+    "latency_answer_ms": 1184.43130000378,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q136",
+    "question": "What are some of the personalities of Andrew's four fur babies?",
+    "question_type": "adversarial",
+    "ground_truth": "oldest is relaxed, second is playful, third can be naughty but loves cuddles, youngest is full of life",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3452.8519000014057,
+    "latency_answer_ms": 1134.1453000059118,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D13:6"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q137",
+    "question": "What type of classes did Andrew start with his pups recently on 4 August, 2023?",
+    "question_type": "adversarial",
+    "ground_truth": "Agility classes",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey shares dog training and hiking experiences: On 4 August 2023, Audrey mentioned that she started agility classes with her dogs at a dog park, which she attends twice a week, providing great physical and mental workouts for them. She enjoys seeing them learn and overcome challenges, which has strengthened their bond. During the conversation, she shared that she recently completed a two-hour hike, which offered stunning views and a refreshing appreciation of nature. Andrew expressed his own ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3384.9666000023717,
+    "latency_answer_ms": 1164.8697999917204,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D14:2"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q138",
+    "question": "What is essential to keep the dogs looking good according to Andrew?",
+    "question_type": "adversarial",
+    "ground_truth": "Daily brushing, regular baths, nail trims, and lots of love",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7722.093500007759,
+    "latency_answer_ms": 1012.208100000862,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D17:4"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q139",
+    "question": "What did Audrey organize with the neighbors' cats?",
+    "question_type": "adversarial",
+    "ground_truth": "a doggy playdate",
+    "prediction": "No information available.",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4272.985500007053,
+    "latency_answer_ms": 1185.5500000092434,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:6"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q140",
+    "question": "What did Andrew do to give his dogs extra comfort as the weather cooled down?",
+    "question_type": "adversarial",
+    "ground_truth": "Got new beds for them",
+    "prediction": "No information available.",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4011.4064999943366,
+    "latency_answer_ms": 1508.730600005947,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:10"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q141",
+    "question": "How does Andrew describe the new beds for his dogs?",
+    "question_type": "adversarial",
+    "ground_truth": "Super cozy and comfy",
+    "prediction": "No information available.",
+    "recalled_context": "Conversation about self-care and pets: On 6 September 2023, Audrey and Andrew discussed balancing work and self-care. Audrey shared her daily self-care routine, which includes treating herself nice, while Andrew mentioned adding simple activities like grabbing coffee and walking during lunch to recharge. Audrey organized a doggy playdate with neighbors' dogs that made her happy, and she recently bought new beds for her dogs to ensure their comfort as the weather cooled down. Andrew also enjoyed ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4022.4308999895584,
+    "latency_answer_ms": 1536.5365000034217,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D18:12"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q142",
+    "question": "How did Andrew calm down his dog after the leash incident?",
+    "question_type": "adversarial",
+    "ground_truth": "Petted, hugged, spoke calmly and slowly walked the dog",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's dog incident and gardening update: On 24 September 2023, Audrey recounted a troubling event where one of her dogs pulled so hard on the leash that it broke, causing her to chase after the pup to prevent it from running off. She successfully caught her dog, which made her reflect on the bond they share. Audrey frequently trains her dogs by teaching them commands like sit, stay, shake, and roll over, emphasizing the importance of trust and patience in their relationship. She mentioned hav",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3691.7000000103144,
+    "latency_answer_ms": 1142.772999999579,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:4"
+      ],
+      "memories_recalled": 5
+    }
+  },
+  {
+    "question_id": "conv-44_q143",
+    "question": "How often does Andrew take his dogs for walks?",
+    "question_type": "adversarial",
+    "ground_truth": "Multiple times a day",
+    "prediction": "No information available.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4960.142299998552,
+    "latency_answer_ms": 1028.8802000141004,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:10"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q144",
+    "question": "What kind of vegetables does Audrey take care of?",
+    "question_type": "adversarial",
+    "ground_truth": "Peruvian Lilies",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey shares about her pets and bonding with dogs: In a conversation on 24 August 2023, Audrey revealed that she has never been fishing, instead recalling a peaceful moment spent at a picturesque lake in the mountains with friends. She discussed the importance of regular grooming to keep her dogs looking good, mentioning daily brushing, baths, and nail trims as crucial to their health and happiness. The bond she has with her dogs brings her happiness and she takes the responsibility of their ca",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3477.2553000075277,
+    "latency_answer_ms": 969.1315999953076,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D19:20"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q145",
+    "question": "What did Andrew learn from reading books about economic systems?",
+    "question_type": "adversarial",
+    "ground_truth": "about animals, plants, and ecosystems and how they work together",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4698.694599996088,
+    "latency_answer_ms": 1039.845699997386,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D20:25"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q146",
+    "question": "What was the reason Andrew couldn't walk his dogs for a period of time?",
+    "question_type": "adversarial",
+    "ground_truth": "Knee injury",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 9492.876499993145,
+    "latency_answer_ms": 1778.3014999877196,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:1"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q147",
+    "question": "What type of jewelry does Andrew make?",
+    "question_type": "adversarial",
+    "ground_truth": "Jewelry made from recycled objects",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3557.7941999945324,
+    "latency_answer_ms": 1052.849800005788,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:5"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q148",
+    "question": "Why does Andrew make jewelry out of recycled objects?",
+    "question_type": "adversarial",
+    "ground_truth": "To show love for creativity and sustainability",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's passions: dogs and recycled jewelry: On 6 October 2023, Audrey shared her experience of recovering from a knee injury that prevented her from walking her dogs, which had a significant emotional impact on her. She expressed joy in being able to walk them again, highlighting the happiness they bring to her life. The conversation shifted to Audrey's hobby of making jewelry from recycled materials such as bottle caps and buttons, which she does both for personal fulfillment and as a part-ti",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3760.6175000109943,
+    "latency_answer_ms": 1733.8309999904595,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D22:5"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q149",
+    "question": "What type of games do Andrew's dogs like to play at the park?",
+    "question_type": "adversarial",
+    "ground_truth": "Fetch and Frisbee",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey and Andrew discuss their dogs and pet grooming: On 22 November 2023, Audrey shares that she took her dogs to a pet salon the previous Friday, and they were very excited and looked adorable after grooming. Andrew compliments Audrey on her dogs' appearance and asks for pictures, which she provides. Andrew mentions that he recently adopted a new dog called 'Scout' and plans to take all three dogs, including Scout, Toby, and Buddy, to a nearby park for fresh air. Audrey advises Andrew to intr",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 5375.105899991468,
+    "latency_answer_ms": 1104.5879000012064,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:14"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q150",
+    "question": "What did Andrew make to thank his neighbors?",
+    "question_type": "adversarial",
+    "ground_truth": "Goodies",
+    "prediction": "No information available.",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4142.843199995696,
+    "latency_answer_ms": 1071.8677999975625,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:2"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q151",
+    "question": "How do Andrew's dogs react to snow?",
+    "question_type": "adversarial",
+    "ground_truth": "Confused",
+    "prediction": "No information available.",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3788.3230000006733,
+    "latency_answer_ms": 1056.8004000087967,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:12"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q152",
+    "question": "How does Andrew describe his dogs' response to snow?",
+    "question_type": "adversarial",
+    "ground_truth": "They definitely prefer nice, sunny days in the grass.",
+    "prediction": "No information available.",
+    "recalled_context": "Weekend plans and joy with dogs discussed: On 13 October 2023, Audrey shared that she made treats for her neighbors' dogs to spread some joy. Andrew mentioned he planned to visit a new cozy cafe and possibly explore a nearby dog park. Both expressed fondness for their dogs, with Audrey noting her dogs enjoy the dog park and dislike snow, while Andrew's dog, Toby, is a German Shepherd that enjoys wearing sweaters. Audrey recently added more drawings to her tattoo of her dogs, indicating they are ",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3729.926100000739,
+    "latency_answer_ms": 1276.6373000049498,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:12"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q153",
+    "question": "What kind of experiences are Audrey's cats the best companions for?",
+    "question_type": "adversarial",
+    "ground_truth": "Exploring the great outdoors",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey and Andrew discuss new pets and hiking plans: On 19 October 2023, Audrey shared her excitement about buying dog toys at a pet store last Monday and how happy her dogs were with them. Andrew responded with news of adopting a new dog, named Buddy, from a shelter, who is adjusting to his new home and his companion, Toby. They both expressed joy about the companionship pets bring and shared their favorite activities, such as walks and exploring new hiking trails. Audrey looked forward to a hi",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 4464.448099999572,
+    "latency_answer_ms": 980.0456999946618,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D23:24"
+      ],
+      "memories_recalled": 8
+    }
+  },
+  {
+    "question_id": "conv-44_q154",
+    "question": "What activity do Audrey and Buddy enjoy doing together?",
+    "question_type": "adversarial",
+    "ground_truth": "Walking",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey consults a behaviorist for her dogs' issues: Audrey noticed her dogs were not acting normally and made an appointment with an animal behaviorist on 25 October 2023. Following the appointment, she received tips on handling their issues and is implementing positive reinforcement techniques. So far, her dogs appear to be responding well to these changes. Audrey is dedicated to keeping her dogs healthy and happy, describing Pepper and Panda as Lab mixes, and Precious and Pixie as Chihuahua mi",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 12671.418700003414,
+    "latency_answer_ms": 838.4480999957304,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D24:8"
+      ],
+      "memories_recalled": 6
+    }
+  },
+  {
+    "question_id": "conv-44_q155",
+    "question": "What type of drink did Andrew recently try at a new spot in town?",
+    "question_type": "adversarial",
+    "ground_truth": "sushi",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 7441.337199998088,
+    "latency_answer_ms": 1068.3454999962123,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:3"
+      ],
+      "memories_recalled": 4
+    }
+  },
+  {
+    "question_id": "conv-44_q156",
+    "question": "Which type of pizza did Audrey suggest trying first to someone new to Italian cuisine?",
+    "question_type": "adversarial",
+    "ground_truth": "California or salmon roll",
+    "prediction": "No information available.",
+    "recalled_context": "Audrey's accident and Andrew's sushi adventure: On 24 October 2023, Audrey shared with Andrew that she had an accident while playing with her dogs at the park the previous week, making it challenging to care for them with one arm. Despite this, she reported feeling better each day. Andrew mentioned trying a new sushi spot in town, which he enjoyed. Audrey encouraged him to explore sushi, suggesting California and salmon rolls as easier options for beginners and recommending various sauces to enh",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 3816.8237999925623,
+    "latency_answer_ms": 918.2090999966022,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D25:8"
+      ],
+      "memories_recalled": 7
+    }
+  },
+  {
+    "question_id": "conv-44_q157",
+    "question": "How often does Andrew meet up with other dog owners for tips and playdates?",
+    "question_type": "adversarial",
+    "ground_truth": "Once a week",
+    "prediction": "No information available.",
+    "recalled_context": "Dog ownership advice shared between friends: On 4 November 2023, Audrey shared her enjoyment of exploring parks with her four dogs and her recent decision to join a dog owners group for tips on better care. She meets with the group once a week. Andrew considered adding another dog but decided to focus on properly caring for his current dogs, Toby and Buddy. Audrey provided tips for maintaining happiness in dogs, stressing the importance of exercise and mental stimulation. She suggested activitie",
+    "f1_score": 1.0,
+    "judge_score": true,
+    "exact_match": false,
+    "latency_ingest_ms": 12191.08542857118,
+    "latency_recall_ms": 10261.162299997522,
+    "latency_answer_ms": 947.7939000062179,
+    "metadata": {
+      "category": 5,
+      "conv_id": "conv-44",
+      "evidence": [
+        "D27:4"
+      ],
+      "memories_recalled": 8
+    }
+  }
+]
