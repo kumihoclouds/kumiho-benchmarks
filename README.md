@@ -66,7 +66,9 @@ breakdown, and paper integration notes.
 
 **0.533 overall F1** on all 1,986 questions across 10 conversations —
 the highest score we are aware of on the official LoCoMo token-level F1 metric
-as of February 2026.
+as of February 2026. Achieved in **summarized mode** (title + summary only,
+no raw conversation artifacts), demonstrating that the graph's metadata layer
+alone is sufficient to outperform systems with full-context retrieval.
 
 The official LoCoMo evaluation metric is **token-level F1 with Porter stemming**
 ([Maharana et al. 2024](https://arxiv.org/abs/2402.17753), `evaluation.py`).
@@ -103,7 +105,7 @@ the four standard categories is 0.407.*
 | Adversarial | 446 | 0.966 |
 | **Overall** | **1,986** | **0.533** |
 
-Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge`
+Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge --graph-augmented (default)`
 
 ---
 
@@ -191,8 +193,8 @@ python -m kumiho_eval.run_benchmarks --all --max-samples 1
 # Custom models
 python -m kumiho_eval.run_benchmarks --all --answer-model gpt-4o --judge-model gpt-4o
 
-# Enable graph-augmented recall (edge traversal) for LoCoMo-Plus
-python -m kumiho_eval.run_benchmarks --locomo-plus --graph-augmented
+# Disable graph-augmented recall (on by default)
+python -m kumiho_eval.run_benchmarks --locomo-plus --no-graph-augmented
 
 # Compare full vs summarized recall modes
 python -m kumiho_eval.run_benchmarks --all --dual-mode
@@ -221,7 +223,7 @@ python -m kumiho_eval.run_benchmarks --all --agm
 | `--recall-limit` | `10` | Max memories recalled per query |
 | `--recall-mode` | `full` | `full` (artifact content) or `summarized` (title+summary) |
 | `--dual-mode` | | Run both full and summarized, then compare |
-| `--graph-augmented` | | Enable graph-augmented recall (edge traversal) |
+| `--no-graph-augmented` | | Disable graph-augmented recall (on by default) |
 | `--project` | `benchmark-eval` | Kumiho project name prefix |
 | `-v` | | Verbose logging |
 
@@ -230,11 +232,10 @@ python -m kumiho_eval.run_benchmarks --all --agm
 Each benchmark can also be run directly with finer-grained control:
 
 ```bash
-# LoCoMo-Plus (recommended: summarized + graph-augmented for best results)
+# LoCoMo-Plus (recommended: summarized mode, graph-augmented is on by default)
 python -m kumiho_eval.locomo_plus_eval \
   --concurrency 16 \
   --entry-concurrency 4 \
-  --graph-augmented \
   --recall-mode summarized \
   --project benchmark-locomo-plus
 
@@ -269,7 +270,7 @@ python -m kumiho_eval.agm_compliance_eval [--max-scenarios N] [--output DIR]
 | `--base-data` | auto | Path to locomo10.json |
 | `--concurrency` | `4` | Max parallel session ingestions |
 | `--entry-concurrency` | `1` | Max entries processed in parallel |
-| `--graph-augmented` | | Enable graph-augmented recall (edge traversal) |
+| `--no-graph-augmented` | | Disable graph-augmented recall (on by default) |
 | `--recall-mode` | `full` | `full` or `summarized` |
 | `--recall-limit` | `10` | Max memories recalled per query |
 | `--answer-model` | `gpt-4o` | Model for answer generation |
