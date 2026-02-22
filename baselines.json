@@ -1,0 +1,265 @@
+{
+  "_description": "Verifiable provenance for all baseline scores cited in README.md and REFERENCE_SCORES in run_benchmarks.py. Each entry records the source publication, specific table/figure, evaluation protocol, and whether the score was reported by the original authors or reproduced by us.",
+  "_last_updated": "2026-02-21",
+
+  "locomo": {
+    "benchmark_paper": {
+      "title": "LoCoMo: Long-Context Conversation Dataset for Memory-Augmented Models",
+      "authors": "Maharana et al.",
+      "venue": "ACL 2024",
+      "arxiv_id": "2402.17753",
+      "url": "https://arxiv.org/abs/2402.17753"
+    },
+    "evaluation_protocol": {
+      "metric": "LLM-as-Judge accuracy (binary correct/incorrect)",
+      "judge_model": "gpt-4o",
+      "dataset_size": "~200 QA pairs across 10 conversations and 5 categories",
+      "judge_prompt": "See common.py _JUDGE_TEMPLATE"
+    },
+    "baselines": {
+      "MAGMA": {
+        "judge_accuracy": 0.700,
+        "source_arxiv_id": "2601.03236",
+        "source_url": "https://arxiv.org/abs/2601.03236",
+        "source_location": "Table 1",
+        "provenance": "reported",
+        "notes": "MAGMA's LoCoMo score from their paper"
+      },
+      "Mem0": {
+        "judge_accuracy": 0.671,
+        "source_arxiv_id": "2504.19413",
+        "source_url": "https://arxiv.org/abs/2504.19413",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Mem0 evaluated by A-Mem authors using their harness"
+      },
+      "Mem0+Graph": {
+        "judge_accuracy": 0.657,
+        "source_arxiv_id": "2504.19413",
+        "source_url": "https://arxiv.org/abs/2504.19413",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Mem0 with graph enhancement, evaluated by A-Mem authors"
+      },
+      "Zep/Graphiti": {
+        "judge_accuracy": 0.584,
+        "source_arxiv_id": "2501.13956",
+        "source_url": "https://arxiv.org/abs/2501.13956",
+        "source_location": "Table 1",
+        "provenance": "reported",
+        "notes": "Disputed — different LoCoMo subset or evaluation protocol may apply. Score taken at face value from Zep/Graphiti paper."
+      },
+      "LangMem": {
+        "judge_accuracy": 0.512,
+        "source_arxiv_id": "2504.19413",
+        "source_url": "https://arxiv.org/abs/2504.19413",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "LangMem evaluated by A-Mem authors"
+      },
+      "A-Mem": {
+        "judge_accuracy": 0.406,
+        "source_arxiv_id": "2504.19413",
+        "source_url": "https://arxiv.org/abs/2504.19413",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "A-Mem self-reported score from their paper"
+      }
+    }
+  },
+
+  "longmemeval": {
+    "benchmark_paper": {
+      "title": "LongMemEval: Benchmarking Chat Assistants on Long-Term Interactive Memory",
+      "authors": "Wu et al.",
+      "venue": "ICLR 2025",
+      "arxiv_id": "2410.10813",
+      "url": "https://arxiv.org/abs/2410.10813"
+    },
+    "evaluation_protocol": {
+      "metric": "GPT-4o judge accuracy across 5 memory ability categories",
+      "judge_model": "gpt-4o",
+      "dataset_size": "500 questions across 5 categories",
+      "variant": "s (small)",
+      "judge_prompt": "See longmemeval_eval.py longmemeval_judge()"
+    },
+    "baselines": {
+      "Zep (gpt-4o)": {
+        "accuracy": 0.712,
+        "source_arxiv_id": "2501.13956",
+        "source_url": "https://arxiv.org/abs/2501.13956",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Zep/Graphiti self-reported with gpt-4o as answer model"
+      },
+      "MAGMA": {
+        "accuracy": 0.612,
+        "source_arxiv_id": "2601.03236",
+        "source_url": "https://arxiv.org/abs/2601.03236",
+        "source_location": "Table 1",
+        "provenance": "reported",
+        "notes": "MAGMA self-reported LongMemEval score"
+      },
+      "Full-context (gpt-4o)": {
+        "accuracy": 0.602,
+        "source_arxiv_id": "2410.10813",
+        "source_url": "https://arxiv.org/abs/2410.10813",
+        "source_location": "Table 3",
+        "provenance": "reported",
+        "notes": "Full-context baseline from the LongMemEval paper itself"
+      },
+      "Zep (gpt-4o-mini)": {
+        "accuracy": 0.638,
+        "source_arxiv_id": "2501.13956",
+        "source_url": "https://arxiv.org/abs/2501.13956",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Zep/Graphiti with gpt-4o-mini as answer model"
+      }
+    }
+  },
+
+  "memoryagentbench": {
+    "benchmark_paper": {
+      "title": "MemoryAgentBench: Benchmarking LLM-based Agent Memory Systems",
+      "arxiv_id": "2507.05257",
+      "url": "https://arxiv.org/abs/2507.05257"
+    },
+    "evaluation_protocol": {
+      "metric": "Per-competency accuracy across 5 splits: AR (Action Recall), TTL (Time-To-Live), LRU (Least Recently Used), CR_SH (Single-Hop Cross-Reference), CR_MH (Multi-Hop Cross-Reference)",
+      "judge_model": "gpt-4o",
+      "dataset_size": "Varies per split"
+    },
+    "baselines": {
+      "MemGPT/Letta": {
+        "AR": 31.7,
+        "TTL": 55.3,
+        "LRU": 2.5,
+        "CR_SH": 28.0,
+        "CR_MH": 3.0,
+        "source_arxiv_id": "2507.05257",
+        "source_url": "https://arxiv.org/abs/2507.05257",
+        "source_location": "Table 3",
+        "provenance": "reported",
+        "notes": "Evaluated by MemoryAgentBench authors"
+      },
+      "Mem0": {
+        "AR": 29.4,
+        "TTL": 27.0,
+        "LRU": 0.8,
+        "CR_SH": 18.0,
+        "CR_MH": 2.0,
+        "source_arxiv_id": "2507.05257",
+        "source_url": "https://arxiv.org/abs/2507.05257",
+        "source_location": "Table 3",
+        "provenance": "reported",
+        "notes": "Evaluated by MemoryAgentBench authors"
+      },
+      "Cognee": {
+        "AR": 27.1,
+        "TTL": 31.9,
+        "LRU": 2.3,
+        "CR_SH": 28.0,
+        "CR_MH": 3.0,
+        "source_arxiv_id": "2507.05257",
+        "source_url": "https://arxiv.org/abs/2507.05257",
+        "source_location": "Table 3",
+        "provenance": "reported",
+        "notes": "Evaluated by MemoryAgentBench authors"
+      },
+      "HippoRAG-v2": {
+        "AR": 60.3,
+        "TTL": 41.0,
+        "LRU": 14.6,
+        "CR_SH": 54.0,
+        "CR_MH": 5.0,
+        "source_arxiv_id": "2507.05257",
+        "source_url": "https://arxiv.org/abs/2507.05257",
+        "source_location": "Table 3",
+        "provenance": "reported",
+        "notes": "Evaluated by MemoryAgentBench authors"
+      }
+    }
+  },
+
+  "locomo_plus": {
+    "benchmark_paper": {
+      "title": "LoCoMo-Plus: Evaluating Long-Context Cognitive Memory",
+      "arxiv_id": "2602.10715",
+      "url": "https://arxiv.org/abs/2602.10715"
+    },
+    "evaluation_protocol": {
+      "metric": "Cognitive judge accuracy (gpt-4o-mini judge, evidence-vs-prediction with constraint verification)",
+      "judge_model": "gpt-4o-mini",
+      "answer_model": "gpt-4o (Kumiho), varies for baselines",
+      "dataset_size": "401 entries across 4 constraint types (causal, state, value, goal)",
+      "judge_prompt": "See locomo_plus_eval.py _COGNITIVE_JUDGE_TEMPLATE"
+    },
+    "baselines": {
+      "RAG (BM25+DPR)": {
+        "cognitive_accuracy": 0.26,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Traditional retrieval baseline from LoCoMo-Plus paper"
+      },
+      "RAG (text-embedding-large)": {
+        "cognitive_accuracy": 0.298,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Dense retrieval baseline using OpenAI text-embedding-large"
+      },
+      "Mem0": {
+        "cognitive_accuracy": 0.414,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Mem0 system evaluated by LoCoMo-Plus authors"
+      },
+      "A-Mem": {
+        "cognitive_accuracy": 0.424,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "A-Mem evaluated by LoCoMo-Plus authors"
+      },
+      "SeCom": {
+        "cognitive_accuracy": 0.426,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "SeCom system evaluated by LoCoMo-Plus authors"
+      },
+      "GPT-4.1": {
+        "cognitive_accuracy": 0.436,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "GPT-4.1 full-context baseline from LoCoMo-Plus paper"
+      },
+      "Gemini-2.5-Pro": {
+        "cognitive_accuracy": 0.457,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Gemini-2.5-Pro 1M context baseline from LoCoMo-Plus paper"
+      },
+      "Gemini-2.5-Flash": {
+        "cognitive_accuracy": 0.45,
+        "source_arxiv_id": "2602.10715",
+        "source_url": "https://arxiv.org/abs/2602.10715",
+        "source_location": "Table 2",
+        "provenance": "reported",
+        "notes": "Gemini-2.5-Flash baseline from LoCoMo-Plus paper"
+      }
+    }
+  }
+}

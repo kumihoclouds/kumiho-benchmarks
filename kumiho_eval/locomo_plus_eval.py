@@ -41,7 +41,9 @@ from .common import (
     _OPENAI_ERRORS,
     compute_aggregate_metrics,
     generate_answer,
+    register_prompt_template,
     save_results,
+    token_tracker,
 )
 
 _RETRYABLE_ERRORS = (
@@ -434,6 +436,115 @@ def _session_to_messages(session: dict, speaker_a: str) -> list[dict[str, str]]:
 # Cognitive judge
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Retrieval judge — evaluates whether recalled context contains the cue
+# ---------------------------------------------------------------------------
+
+_RETRIEVAL_JUDGE_SYSTEM = "You are a Retrieval Accuracy Judge."
+
+_RETRIEVAL_JUDGE_TEMPLATE = """Your task: Judge whether the Retrieved Context contains information from the Evidence (the original cue conversation). You are NOT judging an answer — you are judging whether the memory retrieval system successfully found the relevant memory.
+
+Labels:
+- "hit": The retrieved context contains the key facts, events, or constraints from the evidence. It does not need to be verbatim — paraphrases, summaries, or partial coverage of the core information count as a hit.
+- "miss": The retrieved context does not contain the evidence information, or only contains unrelated memories.
+
+Evidence (original cue conversation):
+{evidence}
+
+Retrieved Context (memories returned by the retrieval system):
+{recalled_context}
+
+Return your judgment strictly in JSON format:
+{{"label": "hit"|"miss", "reason": "<brief explanation of what was or was not found>"}}
+"""
+
+register_prompt_template("retrieval_judge", _RETRIEVAL_JUDGE_TEMPLATE)
+
+
+async def retrieval_judge(
+    evidence: str,
+    recalled_context: str,
+    *,
+    model: str = "gpt-4o-mini",
+    api_key: str | None = None,
+) -> tuple[bool, str, dict[str, Any]]:
+    """
+    Judge whether the recalled context contains the cue evidence.
+
+    This is a retrieval-specific metric, independent of answer generation.
+    Evaluates (evidence, recalled_context) — NOT (evidence, prediction).
+
+    Returns (is_hit, reason, audit_metadata).
+    """
+    import hashlib
+    import os
+
+    import backoff
+    from openai import AsyncOpenAI
+
+    # If nothing was recalled, it's trivially a miss — no LLM call needed
+    if not recalled_context or not recalled_context.strip():
+        audit = {
+            "retrieval_judge_model": model,
+            "retrieval_prompt_template_hash": hashlib.sha256(
+                _RETRIEVAL_JUDGE_TEMPLATE.encode("utf-8"),
+            ).hexdigest()[:16],
+            "retrieval_raw_response": "[empty context — automatic miss]",
+            "retrieval_parsed_label": "miss",
+        }
+        return False, "No memories recalled", audit
+
+    client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+    prompt = _RETRIEVAL_JUDGE_TEMPLATE.format(
+        evidence=evidence,
+        recalled_context=recalled_context[:6000],  # cap to avoid token overflow
+    )
+    prompt_template_hash = hashlib.sha256(
+        _RETRIEVAL_JUDGE_TEMPLATE.encode("utf-8"),
+    ).hexdigest()[:16]
+
+    @backoff.on_exception(backoff.expo, Exception, max_tries=3)
+    async def _call():
+        resp = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": _RETRIEVAL_JUDGE_SYSTEM},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=256,
+            temperature=0.0,
+        )
+        token_tracker.record("retrieval_judge", resp)
+        return resp.choices[0].message.content.strip()
+
+    raw = await _call()
+
+    # Parse JSON response
+    try:
+        parsed = json.loads(raw)
+        label = parsed.get("label", "miss").lower().strip()
+        reason = parsed.get("reason", "")
+    except json.JSONDecodeError:
+        lower = raw.lower()
+        if '"label": "hit"' in lower or '"label":"hit"' in lower:
+            label, reason = "hit", raw
+        else:
+            label, reason = "miss", raw
+
+    audit = {
+        "retrieval_judge_model": model,
+        "retrieval_prompt_template_hash": prompt_template_hash,
+        "retrieval_raw_response": raw,
+        "retrieval_parsed_label": label,
+    }
+
+    return label == "hit", reason, audit
+
+
+# ---------------------------------------------------------------------------
+# Cognitive judge (end-to-end answer awareness)
+# ---------------------------------------------------------------------------
+
 _COGNITIVE_JUDGE_SYSTEM = "You are a Memory Awareness Judge."
 
 _COGNITIVE_JUDGE_TEMPLATE = """Your task: Judge whether the Model Prediction considers or is linked to the Evidence. If there is a clear connection, the answer is correct (score 1); if not, it is wrong (no score).
@@ -452,6 +563,8 @@ Return your judgment strictly in JSON format:
 {{"label": "correct"|"wrong", "reason": "<Does the prediction relate to the evidence?>"}}
 """
 
+register_prompt_template("cognitive_judge", _COGNITIVE_JUDGE_TEMPLATE)
+
 
 async def cognitive_judge(
     evidence: str,
@@ -459,7 +572,7 @@ async def cognitive_judge(
     *,
     model: str = "gpt-4o-mini",
     api_key: str | None = None,
-) -> tuple[bool, str]:
+) -> tuple[bool, str, dict[str, Any]]:
     """
     Judge whether a response demonstrates awareness of the cue evidence.
 
@@ -467,8 +580,15 @@ async def cognitive_judge(
     - Only evidence + prediction are shown to the judge (no trigger)
     - Default judge model: gpt-4o-mini (paper default)
 
-    Returns (is_correct, reason).
+    Returns (is_correct, reason, audit_metadata).
+
+    audit_metadata includes:
+    - judge_model: model name used for judging
+    - prompt_template_hash: SHA-256 of the judge prompt template
+    - raw_response: verbatim judge output before parsing
+    - parsed_label: the label extracted from the response
     """
+    import hashlib
     import os
 
     import backoff
@@ -478,6 +598,9 @@ async def cognitive_judge(
     prompt = _COGNITIVE_JUDGE_TEMPLATE.format(
         evidence=evidence, prediction=prediction,
     )
+    prompt_template_hash = hashlib.sha256(
+        _COGNITIVE_JUDGE_TEMPLATE.encode("utf-8"),
+    ).hexdigest()[:16]
 
     @backoff.on_exception(backoff.expo, Exception, max_tries=3)
     async def _call():
@@ -490,6 +613,7 @@ async def cognitive_judge(
             max_tokens=512,
             temperature=0.0,
         )
+        token_tracker.record("cognitive_judge", resp)
         return resp.choices[0].message.content.strip()
 
     raw = await _call()
@@ -497,17 +621,25 @@ async def cognitive_judge(
     # Parse JSON response
     try:
         parsed = json.loads(raw)
-        label = parsed.get("label", "wrong").lower()
+        label = parsed.get("label", "wrong").lower().strip()
         reason = parsed.get("reason", "")
     except json.JSONDecodeError:
-        # Fallback: check for keywords
+        # Fallback: extract first-token label from raw text
         lower = raw.lower()
-        if '"correct"' in lower or "'correct'" in lower:
+        # Strict match — look for the label as a quoted JSON value
+        if '"label": "correct"' in lower or '"label":"correct"' in lower:
             label, reason = "correct", raw
         else:
             label, reason = "wrong", raw
 
-    return label == "correct", reason
+    audit = {
+        "judge_model": model,
+        "prompt_template_hash": prompt_template_hash,
+        "raw_response": raw,
+        "parsed_label": label,
+    }
+
+    return label == "correct", reason, audit
 
 
 # ---------------------------------------------------------------------------
@@ -653,6 +785,7 @@ async def evaluate_locomo_plus(
                                         sid,
                                         user_id=user_id,
                                         context="personal",
+                                        stack_revisions=config.stack_revisions,
                                     )
                                     # Post-consolidation: discover & create edges
                                     if config.graph_augmented and cons.get("success"):
@@ -727,10 +860,25 @@ async def evaluate_locomo_plus(
                     memories, query=trigger_text,
                 )
 
+                # --- Phase 2b: Retrieval evaluation ---
+                # Explicit retrieval hit/miss — independent of answer generation.
+                # Evaluates (evidence, recalled_context), not (evidence, prediction).
+                retrieval_hit, retrieval_reason, retrieval_audit = await retrieval_judge(
+                    evidence=mapped_cue,
+                    recalled_context=recalled_context,
+                    model=config.judge_model,
+                    api_key=config.openai_api_key,
+                )
+                retrieval_label = "HIT" if retrieval_hit else "MISS"
+                logger.info(
+                    "\033[1;36m🔍 [%s] RETRIEVAL %s\033[0m — %s",
+                    entry_id, retrieval_label, retrieval_reason[:80],
+                )
+
                 # --- Phase 3: Generate response ---
-                # Match LoCoMo-Plus INSTRUCTION_COGNITIVE (utils.py)
+                # Match LoCoMo-Plus INSTRUCTION_COGNITIVE (utils.py) verbatim
                 system = (
-                    "This is a memory-aware dialogue setting. "
+                    "Your task: This is a memory-aware dialogue setting. "
                     "You are continuing or reflecting on a prior conversation. "
                     "Show that you are aware of the relevant memory or context "
                     "from the evidence when you respond; your answer should "
@@ -744,7 +892,8 @@ async def evaluate_locomo_plus(
                     system_prompt=system,
                     model=config.answer_model,
                     api_key=config.openai_api_key,
-                    max_tokens=256,
+                    max_tokens=1024,
+                    temperature=0.3,
                 )
                 answer_ms = (time.perf_counter() - t_answer) * 1000
                 logger.info(
@@ -754,7 +903,7 @@ async def evaluate_locomo_plus(
 
                 # --- Phase 4: Cognitive judge ---
                 # Paper judge only sees evidence + prediction (no trigger)
-                judge_ok, judge_reason = await cognitive_judge(
+                judge_ok, judge_reason, judge_audit = await cognitive_judge(
                     evidence=mapped_cue,
                     prediction=prediction,
                     model=config.judge_model,
@@ -787,7 +936,11 @@ async def evaluate_locomo_plus(
                         "base_conv_idx": ei % len(base_data),
                         "memories_recalled": len(memories),
                         "total_revisions_seen": total_revisions,
+                        "retrieval_hit": retrieval_hit,
+                        "retrieval_reason": retrieval_reason,
+                        "retrieval_audit": retrieval_audit,
                         "judge_reason": judge_reason,
+                        "judge_audit": judge_audit,
                     },
                 )
                 async with checkpoint_lock:
@@ -795,9 +948,10 @@ async def evaluate_locomo_plus(
                     _save_checkpoint_line(output_dir, result)
 
                 verdict = "\033[1;32m✅ PASS\033[0m" if judge_ok else "\033[1;31m❌ FAIL\033[0m"
+                ret_icon = "\033[1;36m🔍HIT\033[0m" if retrieval_hit else "\033[1;31m🔍MISS\033[0m"
                 logger.info(
-                    "\033[1m%s\033[0m \033[1;37m[%s]\033[0m %s | gap=%s (%dd) | recall=%.1fs answer=%.1fs | mems=%d",
-                    verdict, entry_id, relation_type, time_gap,
+                    "\033[1m%s\033[0m %s \033[1;37m[%s]\033[0m %s | gap=%s (%dd) | recall=%.1fs answer=%.1fs | mems=%d",
+                    verdict, ret_icon, entry_id, relation_type, time_gap,
                     parse_time_gap(time_gap), recall_ms / 1000, answer_ms / 1000,
                     len(memories),
                 )
@@ -888,6 +1042,11 @@ async def evaluate_locomo_plus(
     save_results(all_results, output_dir / "all_results.json")
     metrics = compute_aggregate_metrics(all_results)
 
+    # Compute recall accuracy (retrieval hit rate) — separate from judge accuracy
+    retrieval_results = [r for r in all_results if "retrieval_hit" in r.metadata]
+    recall_hits = sum(1 for r in retrieval_results if r.metadata.get("retrieval_hit"))
+    recall_accuracy = recall_hits / len(retrieval_results) if retrieval_results else 0.0
+
     # Per-relation_type breakdown
     type_metrics: dict[str, Any] = {}
     for rtype in ["causal", "state"]:
@@ -896,9 +1055,15 @@ async def evaluate_locomo_plus(
             if r.metadata.get("relation_type") == rtype
         ]
         if type_results:
+            type_ret = [r for r in type_results if "retrieval_hit" in r.metadata]
+            type_recall_acc = (
+                float(np.mean([r.metadata["retrieval_hit"] for r in type_ret]))
+                if type_ret else 0.0
+            )
             type_metrics[rtype] = {
                 "count": len(type_results),
                 "judge_accuracy": float(np.mean([r.judge_score for r in type_results])),
+                "recall_accuracy": type_recall_acc,
             }
 
     # Per time-gap bucket
@@ -919,13 +1084,22 @@ async def evaluate_locomo_plus(
 
     gap_scores = {}
     for bucket, results in gap_metrics.items():
+        bucket_ret = [r for r in results if "retrieval_hit" in r.metadata]
+        bucket_recall = (
+            float(np.mean([r.metadata["retrieval_hit"] for r in bucket_ret]))
+            if bucket_ret else 0.0
+        )
         gap_scores[bucket] = {
             "count": len(results),
             "judge_accuracy": float(np.mean([r.judge_score for r in results])),
+            "recall_accuracy": bucket_recall,
         }
 
     metrics["locomo_plus"] = {
         "total_entries": len(all_results),
+        "recall_accuracy": recall_accuracy,
+        "recall_hits": recall_hits,
+        "recall_evaluated": len(retrieval_results),
         "overall_judge_accuracy": float(np.mean([r.judge_score for r in all_results])) if all_results else 0,
         "by_relation_type": type_metrics,
         "by_time_gap": gap_scores,
@@ -934,31 +1108,32 @@ async def evaluate_locomo_plus(
     with open(output_dir / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2, default=str)
 
-    # Print results — cognitive eval uses Judge Accuracy only (no F1/EM)
+    # Print results
     lp = metrics["locomo_plus"]
     print(f"\n{'=' * 70}")
     print(f"  LoCoMo-Plus (Cognitive Memory) — Kumiho Evaluation")
     print(f"{'=' * 70}")
     print(f"  Total entries:           {lp['total_entries']}")
-    print(f"  Judge Accuracy:          {lp['overall_judge_accuracy']:.4f}")
+    print(f"  Recall Accuracy:         {lp['recall_accuracy']:.4f}  ({lp['recall_hits']}/{lp['recall_evaluated']})")
+    print(f"  Judge Accuracy (E2E):    {lp['overall_judge_accuracy']:.4f}")
     print(f"  Avg Recall Latency:      {metrics.get('avg_latency_recall_ms', 0):.1f} ms")
     print(f"  Avg Answer Latency:      {metrics.get('avg_latency_answer_ms', 0):.1f} ms")
 
     print(f"\n  By Relation Type:")
-    print(f"  {'Type':<20} {'Count':>6} {'Judge Acc':>10}")
-    print(f"  {'-' * 38}")
+    print(f"  {'Type':<20} {'Count':>6} {'Recall':>10} {'Judge Acc':>10}")
+    print(f"  {'-' * 50}")
     for rtype in ["causal", "state"]:
         if rtype in type_metrics:
             vals = type_metrics[rtype]
-            print(f"  {rtype:<20} {vals['count']:>6} {vals['judge_accuracy']:>10.4f}")
+            print(f"  {rtype:<20} {vals['count']:>6} {vals['recall_accuracy']:>10.4f} {vals['judge_accuracy']:>10.4f}")
 
     print(f"\n  By Time Gap:")
-    print(f"  {'Gap':<20} {'Count':>6} {'Judge Acc':>10}")
-    print(f"  {'-' * 38}")
+    print(f"  {'Gap':<20} {'Count':>6} {'Recall':>10} {'Judge Acc':>10}")
+    print(f"  {'-' * 50}")
     for bucket in ["<=2wk", "2wk-1mo", "1-3mo", "3-6mo", ">6mo"]:
         if bucket in gap_scores:
             v = gap_scores[bucket]
-            print(f"  {bucket:<20} {v['count']:>6} {v['judge_accuracy']:>10.4f}")
+            print(f"  {bucket:<20} {v['count']:>6} {v['recall_accuracy']:>10.4f} {v['judge_accuracy']:>10.4f}")
 
     print(f"{'=' * 70}\n")
 
@@ -993,8 +1168,16 @@ def main():
     parser.add_argument("--project", type=str, default="benchmark-locomo-plus")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
-    parser.add_argument("--graph-augmented", action="store_true",
-                        help="Enable graph-augmented recall (follow edges from recalled memories)")
+    parser.add_argument("--no-graph-augmented", action="store_true",
+                        help="Disable graph-augmented recall (fall back to vector-only search)")
+    parser.add_argument("--sibling-threshold", type=float, default=0.30,
+                        help="Sibling similarity threshold (0=budget mode, 0.30=server-scored)")
+    parser.add_argument("--sibling-top-k", type=int, default=0,
+                        help="Max siblings to keep after scoring (0=unlimited)")
+    parser.add_argument("--context-top-k", type=int, default=0,
+                        help="Global cap on revisions in final context (0=unlimited)")
+    parser.add_argument("--no-stack", action="store_true",
+                        help="Disable revision stacking (one item per session)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -1010,7 +1193,11 @@ def main():
         recall_mode=args.recall_mode,
         concurrency=args.concurrency,
         entry_concurrency=args.entry_concurrency,
-        graph_augmented=args.graph_augmented,
+        graph_augmented=not args.no_graph_augmented,
+        sibling_similarity_threshold=args.sibling_threshold,
+        sibling_top_k=args.sibling_top_k,
+        context_top_k=getattr(args, "context_top_k", 0),
+        stack_revisions=not args.no_stack,
     )
 
     asyncio.run(evaluate_locomo_plus(

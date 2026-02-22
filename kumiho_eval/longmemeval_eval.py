@@ -36,6 +36,7 @@ from .common import (
     print_metrics_table,
     save_results,
     token_f1,
+    token_tracker,
 )
 
 # Network error types that should trigger retry
@@ -323,8 +324,11 @@ async def longmemeval_judge(
         max_tokens=10,
         temperature=0.0,
     )
-    verdict = resp.choices[0].message.content.strip().lower()
-    return "yes" in verdict
+    token_tracker.record("longmemeval_judge", resp)
+    raw_verdict = resp.choices[0].message.content.strip()
+    # Extract first token and match strictly — "yesterday" must NOT match "yes"
+    verdict = raw_verdict.lower().split()[0] if raw_verdict.strip() else ""
+    return verdict == "yes"
 
 
 # ---------------------------------------------------------------------------

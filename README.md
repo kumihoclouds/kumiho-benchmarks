@@ -12,10 +12,17 @@ for the AI Cognitive Memory paper.
 
 ### LoCoMo-Plus (Level-2 Cognitive Memory)
 
-**93.3% judge accuracy** on the full 401-entry LoCoMo-Plus benchmark — the
-highest reported score, outperforming Gemini-2.5-Pro (45.7%) by 47.6 points.
+**93.3% judge accuracy** on the full 401-entry LoCoMo-Plus benchmark —
+the highest score we are aware of as of February 2026 under the LoCoMo-Plus
+evaluation protocol (gpt-4o-mini cognitive judge, evidence-vs-prediction).
+Outperforms Gemini-2.5-Pro (45.7%) by 47.6 points.
 **Recall accuracy: 98.5%** — the architecture retrieves the correct memory
 in all but 6 of 401 entries.
+
+All baseline scores below are **reported** (not reproduced) from the
+LoCoMo-Plus publication ([Li et al. 2026, arXiv 2602.10715](https://arxiv.org/abs/2602.10715),
+Table 2). See [`baselines.json`](baselines.json) for exact provenance of
+each number including table/figure references and evaluation protocol details.
 
 | System | Model | LoCoMo-Plus Accuracy |
 |--------|-------|---------------------|
@@ -28,9 +35,10 @@ in all but 6 of 401 entries.
 | **Kumiho (GPT-4o-mini answer)** | **GPT-4o-mini** | **~88%** |
 | **Kumiho (GPT-4o answer)** | **GPT-4o** | **93.3%** |
 
-Total cost for the full 401-entry run: **<$12** using GPT-4o-mini for
+Total cost for the full 401-entry run: **~$14** using GPT-4o-mini for
 consolidation, event extraction, prospective indexing, reformulation, and
-judging. GPT-4o for answer generation only.
+judging. GPT-4o for answer generation only. Token-level cost breakdown
+available in `manifest_*.json` after each run.
 
 #### By Constraint Type
 
@@ -54,18 +62,48 @@ See [docs/AI_Cognitive_memory_LoCoMo_Plus_benchmark.md](../docs/AI_Cognitive_mem
 for the full analysis including failure taxonomy, model comparison, time-gap
 breakdown, and paper integration notes.
 
-### LoCoMo (Level-1 Conversational QA)
+### LoCoMo (Original QA Benchmark)
 
-| System | LoCoMo Judge Acc. | Source |
-|--------|-------------------|--------|
-| MAGMA | 70.0% | arXiv 2601.03236 |
-| Mem0 | 67.1% | arXiv 2504.19413 |
-| Mem0+Graph | 65.7% | arXiv 2504.19413 |
-| Zep/Graphiti | 58.4% | arXiv 2501.13956 |
-| LangMem | 51.2% | arXiv 2504.19413 |
-| A-Mem | 40.6% | arXiv 2504.19413 |
-| **Kumiho (full)** | **95.2%** | This work |
-| **Kumiho (summarized)** | **99.6%** | This work |
+**0.533 overall F1** on all 1,986 questions across 10 conversations —
+the highest score we are aware of on the official LoCoMo token-level F1 metric
+as of February 2026.
+
+The official LoCoMo evaluation metric is **token-level F1 with Porter stemming**
+([Maharana et al. 2024](https://arxiv.org/abs/2402.17753), `evaluation.py`).
+Many competing systems report LLM-as-judge accuracy instead, which inflates
+scores by 1.5–2× and is not directly comparable. The table below uses **F1
+only**.
+
+All baseline F1 scores are sourced from the Mem0 research paper
+([Chhablani et al. 2025, arXiv 2504.19413](https://arxiv.org/abs/2504.19413))
+and Memobase's published evaluation
+([memodb-io/memobase](https://github.com/memodb-io/memobase/blob/main/docs/experiments/locomo-benchmark/README.md)).
+
+| System | Single-Hop | Multi-Hop | Temporal | Open-Domain | Overall F1 | Source |
+| ------ | ---------- | --------- | -------- | ----------- | ---------- | ------ |
+| Zep | 0.357 | 0.194 | 0.420 | 0.496 | — | arXiv 2504.19413 |
+| OpenAI Memory | — | — | — | — | ~0.343 | arXiv 2504.19413 |
+| Mem0 | 0.387 | 0.286 | 0.489 | 0.477 | ~0.40 | arXiv 2504.19413 |
+| Mem0-Graph | 0.381 | 0.243 | 0.516 | 0.493 | ~0.40 | arXiv 2504.19413 |
+| Memobase | 0.463 | 0.229 | 0.642 | 0.516 | — | GitHub |
+| **Kumiho** | **0.423** | **0.314** | **0.493** | **0.262** | **0.533** | This work |
+
+*Kumiho's overall includes adversarial category (0.966 F1, n=446) which most
+baselines do not report separately. Excluding adversarial, Kumiho's F1 across
+the four standard categories is 0.407.*
+
+#### Per-Category Breakdown
+
+| Category | Count | F1 |
+| -------- | ----: | --: |
+| Single-hop | 841 | 0.423 |
+| Multi-hop | 282 | 0.314 |
+| Temporal | 321 | 0.493 |
+| Open-domain | 96 | 0.262 |
+| Adversarial | 446 | 0.966 |
+| **Overall** | **1,986** | **0.533** |
+
+Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge`
 
 ---
 
@@ -75,7 +113,7 @@ breakdown, and paper integration notes.
 
 | Benchmark | Focus | Metric | Source |
 |-----------|-------|--------|--------|
-| **LoCoMo** | Long conversation QA (10 conversations, ~200 QA pairs across 5 categories) | Token-F1, LLM-as-Judge Accuracy | [Maharana et al. 2024](https://arxiv.org/abs/2402.14562) |
+| **LoCoMo** | Long conversation QA (10 conversations, ~2,000 QA pairs across 5 categories) | Token-F1 (official) | [Maharana et al. 2024](https://arxiv.org/abs/2402.17753) |
 | **LoCoMo-Plus** | Level-2 cognitive memory (401 entries, 4 constraint types, cue-trigger semantic disconnect) | LLM Cognitive Judge Accuracy | [arXiv 2602.10715](https://arxiv.org/abs/2602.10715) |
 | **LongMemEval** | 5 core memory abilities (500 questions, multi-session, temporal) | Accuracy across ability categories | [ICLR 2025](https://arxiv.org/abs/2410.10813) |
 | **MemoryAgentBench** | Agent competency (action recall, TTL, LRU, single/multi-hop CR) | Per-competency accuracy | [MemoryAgentBench](https://github.com/MemoryAgentBench) |
@@ -313,6 +351,7 @@ results/
     agm_compliance_matrix.txt                     # Postulate x category matrix
     agm_latex_table.tex                           # Paper-ready LaTeX table
   tier1_metrics_TIMESTAMP.json                    # All Tier 1 combined
+  manifest_TIMESTAMP.json                         # Run manifest (git SHAs, config, prompt hashes)
   paper_tables_TIMESTAMP.tex                      # LaTeX comparison vs baselines
 ```
 

@@ -16,11 +16,13 @@ import logging
 import os
 import re
 import string
+import subprocess
 import threading
 import time
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -66,6 +68,85 @@ if _ENV_LOCAL.exists():
                 _k, _v = _line.split("=", 1)
                 os.environ.setdefault(_k.strip(), _v.strip())
     logger.debug("Loaded env from %s", _ENV_LOCAL)
+
+
+# ---------------------------------------------------------------------------
+# Token usage tracking
+# ---------------------------------------------------------------------------
+
+
+class TokenTracker:
+    """Thread-safe token usage tracker aggregated by phase.
+
+    Records prompt_tokens, completion_tokens, and total_tokens from OpenAI
+    API responses.  Aggregates by phase (e.g. "judge", "answer",
+    "retrieval_judge") so cost claims can be verified from the run manifest.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._phases: dict[str, dict[str, int]] = {}
+
+    def record(self, phase: str, response: Any) -> dict[str, int]:
+        """Extract and record token usage from an OpenAI chat response."""
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        tokens = {
+            "prompt_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+            "completion_tokens": getattr(usage, "completion_tokens", 0) or 0,
+            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+        }
+
+        with self._lock:
+            if phase not in self._phases:
+                self._phases[phase] = {
+                    "prompt_tokens": 0, "completion_tokens": 0,
+                    "total_tokens": 0, "calls": 0,
+                }
+            self._phases[phase]["prompt_tokens"] += tokens["prompt_tokens"]
+            self._phases[phase]["completion_tokens"] += tokens["completion_tokens"]
+            self._phases[phase]["total_tokens"] += tokens["total_tokens"]
+            self._phases[phase]["calls"] += 1
+
+        return tokens
+
+    def summary(self) -> dict[str, Any]:
+        """Return per-phase and total token usage."""
+        with self._lock:
+            total = {
+                "prompt_tokens": 0, "completion_tokens": 0,
+                "total_tokens": 0, "calls": 0,
+            }
+            for phase_data in self._phases.values():
+                for key in total:
+                    total[key] += phase_data[key]
+            return {
+                "by_phase": {k: dict(v) for k, v in self._phases.items()},
+                "total": total,
+            }
+
+    def reset(self) -> None:
+        """Reset all counters (call before each benchmark run)."""
+        with self._lock:
+            self._phases.clear()
+
+
+token_tracker = TokenTracker()
+
+
+# ---------------------------------------------------------------------------
+# Prompt template registry (for manifest hash generation)
+# ---------------------------------------------------------------------------
+
+_PROMPT_TEMPLATE_REGISTRY: dict[str, str] = {}
+
+
+def register_prompt_template(name: str, template: str) -> None:
+    """Register a prompt template for manifest hash generation."""
+    _PROMPT_TEMPLATE_REGISTRY[name] = template
+
 
 # ---------------------------------------------------------------------------
 # Text normalisation (mirrors LoCoMo / LongMemEval conventions)
@@ -155,6 +236,8 @@ Does the model's response correctly answer the question? Consider:
 
 Answer "correct" or "incorrect":"""
 
+register_prompt_template("llm_judge", _JUDGE_TEMPLATE)
+
 
 @backoff.on_exception(backoff.expo, Exception, max_tries=3)
 async def llm_judge(
@@ -181,8 +264,11 @@ async def llm_judge(
         max_tokens=10,
         temperature=0.0,
     )
-    verdict = resp.choices[0].message.content.strip().lower()
-    return "correct" in verdict
+    token_tracker.record("judge", resp)
+    raw_verdict = resp.choices[0].message.content.strip()
+    # Extract first token and match strictly — "incorrect" must NOT match "correct"
+    verdict = raw_verdict.lower().split()[0] if raw_verdict.strip() else ""
+    return verdict == "correct"
 
 
 # ---------------------------------------------------------------------------
@@ -199,17 +285,13 @@ async def generate_answer(
     model: str = "gpt-4o",
     api_key: str | None = None,
     max_tokens: int = 256,
+    temperature: float = 0.0,
 ) -> str:
     """Generate an answer to a question given retrieved context."""
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-    user_msg = (
-        f"Based on the following memory context, respond to the message.\n\n"
-        f"Memory context:\n{context}\n\nMessage: {question}\n\n"
-        f"Respond naturally, grounding your answer in the specific details "
-        f"from the memory context above. Be concise (2-4 sentences)."
-    )
+    user_msg = f"Context:\n{context}\n\n{question}"
     for _answer_attempt in range(3):
         resp = await client.chat.completions.create(
             model=model,
@@ -218,8 +300,9 @@ async def generate_answer(
                 {"role": "user", "content": user_msg},
             ],
             max_tokens=max_tokens,
-            temperature=0.0,
+            temperature=temperature,
         )
+        token_tracker.record("answer", resp)
         text = (resp.choices[0].message.content or "").strip()
         if text:
             return text
@@ -250,12 +333,15 @@ class BenchmarkConfig:
     max_samples: int | None = None
     start_at: int = 0  # Skip entries before this index (e.g. 201 for cog-201)
     consolidation_threshold: int = 20
-    recall_limit: int = 10
+    recall_limit: int = 5
     recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
     entry_concurrency: int = 1  # How many entries to process in parallel (pipeline parallelism)
-    graph_augmented: bool = False  # Follow edges from recalled memories to discover related ones
+    graph_augmented: bool = True  # Graph-native: edge traversal + multi-query recall (Kumiho default)
     sibling_similarity_threshold: float = 0.30  # Min cosine similarity for siblings (0=off)
+    sibling_top_k: int = 0  # Max siblings to keep after scoring (0=unlimited, use threshold only)
+    context_top_k: int = 0  # Global cap on revisions in final context (0=unlimited)
+    stack_revisions: bool = True  # True = stack similar sessions; False = one item per session
 
 
 @dataclass
@@ -370,6 +456,9 @@ class KumihoMemoryAdapter:
             pii_redactor=pii_redactor,
             memory_store=_store,
             memory_retrieve=_retrieve,
+            recall_mode=self.config.recall_mode,
+            sibling_similarity_threshold=self.config.sibling_similarity_threshold,
+            sibling_top_k=self.config.sibling_top_k,
         )
 
         self._initialised = True
@@ -484,12 +573,16 @@ class KumihoMemoryAdapter:
         space_path: str | None = None,
         user_id: str | None = None,
         context: str | None = None,
+        stack_revisions: bool | None = None,
     ) -> dict[str, Any]:
         """Consolidate a session into long-term graph memory.
 
         When *user_id* and *context* are provided, the memory is stored
         into a user-scoped space (``{context}/{user_id}``).  An explicit
         *space_path* overrides everything.
+
+        Set *stack_revisions* to ``False`` to create a new item per session
+        instead of stacking onto an existing similar item.
         """
         await self.initialise()
         t0 = time.perf_counter()
@@ -500,6 +593,8 @@ class KumihoMemoryAdapter:
             kwargs["user_id"] = user_id
         if context:
             kwargs["context"] = context
+        if stack_revisions is not None:
+            kwargs["stack_revisions"] = stack_revisions
         result = await self._retry_network(
             self._manager.consolidate_session, **kwargs,
         )
@@ -559,6 +654,7 @@ class KumihoMemoryAdapter:
                 max_tokens=100,
                 temperature=0.3,
             )
+            token_tracker.record("recall_reformulation", resp)
             raw = resp.choices[0].message.content.strip()
             queries = [
                 line.strip().lstrip("0123456789.-) ")
@@ -573,6 +669,39 @@ class KumihoMemoryAdapter:
         except Exception as e:
             logger.warning("Query reformulation failed: %s", e)
             return []
+
+    @staticmethod
+    def _collect_top_revisions(
+        memories: list[dict[str, Any]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Flatten sibling revisions, return top-*limit* by score.
+
+        When siblings exist, the primary memory is skipped (it's the
+        item-level shell whose recall score is on a different scale).
+        Each returned dict has at least ``title``, ``summary``, ``kref``,
+        and ``_score`` keys.
+        """
+        candidates: list[dict[str, Any]] = []
+        for mem in memories:
+            siblings = mem.get("sibling_revisions", [])
+            if siblings:
+                for sib in siblings:
+                    candidates.append({
+                        "kref": sib.get("kref", ""),
+                        "title": sib.get("title", ""),
+                        "summary": sib.get("summary", ""),
+                        "_score": sib.get("_score", 0.0),
+                    })
+            else:
+                candidates.append({
+                    "kref": mem.get("kref", ""),
+                    "title": mem.get("title", ""),
+                    "summary": mem.get("summary", ""),
+                    "_score": mem.get("score", 0.0),
+                })
+        candidates.sort(key=lambda x: x.get("_score", 0.0), reverse=True)
+        return candidates[:limit]
 
     async def recall_with_graph_augmentation(
         self,
@@ -651,12 +780,51 @@ class KumihoMemoryAdapter:
             kref = m.get("kref", "")
             if kref:
                 seen_krefs.add(kref)
+            # Also mark sibling krefs as seen so edge traversal
+            # doesn't re-discover revisions we already have.
+            for sib in m.get("sibling_revisions", []):
+                sib_kref = sib.get("kref", "")
+                if sib_kref:
+                    seen_krefs.add(sib_kref)
 
         augmented = list(memories)
         edge_filter = set(edge_types or [
             "DERIVED_FROM", "DEPENDS_ON", "REFERENCED",
             "CONTAINS", "CREATED_FROM", "SUPERSEDES",
         ])
+
+        # --- Collect top-K scored revisions for edge traversal ---
+        # Instead of traversing from primary recalled items (which with
+        # stacking are always the same 1-2 items), flatten sibling
+        # revisions, rank by _score, and traverse from the top-K.
+        # Primary memory is skipped when siblings exist (score scale
+        # mismatch: recall ~3.0 vs sibling cosine 0-1).
+        revision_candidates: list[tuple[str, float]] = []
+        for mem in memories:
+            siblings = mem.get("sibling_revisions", [])
+            if siblings:
+                for sib in siblings:
+                    sib_kref = sib.get("kref", "")
+                    if sib_kref:
+                        revision_candidates.append((sib_kref, sib.get("_score", 0.0)))
+            else:
+                kref = mem.get("kref", "")
+                if kref:
+                    revision_candidates.append((kref, mem.get("score", 0.0)))
+
+        # Sort by score descending, pick top-K for traversal
+        revision_candidates.sort(key=lambda x: x[1], reverse=True)
+        traverse_limit = self.config.context_top_k or 5
+        traverse_krefs = [
+            kref for kref, _ in revision_candidates[:traverse_limit]
+        ]
+
+        if traverse_krefs:
+            logger.info(
+                "Graph augmentation: traversing edges from %d top-scored revisions (top score=%.3f)",
+                len(traverse_krefs),
+                revision_candidates[0][1] if revision_candidates else 0,
+            )
 
         # --- Strategy A: Edge traversal via kumiho SDK ---
         # kumiho.get_revision / rev.get_edges are *synchronous* gRPC calls
@@ -672,12 +840,14 @@ class KumihoMemoryAdapter:
         graph_augmented_results: list[dict] = []
 
         def _sync_graph_traverse() -> int:
-            """Run all sync gRPC calls in a plain thread."""
+            """Run all sync gRPC calls in a plain thread.
+
+            Traverses edges from the top-K scored revisions (not the
+            primary recalled items) so that graph augmentation discovers
+            connections relevant to the specific question.
+            """
             found = 0
-            for mem in memories[:5]:
-                kref_str = mem.get("kref", "")
-                if not kref_str:
-                    continue
+            for kref_str in traverse_krefs:
                 try:
                     rev = kumiho.get_revision(kref_str)
                     edges = rev.get_edges(direction=kumiho.BOTH)
@@ -746,12 +916,16 @@ class KumihoMemoryAdapter:
             )
 
         # --- Strategy B: Multi-hop semantic recall (fallback if no edges found) ---
+        # Use top-K scored revisions (not primary items) so the semantic
+        # fallback is also question-specific when items are stacked.
         if graph_found == 0 and max_hops >= 1:
             logger.debug("No graph edges found, falling back to multi-hop semantic recall")
+            # Gather title/summary from the top-K scored revisions
             secondary_terms = []
-            for mem in memories[:5]:
-                title = mem.get("title", "")
-                summary = mem.get("summary", "")
+            _top_revisions_for_fallback = self._collect_top_revisions(memories, traverse_limit)
+            for rev_info in _top_revisions_for_fallback:
+                title = rev_info.get("title", "")
+                summary = rev_info.get("summary", "")
                 if title:
                     secondary_terms.append(title)
                 elif summary:
@@ -774,8 +948,8 @@ class KumihoMemoryAdapter:
                 len(memories), len(augmented) - len(memories), len(augmented),
             )
 
-        # Cap total to prevent context noise from drowning signal
-        cap = max_total or (base_limit * 3)
+        # Cap total — graph augmentation adds targeted connections, not flood
+        cap = max_total or (base_limit + 5)
         if len(augmented) > cap:
             logger.info("Capping augmented memories from %d to %d", len(augmented), cap)
             augmented = augmented[:cap]
@@ -1018,6 +1192,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                 max_tokens=200,
                 temperature=0.7,
             )
+            token_tracker.record("implication_queries", resp)
             raw = resp.choices[0].message.content.strip()
             # Strip markdown code fences if present
             if raw.startswith("```"):
@@ -1114,41 +1289,64 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         - "full": includes artifact content (raw conversation text) — lossless
         - "summarized": only title + summary — lossy, comparable to Mem0/Graphiti
 
-        When *query* is provided and ``sibling_similarity_threshold > 0``,
-        sibling revisions are filtered by embedding cosine similarity to the
-        query so only semantically relevant siblings reach the answer model.
+        **Revision-centric assembly**: flattens all revisions (primary +
+        siblings) from every recalled memory, ranks them globally by
+        ``_score``, and takes the top ``context_top_k``.  Item-level
+        metadata is skipped — only revision-level content appears.
         """
-        threshold = self.config.sibling_similarity_threshold
+        full_mode = self.config.recall_mode == "full"
 
-        texts = []
+        # --- Collect all revisions across all memories into one flat list ---
+        all_revisions: list[dict[str, Any]] = []
+
         for mem in memories:
-            title = mem.get("title", "")
-            summary = mem.get("summary", "")
-            content = mem.get("content", "")
+            siblings = mem.get("sibling_revisions", [])
 
-            if self.config.recall_mode == "full" and content:
-                texts.append(content[:4000])
+            if siblings:
+                # With stacking, the primary memory is the *item-level*
+                # shell (latest revision's generic title/summary).  Its
+                # recall score (~3.0+) is on a different scale than sibling
+                # _scores (cosine 0-1), so including it would always make
+                # it dominate the top-K.  Skip it — the siblings ARE the
+                # individually scored revisions we want.
+                for sib in siblings:
+                    all_revisions.append({
+                        "title": sib.get("title", ""),
+                        "summary": sib.get("summary", ""),
+                        "content": sib.get("content", ""),
+                        "_score": sib.get("_score", 0.0),
+                    })
+            else:
+                # No siblings (non-stacked item or single revision) —
+                # use the primary memory directly.
+                all_revisions.append({
+                    "title": mem.get("title", ""),
+                    "summary": mem.get("summary", ""),
+                    "content": mem.get("content", ""),
+                    "_score": mem.get("score", 0.0),
+                })
+
+        # --- Global ranking by score (best revisions first) ---
+        has_scores = any(r.get("_score", 0) > 0 for r in all_revisions)
+        if has_scores:
+            all_revisions.sort(key=lambda r: r.get("_score", 0.0), reverse=True)
+
+        # --- Apply global top-K cap ---
+        top_k = self.config.context_top_k
+        if top_k > 0 and len(all_revisions) > top_k:
+            all_revisions = all_revisions[:top_k]
+
+        # --- Build text from surviving revisions ---
+        texts = []
+        for rev in all_revisions:
+            title = rev.get("title", "")
+            summary = rev.get("summary", "")
+            content = rev.get("content", "")
+
+            if full_mode and content:
+                texts.append(content[:8000])
             elif summary:
                 texts.append(f"{title}: {summary}" if title else summary)
-
-            # Unfold sibling revisions — optionally filtered by relevance
-            siblings = mem.get("sibling_revisions", [])
-            if siblings and query and threshold > 0:
-                siblings = self._filter_siblings_by_embedding(
-                    siblings, query, threshold,
-                )
-
-            for sib in siblings:
-                sib_title = sib.get("title", "")
-                sib_summary = sib.get("summary", "")
-                sib_content = sib.get("content", "")
-
-                if self.config.recall_mode == "full" and sib_content:
-                    texts.append(sib_content[:4000])
-                elif sib_summary:
-                    texts.append(
-                        f"{sib_title}: {sib_summary}" if sib_title else sib_summary
-                    )
 
         return "\n\n".join(texts) if texts else ""
 
@@ -1243,3 +1441,79 @@ def print_metrics_table(metrics: dict[str, Any], benchmark_name: str) -> None:
             )
 
     print(f"{'=' * 70}\n")
+
+
+# ---------------------------------------------------------------------------
+# Run manifest (reproducibility)
+# ---------------------------------------------------------------------------
+
+
+def _get_git_sha(repo_path: Path) -> str:
+    """Get the HEAD commit SHA of a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _get_submodule_shas(repo_root: Path) -> dict[str, str]:
+    """Get commit SHAs for dataset submodules."""
+    shas = {}
+    for submod in ["locomo", "LongMemEval", "MemoryAgentBench"]:
+        submod_path = repo_root / submod
+        if submod_path.is_dir():
+            shas[submod] = _get_git_sha(submod_path)
+    return shas
+
+
+def generate_run_manifest(
+    config: BenchmarkConfig,
+    benchmarks: list[str],
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    """Generate a reproducibility manifest for a benchmark run.
+
+    Captures: harness git commit, dataset SHAs, model names, prompt template
+    hashes, config flags, and timestamps.  Written alongside metrics so any
+    reviewer can verify the exact evaluation environment.
+    """
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parent.parent
+
+    # Collect all registered prompt template hashes
+    template_hashes = {}
+    for name, template in sorted(_PROMPT_TEMPLATE_REGISTRY.items()):
+        template_hashes[name] = hashlib.sha256(
+            template.encode("utf-8"),
+        ).hexdigest()[:16]
+
+    return {
+        "harness_git_sha": _get_git_sha(repo_root),
+        "dataset_shas": _get_submodule_shas(repo_root),
+        "benchmarks": benchmarks,
+        "config": {
+            "answer_model": config.answer_model,
+            "judge_model": config.judge_model,
+            "llm_model": config.llm_model,
+            "llm_provider": config.llm_provider,
+            "recall_limit": config.recall_limit,
+            "recall_mode": config.recall_mode,
+            "graph_augmented": config.graph_augmented,
+            "sibling_similarity_threshold": config.sibling_similarity_threshold,
+            "consolidation_threshold": config.consolidation_threshold,
+            "max_samples": config.max_samples,
+            "start_at": config.start_at,
+            "concurrency": config.concurrency,
+            "entry_concurrency": config.entry_concurrency,
+        },
+        "prompt_template_hashes": template_hashes,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": None,
+    }
