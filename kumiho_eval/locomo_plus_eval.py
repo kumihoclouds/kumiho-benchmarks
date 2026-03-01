@@ -34,6 +34,12 @@ import numpy as np
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from tqdm import tqdm
 
+try:
+    import grpc
+    _GRPC_ERRORS: tuple[type[BaseException], ...] = (grpc.RpcError,)
+except ImportError:
+    _GRPC_ERRORS = ()
+
 from .common import (
     BenchmarkConfig,
     EvalResult,
@@ -49,6 +55,7 @@ from .common import (
 _RETRYABLE_ERRORS = (
     OSError, RequestsConnectionError, ConnectionError, TimeoutError,
     *_OPENAI_ERRORS,
+    *_GRPC_ERRORS,
 )
 MAX_ENTRY_RETRIES = 5
 RETRY_BASE_DELAY = 10
@@ -800,7 +807,12 @@ async def evaluate_locomo_plus(
                                             except Exception as e:
                                                 logger.debug("Edge discovery failed: %s", e)
                                 except Exception as e:
-                                    logger.warning("Consolidation failed for %s: %s", entry_id, e)
+                                    logger.error(
+                                        "Consolidation failed for %s (session %s): %s",
+                                        entry_id, sid, e,
+                                        exc_info=True,
+                                    )
+                                    raise  # Propagate so the entry retries
                             return sid
 
                     # Phase 1a: Base sessions in parallel
@@ -1023,7 +1035,8 @@ async def evaluate_locomo_plus(
             return_exceptions=True,
         )
 
-        # Log any silently-swallowed exceptions so entries don't vanish
+        # Checkpoint any unhandled exceptions as failures instead of
+        # silently dropping them (which causes infinite retry on resume).
         dropped = 0
         for (ei, _entry), result in zip(pending, gather_results):
             if isinstance(result, BaseException):
@@ -1031,11 +1044,32 @@ async def evaluate_locomo_plus(
                 logger.error(
                     "Entry %s failed with unhandled exception: %s: %s",
                     entry_id, type(result).__name__, result,
+                    exc_info=result,
                 )
+                fail_result = EvalResult(
+                    question_id=entry_id,
+                    question="",
+                    question_type="cognitive/error",
+                    ground_truth="",
+                    prediction="",
+                    recalled_context="",
+                    f1_score=0.0,
+                    judge_score=False,
+                    exact_match=False,
+                    latency_ingest_ms=0.0,
+                    latency_recall_ms=0.0,
+                    latency_answer_ms=0.0,
+                    metadata={
+                        "error": f"{type(result).__name__}: {result}",
+                        "unhandled": True,
+                    },
+                )
+                all_results.append(fail_result)
+                _save_checkpoint_line(output_dir, fail_result)
                 dropped += 1
         if dropped:
             logger.warning(
-                "%d entries dropped due to unhandled exceptions (see errors above)",
+                "%d entries checkpointed as failures due to unhandled exceptions",
                 dropped,
             )
     finally:
