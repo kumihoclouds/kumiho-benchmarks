@@ -574,7 +574,7 @@ def main():
     parser.add_argument("--max-samples", type=int, default=None, help="Limit conversations")
     parser.add_argument("--answer-model", type=str, default="gpt-4o", help="Model for answer generation")
     parser.add_argument("--judge-model", type=str, default="gpt-4o", help="Model for LLM judge")
-    parser.add_argument("--recall-limit", type=int, default=3, help="Max memories to recall")
+    parser.add_argument("--recall-limit", type=int, default=10, help="Max memories to recall")
     parser.add_argument("--recall-mode", type=str, default="full",
                         choices=["full", "summarized"],
                         help="Recall mode: full (artifact content) or summarized (title+summary)")
