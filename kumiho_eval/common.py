@@ -285,13 +285,21 @@ async def generate_answer(
     model: str = "gpt-4o",
     api_key: str | None = None,
     max_tokens: int = 256,
+    user_instruction: str = "Answer concisely with exact information from the context.",
     temperature: float = 0.0,
 ) -> str:
-    """Generate an answer to a question given retrieved context."""
+    """Generate an answer to a question given retrieved context.
+
+    ``user_instruction`` is the trailing instruction in the user turn. It
+    defaults to context-grounded extraction (correct for single/multi-hop/
+    temporal), but callers can relax it for categories like open-domain that
+    legitimately require combining the context with world/commonsense knowledge.
+    """
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-    user_msg = f"Context:\n{context}\n\n{question}"
+    user_msg = f"Context:\n{context}\n\n{question}\n\n{user_instruction}"
+    text = ""
     for _answer_attempt in range(3):
         resp = await client.chat.completions.create(
             model=model,
