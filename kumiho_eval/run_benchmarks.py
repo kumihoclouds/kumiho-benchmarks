@@ -40,7 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .common import BenchmarkConfig
+from .common import BenchmarkConfig, generate_run_manifest, token_tracker
 
 logger = logging.getLogger("kumiho_eval")
 
@@ -213,6 +213,8 @@ def generate_paper_table(all_metrics: dict[str, Any]) -> str:
 async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, Any]:
     """Run selected benchmarks and collect all metrics."""
     all_metrics: dict[str, Any] = {}
+    token_tracker.reset()
+    manifest = generate_run_manifest(config, benchmarks)
 
     if "locomo" in benchmarks:
         from .locomo_eval import evaluate_locomo
@@ -283,18 +285,15 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
     output_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
+
     combined_path = output_dir / f"tier1_metrics_{timestamp}.json"
     with open(combined_path, "w") as f:
         json.dump(
             {
                 "timestamp": timestamp,
-                "config": {
-                    "answer_model": config.answer_model,
-                    "judge_model": config.judge_model,
-                    "recall_limit": config.recall_limit,
-                    "recall_mode": config.recall_mode,
-                    "max_samples": config.max_samples,
-                },
+                "manifest": manifest,
+                "token_usage": token_tracker.summary(),
                 "metrics": all_metrics,
                 "reference_scores": REFERENCE_SCORES,
             },
@@ -302,6 +301,12 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
             indent=2,
         )
     logger.info("Combined metrics saved to %s", combined_path)
+
+    # Save manifest separately for quick inspection
+    manifest_path = output_dir / f"manifest_{timestamp}.json"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    logger.info("Run manifest saved to %s", manifest_path)
 
     # Generate paper LaTeX tables
     latex = generate_paper_table(all_metrics)
@@ -340,6 +345,26 @@ async def run_all(config: BenchmarkConfig, benchmarks: list[str]) -> dict[str, A
         print(f"    Overall Accuracy: {lp.get('overall_judge_accuracy', 0):.4f}")
         for rtype, vals in lp.get("by_relation_type", {}).items():
             print(f"    {rtype}: {vals.get('judge_accuracy', 0):.4f}")
+
+    # Token usage summary
+    usage = token_tracker.summary()
+    total = usage["total"]
+    if total["calls"] > 0:
+        print(f"\n  Token Usage:")
+        print(f"    Total calls:       {total['calls']}")
+        print(f"    Prompt tokens:     {total['prompt_tokens']:,}")
+        print(f"    Completion tokens: {total['completion_tokens']:,}")
+        print(f"    Total tokens:      {total['total_tokens']:,}")
+        by_phase = usage["by_phase"]
+        if by_phase:
+            print(f"\n    {'Phase':<25} {'Calls':>6} {'Prompt':>10} {'Completion':>12} {'Total':>10}")
+            print(f"    {'-' * 65}")
+            for phase, data in sorted(by_phase.items()):
+                print(
+                    f"    {phase:<25} {data['calls']:>6} "
+                    f"{data['prompt_tokens']:>10,} {data['completion_tokens']:>12,} "
+                    f"{data['total_tokens']:>10,}"
+                )
 
     print(f"\n  Output: {output_dir}")
     print("=" * 70 + "\n")
@@ -451,7 +476,7 @@ Examples:
             max_samples=args.max_samples,
             recall_limit=args.recall_limit,
             recall_mode=mode,
-            graph_augmented=getattr(args, "graph_augmented", False),
+            graph_augmented=not getattr(args, "no_graph_augmented", False),
         )
 
         logger.info("=" * 70)

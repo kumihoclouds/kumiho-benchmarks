@@ -1,0 +1,67 @@
+{
+  "total_questions": 1986,
+  "overall_f1": 0.5652965072191174,
+  "overall_judge_accuracy": 0.2190332326283988,
+  "overall_exact_match": 0.16515609264853978,
+  "avg_latency_recall_ms": 5756.396934592059,
+  "avg_latency_answer_ms": 1141.8083855993705,
+  "by_type": {
+    "adversarial": {
+      "count": 446,
+      "f1": 0.9753363228699552,
+      "judge_accuracy": 0.9753363228699552,
+      "exact_match": 0.0
+    },
+    "multi-hop": {
+      "count": 282,
+      "f1": 0.3546628433198915,
+      "judge_accuracy": 0.0,
+      "exact_match": 0.12056737588652482
+    },
+    "open-domain": {
+      "count": 96,
+      "f1": 0.2902571403034576,
+      "judge_accuracy": 0.0,
+      "exact_match": 0.16666666666666666
+    },
+    "single-hop": {
+      "count": 841,
+      "f1": 0.46229814547599285,
+      "judge_accuracy": 0.0,
+      "exact_match": 0.25921521997621877
+    },
+    "temporal": {
+      "count": 321,
+      "f1": 0.5327305785249711,
+      "judge_accuracy": 0.0,
+      "exact_match": 0.18691588785046728
+    }
+  },
+  "locomo_categories": {
+    "multi-hop": {
+      "count": 282,
+      "f1": 0.3546628433198915,
+      "judge_accuracy": 0.0
+    },
+    "temporal": {
+      "count": 321,
+      "f1": 0.5327305785249711,
+      "judge_accuracy": 0.0
+    },
+    "open-domain": {
+      "count": 96,
+      "f1": 0.2902571403034576,
+      "judge_accuracy": 0.0
+    },
+    "single-hop": {
+      "count": 841,
+      "f1": 0.46229814547599285,
+      "judge_accuracy": 0.0
+    },
+    "adversarial": {
+      "count": 446,
+      "f1": 0.9753363228699552,
+      "judge_accuracy": 0.9753363228699552
+    }
+  }
+}

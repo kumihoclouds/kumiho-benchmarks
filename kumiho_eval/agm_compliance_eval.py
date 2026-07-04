@@ -40,6 +40,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .common import BenchmarkConfig
+
 logger = logging.getLogger("kumiho_eval.agm")
 
 # ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ logger = logging.getLogger("kumiho_eval.agm")
 
 _ENV_LOCAL = Path(__file__).resolve().parent / ".env.local"
 if _ENV_LOCAL.exists():
-    with open(_ENV_LOCAL) as _f:
+    with open(_ENV_LOCAL, encoding="utf-8") as _f:
         for _line in _f:
             _line = _line.strip()
             if _line and not _line.startswith("#") and "=" in _line:
@@ -1485,82 +1487,124 @@ def check_assertion(
 # ---------------------------------------------------------------------------
 
 
+MAX_SCENARIO_RETRIES = 3
+SCENARIO_RETRY_BASE_DELAY = 5  # seconds
+
+
 def run_scenario(adapter: AGMAdapter, scenario: dict) -> PostulateResult:
-    """Execute a single AGM scenario: setup -> operate -> assert."""
+    """Execute a single AGM scenario: setup -> operate -> assert.
+
+    Includes retry with exponential backoff for transient network errors.
+    """
     scenario_id = scenario["id"]
-    t0 = time.perf_counter()
 
-    try:
-        # 1. Create isolated space
-        space_path = adapter.create_scenario_space(scenario_id)
+    for attempt in range(1, MAX_SCENARIO_RETRIES + 1):
+        t0 = time.perf_counter()
+        try:
+            # 1. Create isolated space
+            space_path = adapter.create_scenario_space(scenario_id)
 
-        # 2. Setup: create initial beliefs
-        belief_refs: dict[str, dict] = {}
-        for belief in scenario.get("beliefs", []):
-            ref = adapter.store_belief(
-                space_path, belief["key"], belief["value"],
-                metadata=belief.get("metadata"),
+            # 2. Setup: create initial beliefs
+            belief_refs: dict[str, dict] = {}
+            for belief in scenario.get("beliefs", []):
+                ref = adapter.store_belief(
+                    space_path, belief["key"], belief["value"],
+                    metadata=belief.get("metadata"),
+                )
+                belief_refs[belief["key"]] = ref
+
+            # 3. Setup: create initial edges (using Revision objects)
+            for edge in scenario.get("edges", []):
+                from_ref = belief_refs.get(edge["from"], {})
+                to_ref = belief_refs.get(edge["to"], {})
+                from_rev = from_ref.get("_revision")
+                to_rev = to_ref.get("_revision")
+                if from_rev and to_rev:
+                    from_rev.create_edge(
+                        target_revision=to_rev,
+                        edge_type=edge["type"],
+                    )
+
+            # 4. Execute operations
+            for op in scenario.get("operations", []):
+                if op["type"] == "revise":
+                    ref = adapter.revise_belief(space_path, op["key"], op["new_value"])
+                    belief_refs[op["key"]] = ref
+                elif op["type"] == "expand":
+                    ref = adapter.expand_belief(space_path, op["key"], op["value"])
+                    belief_refs[op["key"]] = ref
+                elif op["type"] == "contract":
+                    adapter.contract_belief(space_path, op["key"])
+                elif op["type"] == "restore":
+                    adapter.restore_belief(space_path, op["key"])
+
+            # 5. Small delay for eventual consistency
+            time.sleep(0.1)
+
+            # 6. Run assertions
+            assertion_results = []
+            for assertion in scenario.get("assertions", []):
+                result = check_assertion(adapter, space_path, assertion)
+                assertion_results.append(result)
+
+            all_passed = all(a.passed for a in assertion_results)
+            latency = (time.perf_counter() - t0) * 1000
+
+            return PostulateResult(
+                scenario_id=scenario_id,
+                postulate=scenario["postulate"],
+                category=scenario["category"],
+                description=scenario["description"],
+                passed=all_passed,
+                assertions=assertion_results,
+                latency_ms=latency,
             )
-            belief_refs[belief["key"]] = ref
 
-        # 3. Setup: create initial edges (using Revision objects)
-        for edge in scenario.get("edges", []):
-            from_ref = belief_refs.get(edge["from"], {})
-            to_ref = belief_refs.get(edge["to"], {})
-            from_rev = from_ref.get("_revision")
-            to_rev = to_ref.get("_revision")
-            if from_rev and to_rev:
-                from_rev.create_edge(
-                    target_revision=to_rev,
-                    edge_type=edge["type"],
+        except (OSError, ConnectionError, TimeoutError) as e:
+            latency = (time.perf_counter() - t0) * 1000
+            if attempt < MAX_SCENARIO_RETRIES:
+                delay = SCENARIO_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    "Network error on %s (attempt %d/%d), retrying in %ds: %s",
+                    scenario_id, attempt, MAX_SCENARIO_RETRIES, delay, e,
+                )
+                time.sleep(delay)
+            else:
+                logger.error(
+                    "Failed %s after %d attempts: %s",
+                    scenario_id, MAX_SCENARIO_RETRIES, e,
+                )
+                return PostulateResult(
+                    scenario_id=scenario_id,
+                    postulate=scenario["postulate"],
+                    category=scenario["category"],
+                    description=scenario["description"],
+                    passed=False,
+                    latency_ms=latency,
+                    error=str(e),
                 )
 
-        # 4. Execute operations
-        for op in scenario.get("operations", []):
-            if op["type"] == "revise":
-                ref = adapter.revise_belief(space_path, op["key"], op["new_value"])
-                belief_refs[op["key"]] = ref
-            elif op["type"] == "expand":
-                ref = adapter.expand_belief(space_path, op["key"], op["value"])
-                belief_refs[op["key"]] = ref
-            elif op["type"] == "contract":
-                adapter.contract_belief(space_path, op["key"])
-            elif op["type"] == "restore":
-                adapter.restore_belief(space_path, op["key"])
+        except Exception as e:
+            latency = (time.perf_counter() - t0) * 1000
+            return PostulateResult(
+                scenario_id=scenario_id,
+                postulate=scenario["postulate"],
+                category=scenario["category"],
+                description=scenario["description"],
+                passed=False,
+                latency_ms=latency,
+                error=str(e),
+            )
 
-        # 5. Small delay for eventual consistency
-        time.sleep(0.1)
-
-        # 6. Run assertions
-        assertion_results = []
-        for assertion in scenario.get("assertions", []):
-            result = check_assertion(adapter, space_path, assertion)
-            assertion_results.append(result)
-
-        all_passed = all(a.passed for a in assertion_results)
-        latency = (time.perf_counter() - t0) * 1000
-
-        return PostulateResult(
-            scenario_id=scenario_id,
-            postulate=scenario["postulate"],
-            category=scenario["category"],
-            description=scenario["description"],
-            passed=all_passed,
-            assertions=assertion_results,
-            latency_ms=latency,
-        )
-
-    except Exception as e:
-        latency = (time.perf_counter() - t0) * 1000
-        return PostulateResult(
-            scenario_id=scenario_id,
-            postulate=scenario["postulate"],
-            category=scenario["category"],
-            description=scenario["description"],
-            passed=False,
-            latency_ms=latency,
-            error=str(e),
-        )
+    # Should not reach here, but satisfy type checker
+    return PostulateResult(
+        scenario_id=scenario_id,
+        postulate=scenario["postulate"],
+        category=scenario["category"],
+        description=scenario["description"],
+        passed=False,
+        error="Max retries exhausted",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1860,11 +1904,82 @@ def save_compliance_report(report: ComplianceReport, output_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _agm_checkpoint_path(output_dir: Path) -> Path:
+    """Deterministic checkpoint file path for AGM resume support."""
+    return output_dir / "_agm_checkpoint.jsonl"
+
+
+def _load_agm_checkpoint(output_dir: Path) -> tuple[list[PostulateResult], set[str]]:
+    """Load AGM checkpoint if it exists. Returns (results, completed_scenario_ids)."""
+    ckpt = _agm_checkpoint_path(output_dir)
+    if not ckpt.exists():
+        return [], set()
+
+    results: list[PostulateResult] = []
+    completed: set[str] = set()
+    for line in ckpt.read_text(encoding="utf-8").strip().splitlines():
+        try:
+            data = json.loads(line)
+            assertions = [
+                AssertionResult(
+                    name=a["name"],
+                    passed=a["passed"],
+                    expected=a["expected"],
+                    actual=a["actual"],
+                    error=a.get("error", ""),
+                )
+                for a in data.get("assertions", [])
+            ]
+            r = PostulateResult(
+                scenario_id=data["scenario_id"],
+                postulate=data["postulate"],
+                category=data["category"],
+                description=data["description"],
+                passed=data["passed"],
+                assertions=assertions,
+                latency_ms=data.get("latency_ms", 0.0),
+                error=data.get("error", ""),
+            )
+            results.append(r)
+            completed.add(data["scenario_id"])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning("Skipping corrupt AGM checkpoint line: %s", e)
+    logger.info("Loaded AGM checkpoint: %d completed scenarios", len(completed))
+    return results, completed
+
+
+def _save_agm_checkpoint_line(output_dir: Path, result: PostulateResult) -> None:
+    """Append a single scenario result to the AGM checkpoint JSONL file."""
+    ckpt = _agm_checkpoint_path(output_dir)
+    data = {
+        "scenario_id": result.scenario_id,
+        "postulate": result.postulate,
+        "category": result.category,
+        "description": result.description,
+        "passed": result.passed,
+        "latency_ms": result.latency_ms,
+        "error": result.error,
+        "assertions": [
+            {
+                "name": a.name,
+                "passed": a.passed,
+                "expected": a.expected,
+                "actual": a.actual,
+                "error": a.error,
+            }
+            for a in result.assertions
+        ],
+    }
+    with open(ckpt, "a", encoding="utf-8") as f:
+        f.write(json.dumps(data, ensure_ascii=False) + "\n")
+
+
 async def evaluate_agm_compliance(
-    config: Any = None,
+    config: BenchmarkConfig | None = None,
     project: str | None = None,
     output_dir: str = "./results/agm",
     max_scenarios: int | None = None,
+    resume: bool = True,
 ) -> ComplianceReport:
     """
     Run the full AGM compliance evaluation.
@@ -1877,10 +1992,17 @@ async def evaluate_agm_compliance(
         project: Optional project name override
         output_dir: Where to write results
         max_scenarios: Limit scenarios for quick smoke tests
+        resume: Resume from checkpoint if available
 
     Returns:
         ComplianceReport with full results.
     """
+    # Use config for endpoint/token if available
+    if config and config.kumiho_endpoint:
+        os.environ.setdefault("KUMIHO_ENDPOINT", config.kumiho_endpoint)
+    if config and config.kumiho_token:
+        os.environ.setdefault("KUMIHO_AUTH_TOKEN", config.kumiho_token)
+
     # Resolve project name
     proj = project
     if not proj and config:
@@ -1890,11 +2012,18 @@ async def evaluate_agm_compliance(
 
     adapter = AGMAdapter(project=proj)
     output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
 
     logger.info("=" * 60)
     logger.info("AGM Compliance Evaluation - Kumiho Cognitive Memory")
     logger.info("Project: %s", proj)
     logger.info("=" * 60)
+
+    # Load checkpoint for resume
+    if resume:
+        all_results, completed_ids = _load_agm_checkpoint(output)
+    else:
+        all_results, completed_ids = [], set()
 
     try:
         adapter.initialize()
@@ -1907,17 +2036,25 @@ async def evaluate_agm_compliance(
         logger.info("Running %d AGM scenarios...", len(scenarios))
 
         # Run all scenarios
-        results: list[PostulateResult] = []
+        skipped = 0
         for i, scenario in enumerate(scenarios):
+            scenario_id = scenario["id"]
+
+            # Skip already-completed scenarios (checkpoint resume)
+            if scenario_id in completed_ids:
+                skipped += 1
+                continue
+
             logger.info(
                 "[%d/%d] %s - %s",
                 i + 1,
                 len(scenarios),
-                scenario["id"],
+                scenario_id,
                 scenario["description"][:50],
             )
             result = run_scenario(adapter, scenario)
-            results.append(result)
+            all_results.append(result)
+            _save_agm_checkpoint_line(output, result)
 
             status = "PASS" if result.passed else ("ERROR" if result.error else "FAIL")
             logger.info("  -> %s (%.0f ms)", status, result.latency_ms)
@@ -1930,8 +2067,11 @@ async def evaluate_agm_compliance(
                             a.name, a.expected, a.actual,
                         )
 
+        if skipped:
+            logger.info("Resumed: skipped %d already-completed scenarios", skipped)
+
         # Build report
-        report = build_compliance_report(results, proj)
+        report = build_compliance_report(all_results, proj)
 
         # Output
         print_compliance_report(report)
@@ -1976,6 +2116,12 @@ Examples:
                         help="Limit number of scenarios (for smoke testing)")
     parser.add_argument("--project", type=str, default=None,
                         help="Kumiho project name (default: auto-generated)")
+    parser.add_argument("--endpoint", type=str, default=None,
+                        help="Kumiho server endpoint (overrides KUMIHO_ENDPOINT env)")
+    parser.add_argument("--token", type=str, default=None,
+                        help="Kumiho auth token (overrides KUMIHO_AUTH_TOKEN env)")
+    parser.add_argument("--no-resume", action="store_true",
+                        help="Start fresh instead of resuming from checkpoint")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Verbose logging")
 
@@ -1988,11 +2134,19 @@ Examples:
         datefmt="%H:%M:%S",
     )
 
+    config = BenchmarkConfig(
+        project_name=args.project or "benchmark-agm",
+        kumiho_endpoint=args.endpoint,
+        kumiho_token=args.token,
+    )
+
     report = asyncio.run(
         evaluate_agm_compliance(
+            config=config,
             output_dir=args.output,
             project=args.project,
             max_scenarios=args.max_scenarios,
+            resume=not args.no_resume,
         )
     )
 

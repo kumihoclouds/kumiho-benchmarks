@@ -35,6 +35,7 @@ from .common import (
     BenchmarkConfig,
     EvalResult,
     KumihoMemoryAdapter,
+    _OPENAI_ERRORS,
     compute_aggregate_metrics,
     exact_match,
     generate_answer,
@@ -45,7 +46,7 @@ from .common import (
     token_f1,
 )
 
-_RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+_RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError, *_OPENAI_ERRORS)
 MAX_SAMPLE_RETRIES = 3
 RETRY_BASE_DELAY = 10  # seconds
 
@@ -348,32 +349,61 @@ async def evaluate_memoryagentbench(
                         await adapter.create_eval_space(f"mab-{sample_id}")
                         user_id = f"mab-{sample_id}"
 
-                        # --- Phase 1: Ingest context chunks ---
+                        # --- Phase 1: Ingest context chunks (parallel) ---
                         chunks = chunk_context(context, chunk_size=chunk_size)
                         t_ingest = time.perf_counter()
-                        session_ids = []
+                        ingest_sem = asyncio.Semaphore(config.concurrency)
 
-                        for ci, chunk_text in enumerate(chunks):
-                            messages = [{"role": "user", "content": chunk_text}]
-                            result = await adapter.ingest_session(
-                                user_id=user_id,
-                                session_messages=messages,
-                                context="work",
-                            )
-                            sid = result.get("session_id")
-                            if sid:
-                                session_ids.append(sid)
+                        async def _ingest_one_chunk(chunk_text: str) -> str | None:
+                            async with ingest_sem:
+                                messages = [{"role": "user", "content": chunk_text}]
+                                result = await adapter.ingest_session(
+                                    user_id=user_id,
+                                    session_messages=messages,
+                                    context="work",
+                                )
+                                sid = result.get("session_id")
+                                if sid:
+                                    try:
+                                        cons = await adapter.consolidate(
+                                            sid,
+                                            user_id=user_id,
+                                            context="work",
+                                            stack_revisions=config.stack_revisions,
+                                        )
+                                        # Post-consolidation edge discovery
+                                        if config.graph_augmented and cons.get("success"):
+                                            store_res = cons.get("store_result", {})
+                                            rev_kref = store_res.get("revision_kref", "")
+                                            cons_summary = cons.get("summary", "")
+                                            if rev_kref and cons_summary:
+                                                try:
+                                                    await adapter.discover_and_link_edges(
+                                                        rev_kref, cons_summary,
+                                                    )
+                                                except Exception as e:
+                                                    logger.debug("Edge discovery failed: %s", e)
+                                    except Exception as e:
+                                        logger.warning("Consolidation failed: %s", e)
+                                return sid
 
-                        # Consolidate all sessions
-                        for sid in session_ids:
-                            try:
-                                await adapter.consolidate(sid)
-                            except Exception as e:
-                                logger.warning("Consolidation failed: %s", e)
+                        ingest_results = await asyncio.gather(
+                            *[_ingest_one_chunk(c) for c in chunks],
+                            return_exceptions=True,
+                        )
+                        # Re-raise retryable errors so the outer retry loop handles them
+                        for ir in ingest_results:
+                            if isinstance(ir, _RETRYABLE_ERRORS):
+                                raise ir
+                            if isinstance(ir, Exception):
+                                logger.warning("Chunk ingestion error: %s", ir)
 
                         ingest_ms = (time.perf_counter() - t_ingest) * 1000
 
                         # --- Phase 2: Query ---
+                        # Scope recall to this sample's user space
+                        user_space = f"{config.project_name}/work/{user_id}"
+
                         sample_results: list[EvalResult] = []
                         for qi in range(len(questions)):
                             question = questions[qi]
@@ -385,12 +415,21 @@ async def evaluate_memoryagentbench(
                             if str(q_id) in completed_ids:
                                 continue
 
-                            # Recall
+                            # Recall (scoped to this sample's space)
                             t_recall = time.perf_counter()
-                            memories = await adapter.recall(question, limit=config.recall_limit)
+                            if config.graph_augmented:
+                                memories = await adapter.recall_with_graph_augmentation(
+                                    question, limit=config.recall_limit,
+                                    space_paths=[user_space],
+                                )
+                            else:
+                                memories = await adapter.recall(
+                                    question, limit=config.recall_limit,
+                                    space_paths=[user_space],
+                                )
                             recall_ms = (time.perf_counter() - t_recall) * 1000
 
-                            recalled_context = adapter.build_recalled_context(memories)
+                            recalled_context = adapter.build_recalled_context(memories, query=question)
 
                             # Determine system prompt based on competency
                             if split == "CR":
@@ -595,6 +634,20 @@ def main():
     parser.add_argument("--project", type=str, default="benchmark-mab")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
+    parser.add_argument("--concurrency", type=int, default=4,
+                        help="Max parallel chunk ingestions per sample")
+    parser.add_argument("--no-graph-augmented", action="store_true",
+                        help="Disable graph-augmented recall (fall back to vector-only search)")
+    parser.add_argument("--sibling-threshold", type=float, default=0.10,
+                        help="Sibling similarity threshold (0=budget mode, 0.10=lenient, 0.30=strict)")
+    parser.add_argument("--sibling-top-k", type=int, default=3,
+                        help="Max siblings to keep after scoring (0=unlimited)")
+    parser.add_argument("--context-top-k", type=int, default=5,
+                        help="Global cap on revisions in final context (0=unlimited)")
+    parser.add_argument("--no-stack", action="store_true",
+                        help="Disable revision stacking (one item per session)")
+    parser.add_argument("--entry-concurrency", type=int, default=1,
+                        help="How many entries to process in parallel")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -607,6 +660,13 @@ def main():
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
         recall_mode=args.recall_mode,
+        concurrency=args.concurrency,
+        graph_augmented=not args.no_graph_augmented,
+        sibling_similarity_threshold=args.sibling_threshold,
+        sibling_top_k=args.sibling_top_k,
+        context_top_k=args.context_top_k,
+        stack_revisions=not args.no_stack,
+        entry_concurrency=args.entry_concurrency,
     )
 
     splits = [s.strip() for s in args.splits.split(",")]

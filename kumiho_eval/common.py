@@ -16,10 +16,13 @@ import logging
 import os
 import re
 import string
+import subprocess
+import threading
 import time
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -27,10 +30,28 @@ import backoff
 import numpy as np
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
+# OpenAI SDK exceptions (uses httpx internally)
+try:
+    from openai import APIError as OpenAIAPIError
+    from openai import APIConnectionError as OpenAIConnectionError
+    from openai import APITimeoutError as OpenAITimeoutError
+    from openai import RateLimitError as OpenAIRateLimitError
+    from openai import InternalServerError as OpenAIInternalServerError
+    _OPENAI_ERRORS: tuple = (
+        OpenAIAPIError, OpenAIConnectionError, OpenAITimeoutError,
+        OpenAIRateLimitError, OpenAIInternalServerError,
+    )
+except ImportError:
+    _OPENAI_ERRORS = ()
+
 # Network error types that warrant retry in adapter methods
-_NETWORK_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
+_NETWORK_ERRORS = (
+    OSError, RequestsConnectionError, ConnectionError, TimeoutError,
+    *_OPENAI_ERRORS,
+)
 _MAX_ADAPTER_RETRIES = 5
 _ADAPTER_RETRY_BASE = 5  # seconds
+_CALL_TIMEOUT = 120  # seconds — per SDK call timeout
 
 logger = logging.getLogger("kumiho_eval")
 
@@ -47,6 +68,85 @@ if _ENV_LOCAL.exists():
                 _k, _v = _line.split("=", 1)
                 os.environ.setdefault(_k.strip(), _v.strip())
     logger.debug("Loaded env from %s", _ENV_LOCAL)
+
+
+# ---------------------------------------------------------------------------
+# Token usage tracking
+# ---------------------------------------------------------------------------
+
+
+class TokenTracker:
+    """Thread-safe token usage tracker aggregated by phase.
+
+    Records prompt_tokens, completion_tokens, and total_tokens from OpenAI
+    API responses.  Aggregates by phase (e.g. "judge", "answer",
+    "retrieval_judge") so cost claims can be verified from the run manifest.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._phases: dict[str, dict[str, int]] = {}
+
+    def record(self, phase: str, response: Any) -> dict[str, int]:
+        """Extract and record token usage from an OpenAI chat response."""
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        tokens = {
+            "prompt_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+            "completion_tokens": getattr(usage, "completion_tokens", 0) or 0,
+            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+        }
+
+        with self._lock:
+            if phase not in self._phases:
+                self._phases[phase] = {
+                    "prompt_tokens": 0, "completion_tokens": 0,
+                    "total_tokens": 0, "calls": 0,
+                }
+            self._phases[phase]["prompt_tokens"] += tokens["prompt_tokens"]
+            self._phases[phase]["completion_tokens"] += tokens["completion_tokens"]
+            self._phases[phase]["total_tokens"] += tokens["total_tokens"]
+            self._phases[phase]["calls"] += 1
+
+        return tokens
+
+    def summary(self) -> dict[str, Any]:
+        """Return per-phase and total token usage."""
+        with self._lock:
+            total = {
+                "prompt_tokens": 0, "completion_tokens": 0,
+                "total_tokens": 0, "calls": 0,
+            }
+            for phase_data in self._phases.values():
+                for key in total:
+                    total[key] += phase_data[key]
+            return {
+                "by_phase": {k: dict(v) for k, v in self._phases.items()},
+                "total": total,
+            }
+
+    def reset(self) -> None:
+        """Reset all counters (call before each benchmark run)."""
+        with self._lock:
+            self._phases.clear()
+
+
+token_tracker = TokenTracker()
+
+
+# ---------------------------------------------------------------------------
+# Prompt template registry (for manifest hash generation)
+# ---------------------------------------------------------------------------
+
+_PROMPT_TEMPLATE_REGISTRY: dict[str, str] = {}
+
+
+def register_prompt_template(name: str, template: str) -> None:
+    """Register a prompt template for manifest hash generation."""
+    _PROMPT_TEMPLATE_REGISTRY[name] = template
+
 
 # ---------------------------------------------------------------------------
 # Text normalisation (mirrors LoCoMo / LongMemEval conventions)
@@ -136,6 +236,8 @@ Does the model's response correctly answer the question? Consider:
 
 Answer "correct" or "incorrect":"""
 
+register_prompt_template("llm_judge", _JUDGE_TEMPLATE)
+
 
 @backoff.on_exception(backoff.expo, Exception, max_tries=3)
 async def llm_judge(
@@ -162,8 +264,11 @@ async def llm_judge(
         max_tokens=10,
         temperature=0.0,
     )
-    verdict = resp.choices[0].message.content.strip().lower()
-    return "correct" in verdict
+    token_tracker.record("judge", resp)
+    raw_verdict = resp.choices[0].message.content.strip()
+    # Extract first token and match strictly — "incorrect" must NOT match "correct"
+    verdict = raw_verdict.lower().split()[0] if raw_verdict.strip() else ""
+    return verdict == "correct"
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +286,7 @@ async def generate_answer(
     api_key: str | None = None,
     max_tokens: int = 256,
     user_instruction: str = "Answer concisely with exact information from the context.",
+    temperature: float = 0.0,
 ) -> str:
     """Generate an answer to a question given retrieved context.
 
@@ -192,21 +298,24 @@ async def generate_answer(
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-    user_msg = (
-        f"Based on the following memory context, answer the question.\n\n"
-        f"Context:\n{context}\n\nQuestion: {question}\n\n"
-        f"{user_instruction}"
-    )
-    resp = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-            {"role": "user", "content": user_msg},
-        ],
-        max_tokens=max_tokens,
-        temperature=0.0,
-    )
-    return resp.choices[0].message.content.strip()
+    user_msg = f"Context:\n{context}\n\n{question}\n\n{user_instruction}"
+    text = ""
+    for _answer_attempt in range(3):
+        resp = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+                {"role": "user", "content": user_msg},
+            ],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        token_tracker.record("answer", resp)
+        text = (resp.choices[0].message.content or "").strip()
+        if text:
+            return text
+        logger.warning("Empty response from %s (attempt %d/3), retrying", model, _answer_attempt + 1)
+    return text  # return empty after 3 tries rather than loop forever
 
 
 # ---------------------------------------------------------------------------
@@ -230,12 +339,19 @@ class BenchmarkConfig:
     redis_url: str | None = None
     output_dir: str = "./results"
     max_samples: int | None = None
+    start_at: int = 0  # Skip entries before this index (e.g. 201 for cog-201)
     consolidation_threshold: int = 20
-    recall_limit: int = 10
+    recall_limit: int = 5
     recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
     entry_concurrency: int = 1  # How many entries to process in parallel (pipeline parallelism)
-    graph_augmented: bool = False  # Follow edges from recalled memories to discover related ones
+    graph_augmented: bool = True  # Graph-native: edge traversal + multi-query recall (Kumiho default)
+    sibling_similarity_threshold: float = 0.30  # Min cosine similarity for siblings (0=off)
+    sibling_top_k: int = 0  # Max siblings to keep after scoring (0=unlimited, use threshold only)
+    context_top_k: int = 0  # Global cap on revisions in final context (0=unlimited)
+    stack_revisions: bool = True  # True = stack similar sessions; False = one item per session
+    two_pass_rerank: bool = False  # Re-rank siblings with focused embeddings (title+summary only)
+    sibling_score_fields: list[str] | None = None  # Server-side focused scoring fields (e.g. ["title", "summary"])
 
 
 @dataclass
@@ -350,6 +466,10 @@ class KumihoMemoryAdapter:
             pii_redactor=pii_redactor,
             memory_store=_store,
             memory_retrieve=_retrieve,
+            recall_mode=self.config.recall_mode,
+            sibling_similarity_threshold=self.config.sibling_similarity_threshold,
+            sibling_top_k=self.config.sibling_top_k,
+            sibling_score_fields=self.config.sibling_score_fields,
         )
 
         self._initialised = True
@@ -424,16 +544,20 @@ class KumihoMemoryAdapter:
         result["ingest_ms"] = (time.perf_counter() - t0) * 1000
         return result
 
-    async def _retry_network(self, coro_func, *args, **kwargs) -> Any:
+    async def _retry_network(self, coro_func, *args, timeout: float = _CALL_TIMEOUT, **kwargs) -> Any:
         """
         Call an async function with retry on transient network errors.
 
+        Each attempt is wrapped in asyncio.wait_for with *timeout* seconds
+        to prevent indefinite hangs from unresponsive servers.
         Uses exponential backoff: 5s, 10s, 20s, 40s, 80s.
         """
         last_err: Exception | None = None
         for attempt in range(1, _MAX_ADAPTER_RETRIES + 1):
             try:
-                return await coro_func(*args, **kwargs)
+                return await asyncio.wait_for(
+                    coro_func(*args, **kwargs), timeout=timeout,
+                )
             except _NETWORK_ERRORS as e:
                 last_err = e
                 if attempt < _MAX_ADAPTER_RETRIES:
@@ -460,12 +584,16 @@ class KumihoMemoryAdapter:
         space_path: str | None = None,
         user_id: str | None = None,
         context: str | None = None,
+        stack_revisions: bool | None = None,
     ) -> dict[str, Any]:
         """Consolidate a session into long-term graph memory.
 
         When *user_id* and *context* are provided, the memory is stored
         into a user-scoped space (``{context}/{user_id}``).  An explicit
         *space_path* overrides everything.
+
+        Set *stack_revisions* to ``False`` to create a new item per session
+        instead of stacking onto an existing similar item.
         """
         await self.initialise()
         t0 = time.perf_counter()
@@ -476,6 +604,8 @@ class KumihoMemoryAdapter:
             kwargs["user_id"] = user_id
         if context:
             kwargs["context"] = context
+        if stack_revisions is not None:
+            kwargs["stack_revisions"] = stack_revisions
         result = await self._retry_network(
             self._manager.consolidate_session, **kwargs,
         )
@@ -535,6 +665,7 @@ class KumihoMemoryAdapter:
                 max_tokens=100,
                 temperature=0.3,
             )
+            token_tracker.record("recall_reformulation", resp)
             raw = resp.choices[0].message.content.strip()
             queries = [
                 line.strip().lstrip("0123456789.-) ")
@@ -549,6 +680,39 @@ class KumihoMemoryAdapter:
         except Exception as e:
             logger.warning("Query reformulation failed: %s", e)
             return []
+
+    @staticmethod
+    def _collect_top_revisions(
+        memories: list[dict[str, Any]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Flatten sibling revisions, return top-*limit* by score.
+
+        When siblings exist, the primary memory is skipped (it's the
+        item-level shell whose recall score is on a different scale).
+        Each returned dict has at least ``title``, ``summary``, ``kref``,
+        and ``_score`` keys.
+        """
+        candidates: list[dict[str, Any]] = []
+        for mem in memories:
+            siblings = mem.get("sibling_revisions", [])
+            if siblings:
+                for sib in siblings:
+                    candidates.append({
+                        "kref": sib.get("kref", ""),
+                        "title": sib.get("title", ""),
+                        "summary": sib.get("summary", ""),
+                        "_score": sib.get("_score", 0.0),
+                    })
+            else:
+                candidates.append({
+                    "kref": mem.get("kref", ""),
+                    "title": mem.get("title", ""),
+                    "summary": mem.get("summary", ""),
+                    "_score": mem.get("score", 0.0),
+                })
+        candidates.sort(key=lambda x: x.get("_score", 0.0), reverse=True)
+        return candidates[:limit]
 
     async def recall_with_graph_augmentation(
         self,
@@ -627,6 +791,12 @@ class KumihoMemoryAdapter:
             kref = m.get("kref", "")
             if kref:
                 seen_krefs.add(kref)
+            # Also mark sibling krefs as seen so edge traversal
+            # doesn't re-discover revisions we already have.
+            for sib in m.get("sibling_revisions", []):
+                sib_kref = sib.get("kref", "")
+                if sib_kref:
+                    seen_krefs.add(sib_kref)
 
         augmented = list(memories)
         edge_filter = set(edge_types or [
@@ -634,52 +804,139 @@ class KumihoMemoryAdapter:
             "CONTAINS", "CREATED_FROM", "SUPERSEDES",
         ])
 
+        # --- Collect top-K scored revisions for edge traversal ---
+        # Instead of traversing from primary recalled items (which with
+        # stacking are always the same 1-2 items), flatten sibling
+        # revisions, rank by _score, and traverse from the top-K.
+        # Primary memory is skipped when siblings exist (score scale
+        # mismatch: recall ~3.0 vs sibling cosine 0-1).
+        revision_candidates: list[tuple[str, float]] = []
+        for mem in memories:
+            siblings = mem.get("sibling_revisions", [])
+            if siblings:
+                for sib in siblings:
+                    sib_kref = sib.get("kref", "")
+                    if sib_kref:
+                        revision_candidates.append((sib_kref, sib.get("_score", 0.0)))
+            else:
+                kref = mem.get("kref", "")
+                if kref:
+                    revision_candidates.append((kref, mem.get("score", 0.0)))
+
+        # Sort by score descending, pick top-K for traversal
+        revision_candidates.sort(key=lambda x: x[1], reverse=True)
+        traverse_limit = self.config.context_top_k or 5
+        traverse_krefs = [
+            kref for kref, _ in revision_candidates[:traverse_limit]
+        ]
+
+        if traverse_krefs:
+            logger.info(
+                "Graph augmentation: traversing edges from %d top-scored revisions (top score=%.3f)",
+                len(traverse_krefs),
+                revision_candidates[0][1] if revision_candidates else 0,
+            )
+
         # --- Strategy A: Edge traversal via kumiho SDK ---
+        # kumiho.get_revision / rev.get_edges are *synchronous* gRPC calls
+        # that can hang indefinitely on Windows.  Neither asyncio.wait_for
+        # nor asyncio.wait reliably timeout these calls because the Windows
+        # ProactorEventLoop doesn't process timer callbacks while to_thread
+        # futures are pending.  We use a bare daemon thread + threading.Event
+        # with an OS-level timeout (WaitForSingleObject) which is guaranteed
+        # to return regardless of asyncio state.
+        _GRAPH_TRAVERSAL_TIMEOUT = 30  # seconds
+
         graph_found = 0
-        for mem in memories[:5]:  # Top-5 to avoid explosion
-            kref_str = mem.get("kref", "")
-            if not kref_str:
-                continue
+        graph_augmented_results: list[dict] = []
+
+        def _sync_graph_traverse() -> int:
+            """Run all sync gRPC calls in a plain thread.
+
+            Traverses edges from the top-K scored revisions (not the
+            primary recalled items) so that graph augmentation discovers
+            connections relevant to the specific question.
+            """
+            found = 0
+            for kref_str in traverse_krefs:
+                try:
+                    rev = kumiho.get_revision(kref_str)
+                    edges = rev.get_edges(direction=kumiho.BOTH)
+                    for edge in edges:
+                        if edge.edge_type not in edge_filter:
+                            continue
+                        connected_uri = (
+                            edge.target_kref.uri
+                            if edge.source_kref.uri == kref_str
+                            else edge.source_kref.uri
+                        )
+                        if not connected_uri or connected_uri in seen_krefs:
+                            continue
+                        seen_krefs.add(connected_uri)
+                        try:
+                            connected_rev = kumiho.get_revision(connected_uri)
+                            graph_augmented_results.append({
+                                "kref": connected_uri,
+                                "title": connected_rev.metadata.get("title", ""),
+                                "summary": connected_rev.metadata.get("summary", ""),
+                                "content": connected_rev.metadata.get("content", ""),
+                                "score": 0.0,
+                                "graph_augmented": True,
+                                "edge_type": edge.edge_type,
+                                "from_kref": kref_str,
+                            })
+                            found += 1
+                        except Exception as e:
+                            logger.debug("Failed to fetch connected revision %s: %s", connected_uri, e)
+                except Exception as e:
+                    logger.debug("Failed to get edges for %s: %s", kref_str, e)
+            return found
+
+        # Run in a daemon thread with OS-level timeout via threading.Event
+        _done_event = threading.Event()
+        _traverse_result: list[int] = []  # mutable container for thread result
+
+        def _worker():
             try:
-                rev = kumiho.get_revision(kref_str)
-                edges = rev.get_edges(direction=kumiho.BOTH)
-                for edge in edges:
-                    if edge.edge_type not in edge_filter:
-                        continue
-                    # Pick the other end of the edge
-                    connected_uri = (
-                        edge.target_kref.uri
-                        if edge.source_kref.uri == kref_str
-                        else edge.source_kref.uri
-                    )
-                    if not connected_uri or connected_uri in seen_krefs:
-                        continue
-                    seen_krefs.add(connected_uri)
-                    try:
-                        connected_rev = kumiho.get_revision(connected_uri)
-                        augmented.append({
-                            "kref": connected_uri,
-                            "title": connected_rev.metadata.get("title", ""),
-                            "summary": connected_rev.metadata.get("summary", ""),
-                            "content": connected_rev.metadata.get("content", ""),
-                            "score": 0.0,
-                            "graph_augmented": True,
-                            "edge_type": edge.edge_type,
-                            "from_kref": kref_str,
-                        })
-                        graph_found += 1
-                    except Exception as e:
-                        logger.debug("Failed to fetch connected revision %s: %s", connected_uri, e)
+                _traverse_result.append(_sync_graph_traverse())
             except Exception as e:
-                logger.debug("Failed to get edges for %s: %s", kref_str, e)
+                logger.debug("Graph traversal thread error: %s", e)
+            finally:
+                _done_event.set()
+
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+
+        # Poll the event from the event loop — does NOT consume thread pool
+        # threads (unlike asyncio.to_thread which can starve when many
+        # concurrent entries hold pool threads in edge-creation waits).
+        _deadline = time.monotonic() + _GRAPH_TRAVERSAL_TIMEOUT
+        while not _done_event.is_set():
+            if time.monotonic() >= _deadline:
+                break
+            await asyncio.sleep(0.5)
+        completed = _done_event.is_set()
+
+        if completed and _traverse_result:
+            graph_found = _traverse_result[0]
+            augmented.extend(graph_augmented_results)
+        else:
+            logger.warning(
+                "\033[1;33mGraph traversal timed out after %ds — falling back to semantic recall\033[0m",
+                _GRAPH_TRAVERSAL_TIMEOUT,
+            )
 
         # --- Strategy B: Multi-hop semantic recall (fallback if no edges found) ---
+        # Use top-K scored revisions (not primary items) so the semantic
+        # fallback is also question-specific when items are stacked.
         if graph_found == 0 and max_hops >= 1:
-            logger.info("No graph edges found, falling back to multi-hop semantic recall")
+            logger.debug("No graph edges found, falling back to multi-hop semantic recall")
+            # Gather title/summary from the top-K scored revisions
             secondary_terms = []
-            for mem in memories[:5]:
-                title = mem.get("title", "")
-                summary = mem.get("summary", "")
+            _top_revisions_for_fallback = self._collect_top_revisions(memories, traverse_limit)
+            for rev_info in _top_revisions_for_fallback:
+                title = rev_info.get("title", "")
+                summary = rev_info.get("summary", "")
                 if title:
                     secondary_terms.append(title)
                 elif summary:
@@ -702,8 +959,8 @@ class KumihoMemoryAdapter:
                 len(memories), len(augmented) - len(memories), len(augmented),
             )
 
-        # Cap total to prevent context noise from drowning signal
-        cap = max_total or (base_limit * 3)
+        # Cap total — graph augmentation adds targeted connections, not flood
+        cap = max_total or (base_limit + 5)
         if len(augmented) > cap:
             logger.info("Capping augmented memories from %d to %d", len(augmented), cap)
             augmented = augmented[:cap]
@@ -770,7 +1027,7 @@ class KumihoMemoryAdapter:
         if not queries:
             return []
 
-        logger.info(
+        logger.debug(
             "Edge discovery for %s: generated %d implication queries (space_paths=%s)",
             revision_kref, len(queries), space_paths,
         )
@@ -803,7 +1060,7 @@ class KumihoMemoryAdapter:
                     }
 
         if not candidates:
-            logger.info("Edge discovery: no candidates above threshold %.2f", min_score)
+            logger.debug("Edge discovery: no candidates above threshold %.2f", min_score)
             return []
 
         # Step 3: Create edges to top-N candidates
@@ -811,60 +1068,98 @@ class KumihoMemoryAdapter:
             candidates.values(), key=lambda c: c["score"], reverse=True,
         )[:max_edges]
 
-        # Get the source revision object once (with retry for rate limits)
-        source_rev = None
-        for attempt in range(1, 4):
-            try:
-                source_rev = kumiho.get_revision(revision_kref)
-                break
-            except Exception as e:
-                if "RESOURCE_EXHAUSTED" in str(e) and attempt < 3:
-                    await asyncio.sleep(0.05 * attempt)
-                else:
-                    logger.warning("Failed to get source revision %s: %s", revision_kref, e)
-                    return []
+        # Get the source revision, create edges — all sync gRPC calls.
+        # Same daemon-thread + threading.Event pattern as Strategy A in
+        # recall_with_graph_augmentation.  asyncio.wait / asyncio.wait_for
+        # do NOT reliably timeout asyncio.to_thread on Windows.
+        _EDGE_CREATION_TIMEOUT = 60  # seconds
 
-        created_edges: list[dict[str, Any]] = []
-        for cand in sorted_candidates:
-            target_kref = cand["memory"].get("kref", "")
-            # Retry loop for rate-limited edge creation (server marks
-            # CreateEdge as "expensive" — 10 req/s, burst 20).
+        _edge_results: list[dict[str, Any]] = []
+
+        def _sync_create_edges() -> list[dict[str, Any]]:
+            """Run all sync gRPC edge-creation calls in a plain thread."""
+            source_rev = None
             for attempt in range(1, 4):
                 try:
-                    target_rev = kumiho.get_revision(target_kref)
-                    source_rev.create_edge(
-                        target_rev,
-                        edge_type,
-                        metadata={
-                            "reason": f"LLM implication: {cand['query'][:100]}",
-                            "score": str(round(cand["score"], 3)),
-                        },
-                    )
-                    created_edges.append({
-                        "source": revision_kref,
-                        "target": target_kref,
-                        "edge_type": edge_type,
-                        "query": cand["query"],
-                        "score": cand["score"],
-                    })
-                    logger.info(
-                        "Created edge %s → %s (type=%s, query=%r, score=%.3f)",
-                        revision_kref, target_kref, edge_type,
-                        cand["query"][:60], cand["score"],
-                    )
-                    break  # success
+                    source_rev = kumiho.get_revision(revision_kref)
+                    break
                 except Exception as e:
-                    err_str = str(e)
-                    if "RESOURCE_EXHAUSTED" in err_str and attempt < 3:
-                        wait_ms = 50 * attempt  # 50ms, 100ms
-                        logger.debug(
-                            "Rate limited on edge %s → %s (attempt %d), retrying in %dms",
-                            revision_kref, target_kref, attempt, wait_ms,
-                        )
-                        await asyncio.sleep(wait_ms / 1000)
+                    if "RESOURCE_EXHAUSTED" in str(e) and attempt < 3:
+                        time.sleep(0.05 * attempt)
                     else:
-                        logger.warning("Failed to create edge %s → %s: %s", revision_kref, target_kref, e)
-                        break
+                        logger.warning("Failed to get source revision %s: %s", revision_kref, e)
+                        return []
+
+            edges_out: list[dict[str, Any]] = []
+            for cand in sorted_candidates:
+                target_kref = cand["memory"].get("kref", "")
+                for attempt in range(1, 4):
+                    try:
+                        target_rev = kumiho.get_revision(target_kref)
+                        source_rev.create_edge(
+                            target_rev,
+                            edge_type,
+                            metadata={
+                                "reason": f"LLM implication: {cand['query'][:100]}",
+                                "score": str(round(cand["score"], 3)),
+                            },
+                        )
+                        edges_out.append({
+                            "source": revision_kref,
+                            "target": target_kref,
+                            "edge_type": edge_type,
+                            "query": cand["query"],
+                            "score": cand["score"],
+                        })
+                        logger.debug(
+                            "Created edge %s → %s (type=%s, query=%r, score=%.3f)",
+                            revision_kref, target_kref, edge_type,
+                            cand["query"][:60], cand["score"],
+                        )
+                        break  # success
+                    except Exception as e:
+                        err_str = str(e)
+                        if "RESOURCE_EXHAUSTED" in err_str and attempt < 3:
+                            wait_ms = 50 * attempt
+                            logger.debug(
+                                "Rate limited on edge %s → %s (attempt %d), retrying in %dms",
+                                revision_kref, target_kref, attempt, wait_ms,
+                            )
+                            time.sleep(wait_ms / 1000)
+                        else:
+                            logger.warning("Failed to create edge %s → %s: %s", revision_kref, target_kref, e)
+                            break
+            return edges_out
+
+        _edge_done = threading.Event()
+
+        def _edge_worker():
+            try:
+                _edge_results.extend(_sync_create_edges())
+            except Exception as e:
+                logger.debug("Edge creation thread error: %s", e)
+            finally:
+                _edge_done.set()
+
+        t = threading.Thread(target=_edge_worker, daemon=True)
+        t.start()
+
+        # Poll — same pattern as graph traversal, avoids thread pool starvation
+        _edge_deadline = time.monotonic() + _EDGE_CREATION_TIMEOUT
+        while not _edge_done.is_set():
+            if time.monotonic() >= _edge_deadline:
+                break
+            await asyncio.sleep(0.5)
+        completed = _edge_done.is_set()
+
+        if completed:
+            created_edges = list(_edge_results)
+        else:
+            logger.warning(
+                "\033[1;33mEdge creation timed out after %ds for %s\033[0m",
+                _EDGE_CREATION_TIMEOUT, revision_kref,
+            )
+            created_edges = []
 
         return created_edges
 
@@ -908,6 +1203,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                 max_tokens=200,
                 temperature=0.7,
             )
+            token_tracker.record("implication_queries", resp)
             raw = resp.choices[0].message.content.strip()
             # Strip markdown code fences if present
             if raw.startswith("```"):
@@ -928,36 +1224,212 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         if self._manager:
             await self._manager.close()
 
-    def build_recalled_context(self, memories: list[dict[str, Any]]) -> str:
+    # -----------------------------------------------------------------
+    # Embedding-based sibling relevance scoring
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _embed_texts(
+        texts: list[str],
+        api_key: str | None,
+        model: str = "text-embedding-3-small",
+    ) -> np.ndarray:
+        """Batch-embed texts via OpenAI and return an (N, dim) numpy array."""
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+        resp = client.embeddings.create(input=texts, model=model)
+        return np.array([item.embedding for item in resp.data])
+
+    @staticmethod
+    def _cosine_similarities(query_vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+        """Cosine similarity between a single query vector and a matrix of rows."""
+        norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(query_vec)
+        norms = np.where(norms == 0, 1e-9, norms)
+        return matrix @ query_vec / norms
+
+    def _filter_siblings_by_embedding(
+        self,
+        siblings: list[dict[str, Any]],
+        query: str,
+        threshold: float,
+    ) -> list[dict[str, Any]]:
+        """Keep only siblings whose embedding similarity to *query* exceeds *threshold*."""
+        if not siblings or not query or threshold <= 0:
+            return siblings
+
+        sib_texts = []
+        for sib in siblings:
+            t = sib.get("title", "")
+            s = sib.get("summary", "")
+            sib_texts.append(f"{t}: {s}" if t else s)
+
+        try:
+            all_texts = [query] + sib_texts
+            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
+            query_vec = embeddings[0]
+            sib_matrix = embeddings[1:]
+            scores = self._cosine_similarities(query_vec, sib_matrix)
+
+            kept = []
+            for i, sib in enumerate(siblings):
+                if scores[i] >= threshold:
+                    kept.append(sib)
+            logger.debug(
+                "Sibling embedding filter: %d/%d kept (threshold=%.2f, scores=%s)",
+                len(kept), len(siblings), threshold,
+                [f"{s:.3f}" for s in scores],
+            )
+            return kept
+        except Exception as e:
+            logger.warning("Sibling embedding filter failed, keeping all: %s", e)
+            return siblings
+
+    # -----------------------------------------------------------------
+    # Two-pass re-ranking
+    # -----------------------------------------------------------------
+
+    def rerank_memories(
+        self,
+        memories: list[dict[str, Any]],
+        query: str,
+    ) -> list[dict[str, Any]]:
+        """Two-pass re-ranking: replace server-scored ``_score`` on siblings
+        with focused cosine similarity computed from **title+summary only**.
+
+        Pass 1 (already done): server recall + server sibling scoring used
+        enriched SEMANTIC_KEYS embeddings (title, summary, implications,
+        events) to cast a wide net.
+
+        Pass 2 (this method): re-score every sibling using client-side
+        ``text-embedding-3-small`` on *only* ``title: summary`` text.
+        This strips implications/events from the scoring signal so the
+        most directly relevant revision ranks highest.
+
+        The returned memories have updated ``_score`` values on their
+        ``sibling_revisions``; ``build_recalled_context`` picks the
+        correct top-K downstream.
+        """
+        if not query:
+            return memories
+
+        # Collect all sibling revisions across all memories
+        all_sibs: list[dict[str, Any]] = []
+        for mem in memories:
+            for sib in mem.get("sibling_revisions", []):
+                all_sibs.append(sib)
+
+        if not all_sibs:
+            return memories
+
+        # Build focused text for each sibling (title + summary, no implications)
+        sib_texts = []
+        for sib in all_sibs:
+            t = sib.get("title", "")
+            s = sib.get("summary", "")
+            sib_texts.append(f"{t}: {s}" if t else (s or t or ""))
+
+        try:
+            all_texts = [query] + sib_texts
+            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
+            query_vec = embeddings[0]
+            sib_matrix = embeddings[1:]
+            scores = self._cosine_similarities(query_vec, sib_matrix)
+
+            # Write focused scores back onto siblings
+            for i, sib in enumerate(all_sibs):
+                old_score = sib.get("_score", 0.0)
+                sib["_score"] = float(scores[i])
+                logger.debug(
+                    "Two-pass rerank: %s — %.3f → %.3f",
+                    sib.get("title", "?")[:50],
+                    old_score,
+                    sib["_score"],
+                )
+
+            logger.info(
+                "Two-pass rerank: re-scored %d siblings "
+                "(top: %.3f, bottom: %.3f)",
+                len(all_sibs),
+                float(scores.max()) if len(scores) else 0,
+                float(scores.min()) if len(scores) else 0,
+            )
+        except Exception as e:
+            logger.warning("Two-pass rerank failed, keeping original scores: %s", e)
+
+        return memories
+
+    # -----------------------------------------------------------------
+    # Context builder
+    # -----------------------------------------------------------------
+
+    def build_recalled_context(
+        self,
+        memories: list[dict[str, Any]],
+        query: str = "",
+    ) -> str:
         """
         Build text context from recalled memories based on recall_mode.
 
         - "full": includes artifact content (raw conversation text) — lossless
         - "summarized": only title + summary — lossy, comparable to Mem0/Graphiti
 
-        For stacked items with sibling revisions, the siblings' summaries
-        are appended so the LLM sees the full conversation progression
-        without each revision consuming a separate recall slot.
+        **Revision-centric assembly**: flattens all revisions (primary +
+        siblings) from every recalled memory, ranks them globally by
+        ``_score``, and takes the top ``context_top_k``.  Item-level
+        metadata is skipped — only revision-level content appears.
         """
-        texts = []
-        for mem in memories:
-            title = mem.get("title", "")
-            summary = mem.get("summary", "")
-            content = mem.get("content", "")
+        full_mode = self.config.recall_mode == "full"
 
-            if self.config.recall_mode == "full" and content:
-                texts.append(content[:4000])
+        # --- Collect all revisions across all memories into one flat list ---
+        all_revisions: list[dict[str, Any]] = []
+
+        for mem in memories:
+            siblings = mem.get("sibling_revisions", [])
+
+            if siblings:
+                # Siblings now include ALL revisions (including the
+                # published/primary one) — the LLM reranker decides which
+                # are relevant.  Skip the primary entry to avoid double-
+                # counting; its data is in the sibling list if selected.
+                for sib in siblings:
+                    all_revisions.append({
+                        "title": sib.get("title", ""),
+                        "summary": sib.get("summary", ""),
+                        "content": sib.get("content", ""),
+                        "_score": sib.get("_score", 0.0),
+                    })
+            else:
+                # No siblings (non-stacked item or single revision) —
+                # use the primary memory directly.
+                all_revisions.append({
+                    "title": mem.get("title", ""),
+                    "summary": mem.get("summary", ""),
+                    "content": mem.get("content", ""),
+                    "_score": mem.get("score", 0.0),
+                })
+
+        # --- Global ranking by score (best revisions first) ---
+        has_scores = any(r.get("_score", 0) > 0 for r in all_revisions)
+        if has_scores:
+            all_revisions.sort(key=lambda r: r.get("_score", 0.0), reverse=True)
+
+        # --- Apply global top-K cap ---
+        top_k = self.config.context_top_k
+        if top_k > 0 and len(all_revisions) > top_k:
+            all_revisions = all_revisions[:top_k]
+
+        # --- Build text from surviving revisions ---
+        texts = []
+        for rev in all_revisions:
+            title = rev.get("title", "")
+            summary = rev.get("summary", "")
+            content = rev.get("content", "")
+
+            if full_mode and content:
+                texts.append(content[:8000])
             elif summary:
                 texts.append(f"{title}: {summary}" if title else summary)
-
-            # Unfold sibling revisions (conversation progression)
-            for sib in mem.get("sibling_revisions", []):
-                sib_title = sib.get("title", "")
-                sib_summary = sib.get("summary", "")
-                if sib_summary:
-                    texts.append(
-                        f"{sib_title}: {sib_summary}" if sib_title else sib_summary
-                    )
 
         return "\n\n".join(texts) if texts else ""
 
@@ -1052,3 +1524,79 @@ def print_metrics_table(metrics: dict[str, Any], benchmark_name: str) -> None:
             )
 
     print(f"{'=' * 70}\n")
+
+
+# ---------------------------------------------------------------------------
+# Run manifest (reproducibility)
+# ---------------------------------------------------------------------------
+
+
+def _get_git_sha(repo_path: Path) -> str:
+    """Get the HEAD commit SHA of a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _get_submodule_shas(repo_root: Path) -> dict[str, str]:
+    """Get commit SHAs for dataset submodules."""
+    shas = {}
+    for submod in ["locomo", "LongMemEval", "MemoryAgentBench"]:
+        submod_path = repo_root / submod
+        if submod_path.is_dir():
+            shas[submod] = _get_git_sha(submod_path)
+    return shas
+
+
+def generate_run_manifest(
+    config: BenchmarkConfig,
+    benchmarks: list[str],
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    """Generate a reproducibility manifest for a benchmark run.
+
+    Captures: harness git commit, dataset SHAs, model names, prompt template
+    hashes, config flags, and timestamps.  Written alongside metrics so any
+    reviewer can verify the exact evaluation environment.
+    """
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parent.parent
+
+    # Collect all registered prompt template hashes
+    template_hashes = {}
+    for name, template in sorted(_PROMPT_TEMPLATE_REGISTRY.items()):
+        template_hashes[name] = hashlib.sha256(
+            template.encode("utf-8"),
+        ).hexdigest()[:16]
+
+    return {
+        "harness_git_sha": _get_git_sha(repo_root),
+        "dataset_shas": _get_submodule_shas(repo_root),
+        "benchmarks": benchmarks,
+        "config": {
+            "answer_model": config.answer_model,
+            "judge_model": config.judge_model,
+            "llm_model": config.llm_model,
+            "llm_provider": config.llm_provider,
+            "recall_limit": config.recall_limit,
+            "recall_mode": config.recall_mode,
+            "graph_augmented": config.graph_augmented,
+            "sibling_similarity_threshold": config.sibling_similarity_threshold,
+            "consolidation_threshold": config.consolidation_threshold,
+            "max_samples": config.max_samples,
+            "start_at": config.start_at,
+            "concurrency": config.concurrency,
+            "entry_concurrency": config.entry_concurrency,
+        },
+        "prompt_template_hashes": template_hashes,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": None,
+    }

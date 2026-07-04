@@ -1,0 +1,80 @@
+{
+  "total_questions": 401,
+  "overall_f1": 0.9326683291770573,
+  "overall_judge_accuracy": 0.9326683291770573,
+  "overall_exact_match": 0.0,
+  "avg_latency_recall_ms": 4498.585066336127,
+  "avg_latency_answer_ms": 5379.8717349119415,
+  "by_type": {
+    "cognitive/causal": {
+      "count": 101,
+      "f1": 0.9603960396039604,
+      "judge_accuracy": 0.9603960396039604,
+      "exact_match": 0.0
+    },
+    "cognitive/goal": {
+      "count": 100,
+      "f1": 0.85,
+      "judge_accuracy": 0.85,
+      "exact_match": 0.0
+    },
+    "cognitive/state": {
+      "count": 100,
+      "f1": 0.96,
+      "judge_accuracy": 0.96,
+      "exact_match": 0.0
+    },
+    "cognitive/value": {
+      "count": 100,
+      "f1": 0.96,
+      "judge_accuracy": 0.96,
+      "exact_match": 0.0
+    }
+  },
+  "locomo_plus": {
+    "total_entries": 401,
+    "recall_accuracy": 0.0,
+    "recall_hits": 0,
+    "recall_evaluated": 0,
+    "overall_judge_accuracy": 0.9326683291770573,
+    "by_relation_type": {
+      "causal": {
+        "count": 101,
+        "judge_accuracy": 0.9603960396039604,
+        "recall_accuracy": 0.0
+      },
+      "state": {
+        "count": 100,
+        "judge_accuracy": 0.96,
+        "recall_accuracy": 0.0
+      }
+    },
+    "by_time_gap": {
+      "<=2wk": {
+        "count": 35,
+        "judge_accuracy": 0.8857142857142857,
+        "recall_accuracy": 0.0
+      },
+      "2wk-1mo": {
+        "count": 77,
+        "judge_accuracy": 0.974025974025974,
+        "recall_accuracy": 0.0
+      },
+      "3-6mo": {
+        "count": 93,
+        "judge_accuracy": 0.9354838709677419,
+        "recall_accuracy": 0.0
+      },
+      "1-3mo": {
+        "count": 164,
+        "judge_accuracy": 0.9390243902439024,
+        "recall_accuracy": 0.0
+      },
+      ">6mo": {
+        "count": 32,
+        "judge_accuracy": 0.84375,
+        "recall_accuracy": 0.0
+      }
+    }
+  }
+}
