@@ -347,12 +347,55 @@ async def evaluate_locomo(
 
                         # Generate answer
                         t1 = time.perf_counter()
+                        user_instruction = "Answer concisely with exact information from the context."
                         if category == 5:
                             # Adversarial: instruct model to refuse if info not available
                             system = (
                                 "You are answering questions about a conversation. "
                                 "If the information is not available in the context, "
                                 'say "No information available".'
+                            )
+                        elif category == 3:
+                            # Open-domain questions are DEFINED (Maharana et al. 2024) to require
+                            # commonsense / world knowledge combined with the conversation, so the
+                            # answer is often an inference NOT stated verbatim in the memory. The
+                            # generic "exact facts from the context" prompt (correct for single/
+                            # multi-hop/temporal) under-scores this category by forbidding the model
+                            # from using its own knowledge — which is exactly what the host LLM does
+                            # in real product use. Allow context + world-knowledge synthesis here.
+                            system = (
+                                "You are answering an open-domain question about a conversation "
+                                "between two people. Use the conversation context together with your "
+                                "own general and commonsense knowledge; the answer may require "
+                                "inference that goes beyond what is literally stated. Answer concisely."
+                            )
+                            user_instruction = (
+                                "Answer concisely, combining the context with your own general "
+                                "knowledge where the question requires it."
+                            )
+                        elif category == 2:
+                            # Temporal answers are dates or durations ("7 May 2023",
+                            # "June 2023", "4 years", "10 years ago"). Each line of context
+                            # is tagged with the date it was discussed, in brackets like
+                            # "[8 May, 2023]". The event date often differs from that tag
+                            # (e.g. "I went yesterday" on [8 May] -> 7 May), so the model
+                            # must read the turn text for the event and use the bracketed
+                            # date only to resolve relative references ("yesterday", "last
+                            # week") into an absolute date. The generic prompt does not
+                            # explain this encoding; making it explicit — plus asking for
+                            # the bare date/duration LoCoMo scores against — sharpens the
+                            # answer without over-anchoring on the raw session tag.
+                            system = (
+                                "You are answering a temporal question about a conversation "
+                                "between two people. Each line of context is tagged with the "
+                                'date it was discussed, in brackets like "[8 May, 2023]". Read '
+                                "the turn text to find when the event actually happened, using "
+                                "the bracketed date to turn relative references (\"yesterday\", "
+                                '"last week", "years ago") into an absolute date. Then answer '
+                                "with only the resulting date or duration — no explanation."
+                            )
+                            user_instruction = (
+                                "Answer with only the date or duration, as briefly as possible."
                             )
                         else:
                             system = (
@@ -368,6 +411,7 @@ async def evaluate_locomo(
                             question,
                             answer_context,
                             system_prompt=system,
+                            user_instruction=user_instruction,
                             model=config.answer_model,
                             api_key=config.openai_api_key,
                             max_tokens=150,
