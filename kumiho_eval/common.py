@@ -1397,6 +1397,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                         "title": sib.get("title", ""),
                         "summary": sib.get("summary", ""),
                         "content": sib.get("content", ""),
+                        "event_date": sib.get("event_date", ""),
                         "_score": sib.get("_score", 0.0),
                     })
             else:
@@ -1406,6 +1407,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                     "title": mem.get("title", ""),
                     "summary": mem.get("summary", ""),
                     "content": mem.get("content", ""),
+                    "event_date": mem.get("event_date", ""),
                     "_score": mem.get("score", 0.0),
                 })
 
@@ -1425,11 +1427,18 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             title = rev.get("title", "")
             summary = rev.get("summary", "")
             content = rev.get("content", "")
+            # Surface the semantic event_date (valid-time) as a temporal anchor.
+            # In summarized mode the raw content — where LoCoMo dates live inline —
+            # is not loaded, so this prefix is the only date a temporal question
+            # sees. Full mode already carries dates inline in the content.
+            ev_date = rev.get("event_date", "")
+            date_prefix = f"[{ev_date}] " if ev_date else ""
 
             if full_mode and content:
                 texts.append(content[:8000])
             elif summary:
-                texts.append(f"{title}: {summary}" if title else summary)
+                body = f"{title}: {summary}" if title else summary
+                texts.append(f"{date_prefix}{body}")
 
         return "\n\n".join(texts) if texts else ""
 
