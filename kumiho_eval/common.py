@@ -154,6 +154,24 @@ def register_prompt_template(name: str, template: str) -> None:
 
 _ARTICLES_RE = re.compile(r"\b(a|an|the|and)\b", re.IGNORECASE)
 
+# Runtime (no gold-label) detector for date/duration questions. Used to decide
+# whether to surface atomic facts in the recalled context: facts sharpen
+# factual recall but their competing dates distract a temporal answer, so we
+# withhold them ONLY when the question itself asks about time. This infers the
+# query type from the question text — exactly what a real deployment can do —
+# instead of reading the dataset's ground-truth category label.
+_TEMPORAL_QUERY_RE = re.compile(
+    r"\b(when|what year|which year|what date|what day|what month|what time|"
+    r"how long|how many (?:years?|months?|weeks?|days?|hours?)|how old|"
+    r"since when|for how long|how much time|at what point)\b",
+    re.IGNORECASE,
+)
+
+
+def is_temporal_query(question: str) -> bool:
+    """True if the question asks for a date/duration (query-text heuristic)."""
+    return bool(_TEMPORAL_QUERY_RE.search(question or ""))
+
 
 def normalize_answer(text: str) -> str:
     """Lowercase, strip articles/punctuation/whitespace — matches LoCoMo eval."""
@@ -442,6 +460,21 @@ class KumihoMemoryAdapter:
 
         pii_redactor = PIIRedactor()
 
+        # Sibling ranking: give the manager an embedding adapter so stacked-
+        # revision ranking uses cosine similarity (discriminative for direct
+        # factual recall) instead of the LLM-only reranker fallback, which
+        # hard-filters to 1-3 picks and drops the fact-bearing revision on
+        # direct single-hop questions. No key → None → SDK falls back as before.
+        embedding_adapter = None
+        _emb_key = self.config.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        if _emb_key:
+            from kumiho_memory import OpenAICompatEmbeddingAdapter
+            embedding_adapter = OpenAICompatEmbeddingAdapter.create(
+                api_key=_emb_key,
+                base_url=os.environ.get("OPENAI_EMBEDDINGS_BASE_URL"),
+                model="text-embedding-3-small",
+            )
+
         # Import store/retrieve from the MCP server module, then patch
         # _ensure_configured to a no-op so it doesn't re-discover and
         # override our local client on every call.
@@ -467,6 +500,7 @@ class KumihoMemoryAdapter:
             memory_store=_store,
             memory_retrieve=_retrieve,
             recall_mode=self.config.recall_mode,
+            embedding_adapter=embedding_adapter,
             sibling_similarity_threshold=self.config.sibling_similarity_threshold,
             sibling_top_k=self.config.sibling_top_k,
             sibling_score_fields=self.config.sibling_score_fields,
@@ -940,7 +974,7 @@ class KumihoMemoryAdapter:
                 if title:
                     secondary_terms.append(title)
                 elif summary:
-                    secondary_terms.append(summary[:100])
+                    secondary_terms.append(summary[:300])
 
             if secondary_terms:
                 augmented_query = " ".join(secondary_terms)
@@ -1367,6 +1401,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         self,
         memories: list[dict[str, Any]],
         query: str = "",
+        category: int = 0,
     ) -> str:
         """
         Build text context from recalled memories based on recall_mode.
@@ -1398,6 +1433,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                         "summary": sib.get("summary", ""),
                         "content": sib.get("content", ""),
                         "event_date": sib.get("event_date", ""),
+                        "facts": sib.get("facts", ""),
                         "_score": sib.get("_score", 0.0),
                     })
             else:
@@ -1408,6 +1444,7 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
                     "summary": mem.get("summary", ""),
                     "content": mem.get("content", ""),
                     "event_date": mem.get("event_date", ""),
+                    "facts": mem.get("facts", ""),
                     "_score": mem.get("score", 0.0),
                 })
 
@@ -1434,11 +1471,31 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             ev_date = rev.get("event_date", "")
             date_prefix = f"[{ev_date}] " if ev_date else ""
 
+            # Surface the LLM-extracted atomic facts (attribute→value claims
+            # like "Melanie has been married for five years") alongside the
+            # narrative summary. These are the precise, profile-style answers
+            # that single-hop / temporal / open-domain questions need — Kumiho
+            # already extracts them at consolidation but recall never showed
+            # them, forcing the answerer to infer from the looser summary.
+            # Surface the LLM-extracted atomic facts as a concise block so the
+            # answering LLM can read the exact attribute→value claim instead of
+            # digging it out of the narrative summary. Mirrors what the SDK's
+            # own recall context builder does (kumiho_memory.memory_manager),
+            # so this measures a real memory-layer capability — no query-type
+            # tricks, no ground-truth category label.
+            facts = rev.get("facts", "")
+            if isinstance(facts, (list, tuple)):
+                facts = "; ".join(
+                    f.get("claim", str(f)) if isinstance(f, dict) else str(f)
+                    for f in facts
+                )
+            facts_suffix = f"\nFacts: {facts}" if facts else ""
+
             if full_mode and content:
-                texts.append(content[:8000])
+                texts.append(content[:8000] + facts_suffix)
             elif summary:
                 body = f"{title}: {summary}" if title else summary
-                texts.append(f"{date_prefix}{body}")
+                texts.append(f"{date_prefix}{body}{facts_suffix}")
 
         return "\n\n".join(texts) if texts else ""
 

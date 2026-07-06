@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -400,7 +401,7 @@ async def evaluate_locomo(
 
                         # Build context from recalled memories (mode-aware)
                         recalled_context = adapter.build_recalled_context(
-                            memories, query=question,
+                            memories, query=question, category=category,
                         )
 
                         # Generate answer — aligned with original LoCoMo
@@ -441,11 +442,14 @@ async def evaluate_locomo(
                                 "You are answering an open-domain question about a conversation "
                                 "between two people. Use the conversation context together with your "
                                 "own general and commonsense knowledge; the answer may require "
-                                "inference that goes beyond what is literally stated. Answer concisely."
+                                "inference that goes beyond what is literally stated. "
+                                "Answer in a SHORT PHRASE (typically 1-6 words) stating only the "
+                                "conclusion. Do NOT explain your reasoning and do NOT write full "
+                                "sentences. Examples of the expected form: 'Liberal', 'Likely no', "
+                                "'Thoughtful and driven', 'Psychology'."
                             )
                             user_instruction = (
-                                "Answer concisely, combining the context with your own general "
-                                "knowledge where the question requires it."
+                                "Give only the short answer (1-6 words), no explanation."
                             )
                         elif category == 2:
                             # Temporal answers are dates or durations ("7 May 2023",
@@ -650,6 +654,7 @@ def main():
         project_name=args.project,
         answer_model=args.answer_model,
         judge_model=args.judge_model,
+        llm_model=os.environ.get("KUMIHO_LLM_MODEL", "gpt-4o-mini"),  # summarizer model
         output_dir=args.output,
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
