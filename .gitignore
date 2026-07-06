@@ -10,3 +10,7 @@ kumiho_eval/.env
 kumiho_eval/.env.local
 _write_script.py
 compare_runs.py
+
+# session run outputs + local venv
+results-*/
+.venv-codex/
