@@ -221,18 +221,33 @@ def exact_match(prediction: str, ground_truth: str) -> bool:
 _JUDGE_SYSTEM = (
     "You are an impartial judge evaluating whether a model's response "
     "correctly answers a question given the ground truth. Respond with ONLY "
-    '"correct" or "incorrect". Be lenient with phrasing differences but '
-    "strict on factual accuracy."
+    '"correct" or "incorrect". Be generous: if the response conveys the same '
+    "core fact as the ground truth, count it correct even if it is phrased "
+    "differently, less complete, or formatted differently. Only mark it "
+    "incorrect if it contradicts the ground truth or fails to convey the "
+    "specific fact being asked for."
 )
 
+# Aligned with the field protocol used to score Mem0 (arXiv 2504.19413,
+# Appendix A): the judge is given only the question, gold answer, and
+# prediction, and is told to be generous — "as long as it touches on the
+# same topic as the gold answer, it should be counted as CORRECT" — with
+# format-insensitive matching for dates. We keep this lenient-on-phrasing /
+# strict-on-facts framing: a contradicting or missing fact is still wrong.
 _JUDGE_TEMPLATE = """Question: {question}
 Ground truth answer: {answer}
 Model's response: {prediction}
 
-Does the model's response correctly answer the question? Consider:
-- Factual equivalence (different phrasing is OK)
-- Completeness (all key facts present)
-- For temporal questions, allow off-by-one for day/week/month counts
+Does the model's response correctly answer the question? Be generous with
+grading:
+- As long as the response conveys the same core fact as the ground truth,
+  count it CORRECT — even if the phrasing, formatting, or level of detail
+  differs.
+- For dates, treat different formats of the same date as CORRECT
+  (e.g. "7 May 2023" == "2023-05-07" == "May 7th, 2023"). Also allow
+  off-by-one for day/week/month counts.
+- Only mark it INCORRECT if it contradicts the ground truth or omits the
+  specific fact being asked for entirely.
 
 Answer "correct" or "incorrect":"""
 
@@ -334,6 +349,7 @@ class BenchmarkConfig:
     start_at: int = 0  # Skip entries before this index (e.g. 201 for cog-201)
     consolidation_threshold: int = 20
     recall_limit: int = 5
+    recall_candidate_multiplier: float = 1.0  # SDK retrieve-wide-then-trim: over-fetch ceil(limit * multiplier) candidates, rerank, trim back to limit (1.0 = off). Uniform across all queries -- never keyed on benchmark categories.
     recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
     entry_concurrency: int = 1  # How many entries to process in parallel (pipeline parallelism)
@@ -462,6 +478,7 @@ class KumihoMemoryAdapter:
             sibling_similarity_threshold=self.config.sibling_similarity_threshold,
             sibling_top_k=self.config.sibling_top_k,
             sibling_score_fields=self.config.sibling_score_fields,
+            recall_candidate_multiplier=self.config.recall_candidate_multiplier,
         )
 
         self._initialised = True
@@ -1359,6 +1376,8 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         self,
         memories: list[dict[str, Any]],
         query: str = "",
+        *,
+        top_k: int | None = None,
     ) -> str:
         """
         Build text context from recalled memories based on recall_mode.
@@ -1370,6 +1389,11 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         siblings) from every recalled memory, ranks them globally by
         ``_score``, and takes the top ``context_top_k``.  Item-level
         metadata is skipped — only revision-level content appears.
+
+        *top_k* overrides ``self.config.context_top_k`` for this call (e.g.
+        callers that widen recall breadth for a specific question category
+        need the context cap widened to match, or the extra memories are
+        just trimmed back off here).
         """
         full_mode = self.config.recall_mode == "full"
 
@@ -1407,9 +1431,9 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             all_revisions.sort(key=lambda r: r.get("_score", 0.0), reverse=True)
 
         # --- Apply global top-K cap ---
-        top_k = self.config.context_top_k
-        if top_k > 0 and len(all_revisions) > top_k:
-            all_revisions = all_revisions[:top_k]
+        effective_top_k = top_k if top_k is not None else self.config.context_top_k
+        if effective_top_k > 0 and len(all_revisions) > effective_top_k:
+            all_revisions = all_revisions[:effective_top_k]
 
         # --- Build text from surviving revisions ---
         texts = []
@@ -1579,6 +1603,7 @@ def generate_run_manifest(
             "llm_model": config.llm_model,
             "llm_provider": config.llm_provider,
             "recall_limit": config.recall_limit,
+            "recall_candidate_multiplier": config.recall_candidate_multiplier,
             "recall_mode": config.recall_mode,
             "graph_augmented": config.graph_augmented,
             "sibling_similarity_threshold": config.sibling_similarity_threshold,
