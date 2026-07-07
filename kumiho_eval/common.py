@@ -112,6 +112,30 @@ class TokenTracker:
 
         return tokens
 
+    def record_usage(self, phase: str, tokens: dict[str, Any]) -> dict[str, int]:
+        """Record pre-extracted token counts (dict form).
+
+        Bridge for the SDK's ``GraphAugmentationConfig.on_llm_usage`` hook,
+        which reports ``{model, prompt_tokens, completion_tokens,
+        total_tokens}`` dicts for LLM calls made inside kumiho-memory
+        (e.g. ``recall_reformulation``, ``implication_queries``).
+        """
+        counts = {
+            "prompt_tokens": int(tokens.get("prompt_tokens") or 0),
+            "completion_tokens": int(tokens.get("completion_tokens") or 0),
+            "total_tokens": int(tokens.get("total_tokens") or 0),
+        }
+        with self._lock:
+            if phase not in self._phases:
+                self._phases[phase] = {
+                    "prompt_tokens": 0, "completion_tokens": 0,
+                    "total_tokens": 0, "calls": 0,
+                }
+            for key, value in counts.items():
+                self._phases[phase][key] += value
+            self._phases[phase]["calls"] += 1
+        return counts
+
     def summary(self) -> dict[str, Any]:
         """Return per-phase and total token usage."""
         with self._lock:
@@ -398,6 +422,8 @@ class KumihoMemoryAdapter:
         self._manager: Any = None
         self._kumiho_client: Any = None
         self._initialised = False
+        self._embed_adapter: Any = None
+        self._embed_adapter_failed = False
 
     async def initialise(self) -> None:
         """Lazily initialise the Kumiho client and memory manager."""
@@ -411,6 +437,7 @@ class KumihoMemoryAdapter:
             MemorySummarizer,
             PIIRedactor,
         )
+        from kumiho_memory.graph_augmentation import GraphAugmentationConfig
 
         # Connect SDK — pass whatever auth we have; connect() handles discovery
         endpoint = (
@@ -466,6 +493,15 @@ class KumihoMemoryAdapter:
             """Retrieve memory via SDK — wraps kumiho.mcp_server.tool_memory_retrieve."""
             return _mcp_retrieve(**kwargs)
 
+        # Graph-augmented recall is SDK business logic (multi-query
+        # reformulation via the summarizer's provider-agnostic adapter, edge
+        # traversal, sibling-seeded seeding, semantic fallback).  The harness
+        # only supplies configuration + token accounting.
+        graph_cfg = GraphAugmentationConfig(
+            sibling_seeded_traversal=True,  # seed traversal from scored revisions
+            on_llm_usage=lambda phase, info: token_tracker.record_usage(phase, info),
+        )
+
         self._manager = UniversalMemoryManager(
             project=self.config.project_name,
             consolidation_threshold=self.config.consolidation_threshold,
@@ -479,6 +515,12 @@ class KumihoMemoryAdapter:
             sibling_top_k=self.config.sibling_top_k,
             sibling_score_fields=self.config.sibling_score_fields,
             recall_candidate_multiplier=self.config.recall_candidate_multiplier,
+            graph_augmentation=graph_cfg,
+            # NOTE: embedding_adapter is deliberately NOT passed to the
+            # manager — with sibling_similarity_threshold > 0 it would switch
+            # sibling selection to pure-embedding mode, bypassing the LLM
+            # sibling reranker (+ its deterministic fallback).  The two-pass
+            # rerank gets its adapter directly (see rerank_memories below).
         )
 
         self._initialised = True
@@ -639,342 +681,33 @@ class KumihoMemoryAdapter:
             memory_types=memory_types,
         )
 
-    async def _reformulate_query(self, query: str) -> list[str]:
-        """
-        Generate alternative search queries that capture different semantic
-        angles of a trigger message.  Bridges the cue-trigger semantic
-        disconnect by reformulating around underlying emotion, causal event,
-        and related concepts.
-
-        Returns 2-3 reformulated queries (does NOT include the original).
-        """
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(
-            api_key=self.config.openai_api_key
-            or os.environ.get("OPENAI_API_KEY"),
-        )
-        system = (
-            "You generate alternative memory search queries. "
-            "Given a conversational message, produce 2-3 short search queries "
-            "that capture different semantic angles of what this person might "
-            "be referring to from their past. Focus on:\n"
-            "- The underlying emotion or concern\n"
-            "- A possible causal event that led to this behavior\n"
-            "- Related situations or consequences\n"
-            "Return ONLY the queries, one per line, no numbering or bullets."
-        )
-        try:
-            resp = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": query},
-                ],
-                max_tokens=100,
-                temperature=0.3,
-            )
-            token_tracker.record("recall_reformulation", resp)
-            raw = resp.choices[0].message.content.strip()
-            queries = [
-                line.strip().lstrip("0123456789.-) ")
-                for line in raw.splitlines()
-                if line.strip()
-            ]
-            logger.info(
-                "Multi-query reformulation: %d queries from trigger",
-                len(queries),
-            )
-            return queries[:3]
-        except Exception as e:
-            logger.warning("Query reformulation failed: %s", e)
-            return []
-
-    @staticmethod
-    def _collect_top_revisions(
-        memories: list[dict[str, Any]],
-        limit: int,
-    ) -> list[dict[str, Any]]:
-        """Flatten sibling revisions, return top-*limit* by score.
-
-        When siblings exist, the primary memory is skipped (it's the
-        item-level shell whose recall score is on a different scale).
-        Each returned dict has at least ``title``, ``summary``, ``kref``,
-        and ``_score`` keys.
-        """
-        candidates: list[dict[str, Any]] = []
-        for mem in memories:
-            siblings = mem.get("sibling_revisions", [])
-            if siblings:
-                for sib in siblings:
-                    candidates.append({
-                        "kref": sib.get("kref", ""),
-                        "title": sib.get("title", ""),
-                        "summary": sib.get("summary", ""),
-                        "_score": sib.get("_score", 0.0),
-                    })
-            else:
-                candidates.append({
-                    "kref": mem.get("kref", ""),
-                    "title": mem.get("title", ""),
-                    "summary": mem.get("summary", ""),
-                    "_score": mem.get("score", 0.0),
-                })
-        candidates.sort(key=lambda x: x.get("_score", 0.0), reverse=True)
-        return candidates[:limit]
-
     async def recall_with_graph_augmentation(
         self,
         query: str,
         *,
         limit: int | None = None,
-        max_total: int | None = None,
-        max_hops: int = 1,
-        edge_types: list[str] | None = None,
         space_paths: list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Recall with graph augmentation:
-          multi-query reformulation → parallel recall → edge traversal → merge.
+        """Graph-augmented recall — delegates to kumiho-memory.
 
-        After standard vector recall, follows edges from each recalled memory
-        to discover connected memories that vector similarity alone would miss.
-        This is critical for implicit-constraint tasks (e.g. LoCoMo-Plus) where
-        the trigger query has intentionally low semantic overlap with the cue.
-
-        Falls back to multi-hop semantic recall if the graph API is unavailable.
+        The full cognitive pipeline lives in the SDK (multi-query
+        reformulation via the manager's provider-agnostic LLM adapter,
+        parallel recall with kref-dedup merge, edge traversal seeded from
+        top-scored sibling revisions, multi-hop semantic fallback, evidence
+        weighting, the post-recall rerank stack, and sibling enrichment).
+        The harness holds no retrieval logic of its own — it supplies
+        configuration and reads results.  LLM token usage inside the SDK is
+        reported back through ``GraphAugmentationConfig.on_llm_usage`` (see
+        ``initialise()``).
         """
         await self.initialise()
-        import kumiho
-
-        base_limit = limit or self.config.recall_limit
-
-        # --- Multi-query recall: reformulate trigger into multiple angles ---
-        alt_queries = await self._reformulate_query(query)
-        all_queries = [query] + alt_queries
-
-        # Run all queries in parallel
-        recall_tasks = [
-            self.recall(q, limit=base_limit, space_paths=space_paths)
-            for q in all_queries
-        ]
-        recall_results = await asyncio.gather(*recall_tasks, return_exceptions=True)
-
-        # Merge and deduplicate by kref, keeping highest score
-        best_by_kref: dict[str, dict[str, Any]] = {}
-        for result in recall_results:
-            if isinstance(result, Exception):
-                logger.debug("Recall query failed: %s", result)
-                continue
-            for mem in result:
-                kref = mem.get("kref", "")
-                if not kref:
-                    continue
-                existing = best_by_kref.get(kref)
-                if existing is None or mem.get("score", 0) > existing.get("score", 0):
-                    best_by_kref[kref] = mem
-
-        # Sort by score descending, take top base_limit * 2
-        memories = sorted(
-            best_by_kref.values(),
-            key=lambda m: m.get("score", 0),
-            reverse=True,
-        )[: base_limit * 2]
-
-        if len(all_queries) > 1:
-            logger.info(
-                "Multi-query recall: %d queries → %d unique memories (from %d total)",
-                len(all_queries),
-                len(memories),
-                sum(
-                    len(r) for r in recall_results
-                    if not isinstance(r, Exception)
-                ),
-            )
-
-        if not memories:
-            return memories
-
-        seen_krefs: set[str] = set()
-        for m in memories:
-            kref = m.get("kref", "")
-            if kref:
-                seen_krefs.add(kref)
-            # Also mark sibling krefs as seen so edge traversal
-            # doesn't re-discover revisions we already have.
-            for sib in m.get("sibling_revisions", []):
-                sib_kref = sib.get("kref", "")
-                if sib_kref:
-                    seen_krefs.add(sib_kref)
-
-        augmented = list(memories)
-        edge_filter = set(edge_types or [
-            "DERIVED_FROM", "DEPENDS_ON", "REFERENCED",
-            "CONTAINS", "CREATED_FROM", "SUPERSEDES",
-        ])
-
-        # --- Collect top-K scored revisions for edge traversal ---
-        # Instead of traversing from primary recalled items (which with
-        # stacking are always the same 1-2 items), flatten sibling
-        # revisions, rank by _score, and traverse from the top-K.
-        # Primary memory is skipped when siblings exist (score scale
-        # mismatch: recall ~3.0 vs sibling cosine 0-1).
-        revision_candidates: list[tuple[str, float]] = []
-        for mem in memories:
-            siblings = mem.get("sibling_revisions", [])
-            if siblings:
-                for sib in siblings:
-                    sib_kref = sib.get("kref", "")
-                    if sib_kref:
-                        revision_candidates.append((sib_kref, sib.get("_score", 0.0)))
-            else:
-                kref = mem.get("kref", "")
-                if kref:
-                    revision_candidates.append((kref, mem.get("score", 0.0)))
-
-        # Sort by score descending, pick top-K for traversal
-        revision_candidates.sort(key=lambda x: x[1], reverse=True)
-        traverse_limit = self.config.context_top_k or 5
-        traverse_krefs = [
-            kref for kref, _ in revision_candidates[:traverse_limit]
-        ]
-
-        if traverse_krefs:
-            logger.info(
-                "Graph augmentation: traversing edges from %d top-scored revisions (top score=%.3f)",
-                len(traverse_krefs),
-                revision_candidates[0][1] if revision_candidates else 0,
-            )
-
-        # --- Strategy A: Edge traversal via kumiho SDK ---
-        # kumiho.get_revision / rev.get_edges are *synchronous* gRPC calls
-        # that can hang indefinitely on Windows.  Neither asyncio.wait_for
-        # nor asyncio.wait reliably timeout these calls because the Windows
-        # ProactorEventLoop doesn't process timer callbacks while to_thread
-        # futures are pending.  We use a bare daemon thread + threading.Event
-        # with an OS-level timeout (WaitForSingleObject) which is guaranteed
-        # to return regardless of asyncio state.
-        _GRAPH_TRAVERSAL_TIMEOUT = 30  # seconds
-
-        graph_found = 0
-        graph_augmented_results: list[dict] = []
-
-        def _sync_graph_traverse() -> int:
-            """Run all sync gRPC calls in a plain thread.
-
-            Traverses edges from the top-K scored revisions (not the
-            primary recalled items) so that graph augmentation discovers
-            connections relevant to the specific question.
-            """
-            found = 0
-            for kref_str in traverse_krefs:
-                try:
-                    rev = kumiho.get_revision(kref_str)
-                    edges = rev.get_edges(direction=kumiho.BOTH)
-                    for edge in edges:
-                        if edge.edge_type not in edge_filter:
-                            continue
-                        connected_uri = (
-                            edge.target_kref.uri
-                            if edge.source_kref.uri == kref_str
-                            else edge.source_kref.uri
-                        )
-                        if not connected_uri or connected_uri in seen_krefs:
-                            continue
-                        seen_krefs.add(connected_uri)
-                        try:
-                            connected_rev = kumiho.get_revision(connected_uri)
-                            graph_augmented_results.append({
-                                "kref": connected_uri,
-                                "title": connected_rev.metadata.get("title", ""),
-                                "summary": connected_rev.metadata.get("summary", ""),
-                                "content": connected_rev.metadata.get("content", ""),
-                                "score": 0.0,
-                                "graph_augmented": True,
-                                "edge_type": edge.edge_type,
-                                "from_kref": kref_str,
-                            })
-                            found += 1
-                        except Exception as e:
-                            logger.debug("Failed to fetch connected revision %s: %s", connected_uri, e)
-                except Exception as e:
-                    logger.debug("Failed to get edges for %s: %s", kref_str, e)
-            return found
-
-        # Run in a daemon thread with OS-level timeout via threading.Event
-        _done_event = threading.Event()
-        _traverse_result: list[int] = []  # mutable container for thread result
-
-        def _worker():
-            try:
-                _traverse_result.append(_sync_graph_traverse())
-            except Exception as e:
-                logger.debug("Graph traversal thread error: %s", e)
-            finally:
-                _done_event.set()
-
-        t = threading.Thread(target=_worker, daemon=True)
-        t.start()
-
-        # Poll the event from the event loop — does NOT consume thread pool
-        # threads (unlike asyncio.to_thread which can starve when many
-        # concurrent entries hold pool threads in edge-creation waits).
-        _deadline = time.monotonic() + _GRAPH_TRAVERSAL_TIMEOUT
-        while not _done_event.is_set():
-            if time.monotonic() >= _deadline:
-                break
-            await asyncio.sleep(0.5)
-        completed = _done_event.is_set()
-
-        if completed and _traverse_result:
-            graph_found = _traverse_result[0]
-            augmented.extend(graph_augmented_results)
-        else:
-            logger.warning(
-                "\033[1;33mGraph traversal timed out after %ds — falling back to semantic recall\033[0m",
-                _GRAPH_TRAVERSAL_TIMEOUT,
-            )
-
-        # --- Strategy B: Multi-hop semantic recall (fallback if no edges found) ---
-        # Use top-K scored revisions (not primary items) so the semantic
-        # fallback is also question-specific when items are stacked.
-        if graph_found == 0 and max_hops >= 1:
-            logger.debug("No graph edges found, falling back to multi-hop semantic recall")
-            # Gather title/summary from the top-K scored revisions
-            secondary_terms = []
-            _top_revisions_for_fallback = self._collect_top_revisions(memories, traverse_limit)
-            for rev_info in _top_revisions_for_fallback:
-                title = rev_info.get("title", "")
-                summary = rev_info.get("summary", "")
-                if title:
-                    secondary_terms.append(title)
-                elif summary:
-                    secondary_terms.append(summary[:100])
-
-            if secondary_terms:
-                augmented_query = " ".join(secondary_terms)
-                hop_memories = await self.recall(augmented_query, limit=base_limit)
-                for mem in hop_memories:
-                    kref = mem.get("kref", "")
-                    if kref and kref not in seen_krefs:
-                        seen_krefs.add(kref)
-                        mem["graph_augmented"] = True
-                        mem["hop"] = 1
-                        augmented.append(mem)
-
-        if len(augmented) > len(memories):
-            logger.info(
-                "Graph augmentation: %d base + %d augmented = %d total memories",
-                len(memories), len(augmented) - len(memories), len(augmented),
-            )
-
-        # Cap total — graph augmentation adds targeted connections, not flood
-        cap = max_total or (base_limit + 5)
-        if len(augmented) > cap:
-            logger.info("Capping augmented memories from %d to %d", len(augmented), cap)
-            augmented = augmented[:cap]
-
-        return augmented
+        return await self._retry_network(
+            self._manager.recall_memories,
+            query,
+            limit=limit or self.config.recall_limit,
+            space_paths=space_paths,
+            graph_augmented=True,
+        )
 
     # ------------------------------------------------------------------
     # Post-consolidation edge discovery (Option 3: LLM-driven linking)
@@ -984,249 +717,19 @@ class KumihoMemoryAdapter:
         self,
         revision_kref: str,
         summary: str,
-        *,
-        max_queries: int = 5,
-        max_edges: int = 3,
-        min_score: float = 0.3,
-        edge_type: str = "REFERENCED",
-        space_paths: list[str] | None = None,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        """
-        After consolidation, use an LLM to discover and create edges
-        between the new revision and existing related memories.
+        """Post-consolidation edge discovery — delegates to kumiho-memory.
 
-        This bridges the cue–trigger semantic disconnect: the LLM generates
-        "implication queries" — future scenarios where this memory would be
-        relevant — and links to existing memories that match.
-
-        When *space_paths* is not provided, the space is automatically
-        derived from *revision_kref* so edge discovery only searches
-        within the same user/space scope as the source memory.
-
-        Returns list of created edges with metadata.
+        Implication-query generation, candidate search + thresholding, and
+        edge creation (with space auto-derivation from the revision kref) are
+        SDK logic: ``UniversalMemoryManager.discover_edges_post_consolidation``
+        → ``GraphAugmentedRecall.discover_edges``.
         """
         await self.initialise()
-        import kumiho
-
-        if not revision_kref or not summary:
-            return []
-
-        # Auto-derive space scope from the revision kref when not provided.
-        # e.g. kref://project/personal/user-1/item.kind?r=1
-        #      → space_paths = ["project/personal/user-1"]
-        if space_paths is None:
-            try:
-                # Strip "kref://" prefix, then split off the item (last segment
-                # before '?') to get the space path.
-                path_part = revision_kref.split("?")[0]
-                if path_part.startswith("kref://"):
-                    path_part = path_part[len("kref://"):]
-                # path_part = "project/space/.../item_name.kind"
-                # The item is the last segment; everything before it is the
-                # space path.
-                segments = path_part.strip("/").split("/")
-                if len(segments) >= 3:
-                    # project + at least one space + item
-                    space_paths = ["/".join(segments[:-1])]
-            except Exception:
-                pass  # Fall back to un-scoped search
-
-        # Step 1: Ask LLM for implication queries
-        queries = await self._generate_implication_queries(summary, max_queries=max_queries)
-        if not queries:
-            return []
-
-        logger.debug(
-            "Edge discovery for %s: generated %d implication queries (space_paths=%s)",
-            revision_kref, len(queries), space_paths,
+        return await self._manager.discover_edges_post_consolidation(
+            revision_kref, summary, **kwargs,
         )
-
-        # Step 2: Search existing memories with each query (parallel)
-        candidates: dict[str, dict[str, Any]] = {}  # kref → {memory, best_score, query}
-
-        async def _search_one(q: str) -> list[tuple[str, dict]]:
-            try:
-                mems = await self.recall(q, limit=3, space_paths=space_paths)
-                return [(q, m) for m in mems]
-            except Exception as e:
-                logger.debug("Edge discovery recall failed for query %r: %s", q, e)
-                return []
-
-        search_results = await asyncio.gather(*[_search_one(q) for q in queries])
-        for hits in search_results:
-            for q, mem in hits:
-                kref = mem.get("kref", "")
-                score = mem.get("score", 0.0)
-                if not kref or kref == revision_kref:
-                    continue
-                if score < min_score:
-                    continue
-                if kref not in candidates or score > candidates[kref]["score"]:
-                    candidates[kref] = {
-                        "memory": mem,
-                        "score": score,
-                        "query": q,
-                    }
-
-        if not candidates:
-            logger.debug("Edge discovery: no candidates above threshold %.2f", min_score)
-            return []
-
-        # Step 3: Create edges to top-N candidates
-        sorted_candidates = sorted(
-            candidates.values(), key=lambda c: c["score"], reverse=True,
-        )[:max_edges]
-
-        # Get the source revision, create edges — all sync gRPC calls.
-        # Same daemon-thread + threading.Event pattern as Strategy A in
-        # recall_with_graph_augmentation.  asyncio.wait / asyncio.wait_for
-        # do NOT reliably timeout asyncio.to_thread on Windows.
-        _EDGE_CREATION_TIMEOUT = 60  # seconds
-
-        _edge_results: list[dict[str, Any]] = []
-
-        def _sync_create_edges() -> list[dict[str, Any]]:
-            """Run all sync gRPC edge-creation calls in a plain thread."""
-            source_rev = None
-            for attempt in range(1, 4):
-                try:
-                    source_rev = kumiho.get_revision(revision_kref)
-                    break
-                except Exception as e:
-                    if "RESOURCE_EXHAUSTED" in str(e) and attempt < 3:
-                        time.sleep(0.05 * attempt)
-                    else:
-                        logger.warning("Failed to get source revision %s: %s", revision_kref, e)
-                        return []
-
-            edges_out: list[dict[str, Any]] = []
-            for cand in sorted_candidates:
-                target_kref = cand["memory"].get("kref", "")
-                for attempt in range(1, 4):
-                    try:
-                        target_rev = kumiho.get_revision(target_kref)
-                        source_rev.create_edge(
-                            target_rev,
-                            edge_type,
-                            metadata={
-                                "reason": f"LLM implication: {cand['query'][:100]}",
-                                "score": str(round(cand["score"], 3)),
-                            },
-                        )
-                        edges_out.append({
-                            "source": revision_kref,
-                            "target": target_kref,
-                            "edge_type": edge_type,
-                            "query": cand["query"],
-                            "score": cand["score"],
-                        })
-                        logger.debug(
-                            "Created edge %s → %s (type=%s, query=%r, score=%.3f)",
-                            revision_kref, target_kref, edge_type,
-                            cand["query"][:60], cand["score"],
-                        )
-                        break  # success
-                    except Exception as e:
-                        err_str = str(e)
-                        if "RESOURCE_EXHAUSTED" in err_str and attempt < 3:
-                            wait_ms = 50 * attempt
-                            logger.debug(
-                                "Rate limited on edge %s → %s (attempt %d), retrying in %dms",
-                                revision_kref, target_kref, attempt, wait_ms,
-                            )
-                            time.sleep(wait_ms / 1000)
-                        else:
-                            logger.warning("Failed to create edge %s → %s: %s", revision_kref, target_kref, e)
-                            break
-            return edges_out
-
-        _edge_done = threading.Event()
-
-        def _edge_worker():
-            try:
-                _edge_results.extend(_sync_create_edges())
-            except Exception as e:
-                logger.debug("Edge creation thread error: %s", e)
-            finally:
-                _edge_done.set()
-
-        t = threading.Thread(target=_edge_worker, daemon=True)
-        t.start()
-
-        # Poll — same pattern as graph traversal, avoids thread pool starvation
-        _edge_deadline = time.monotonic() + _EDGE_CREATION_TIMEOUT
-        while not _edge_done.is_set():
-            if time.monotonic() >= _edge_deadline:
-                break
-            await asyncio.sleep(0.5)
-        completed = _edge_done.is_set()
-
-        if completed:
-            created_edges = list(_edge_results)
-        else:
-            logger.warning(
-                "\033[1;33mEdge creation timed out after %ds for %s\033[0m",
-                _EDGE_CREATION_TIMEOUT, revision_kref,
-            )
-            created_edges = []
-
-        return created_edges
-
-    @staticmethod
-    async def _generate_implication_queries(
-        summary: str,
-        *,
-        max_queries: int = 5,
-        model: str = "gpt-4o-mini",
-        api_key: str | None = None,
-    ) -> list[str]:
-        """
-        Generate search queries for scenarios where this memory would be relevant.
-
-        The LLM thinks beyond literal content to identify implicit constraints,
-        life themes, and future situations this memory affects.
-        """
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-
-        prompt = f"""Given this conversation memory, generate {max_queries} search queries that would help find this memory in the FUTURE when someone is in a related situation.
-
-Think BEYOND the literal content. Consider:
-- What implicit constraints or decisions were established?
-- What life situations or problems would this memory be relevant to?
-- What future scenarios might this memory affect?
-- What emotional states or challenges connect to this topic?
-
-Memory:
-{summary[:2000]}
-
-Return ONLY a JSON array of {max_queries} short search queries (each 3-8 words). No explanation.
-Example: ["feeling overwhelmed with commitments", "declining social invitations", "work-life balance stress"]"""
-
-        raw = ""
-        try:
-            resp = await client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.7,
-            )
-            token_tracker.record("implication_queries", resp)
-            raw = resp.choices[0].message.content.strip()
-            # Strip markdown code fences if present
-            if raw.startswith("```"):
-                raw = re.sub(r"^```(?:json)?\s*\n?", "", raw)
-                raw = re.sub(r"\n?```\s*$", "", raw)
-                raw = raw.strip()
-            # Parse JSON array
-            queries = json.loads(raw)
-            if isinstance(queries, list):
-                return [str(q).strip() for q in queries if q][:max_queries]
-        except Exception as e:
-            logger.warning("Failed to generate implication queries: %s (raw=%r)", e, raw[:200])
-
-        return []
 
     async def cleanup(self) -> None:
         """Close connections."""
@@ -1234,139 +737,49 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
             await self._manager.close()
 
     # -----------------------------------------------------------------
-    # Embedding-based sibling relevance scoring
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def _embed_texts(
-        texts: list[str],
-        api_key: str | None,
-        model: str = "text-embedding-3-small",
-    ) -> np.ndarray:
-        """Batch-embed texts via OpenAI and return an (N, dim) numpy array."""
-        from openai import OpenAI
-
-        client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-        resp = client.embeddings.create(input=texts, model=model)
-        return np.array([item.embedding for item in resp.data])
-
-    @staticmethod
-    def _cosine_similarities(query_vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
-        """Cosine similarity between a single query vector and a matrix of rows."""
-        norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(query_vec)
-        norms = np.where(norms == 0, 1e-9, norms)
-        return matrix @ query_vec / norms
-
-    def _filter_siblings_by_embedding(
-        self,
-        siblings: list[dict[str, Any]],
-        query: str,
-        threshold: float,
-    ) -> list[dict[str, Any]]:
-        """Keep only siblings whose embedding similarity to *query* exceeds *threshold*."""
-        if not siblings or not query or threshold <= 0:
-            return siblings
-
-        sib_texts = []
-        for sib in siblings:
-            t = sib.get("title", "")
-            s = sib.get("summary", "")
-            sib_texts.append(f"{t}: {s}" if t else s)
-
-        try:
-            all_texts = [query] + sib_texts
-            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
-            query_vec = embeddings[0]
-            sib_matrix = embeddings[1:]
-            scores = self._cosine_similarities(query_vec, sib_matrix)
-
-            kept = []
-            for i, sib in enumerate(siblings):
-                if scores[i] >= threshold:
-                    kept.append(sib)
-            logger.debug(
-                "Sibling embedding filter: %d/%d kept (threshold=%.2f, scores=%s)",
-                len(kept), len(siblings), threshold,
-                [f"{s:.3f}" for s in scores],
-            )
-            return kept
-        except Exception as e:
-            logger.warning("Sibling embedding filter failed, keeping all: %s", e)
-            return siblings
-
-    # -----------------------------------------------------------------
     # Two-pass re-ranking
     # -----------------------------------------------------------------
+
+    def _get_embedding_adapter(self) -> Any:
+        """Lazily build the embedding adapter for two-pass rerank.
+
+        Returns ``None`` when no API key / openai package is available —
+        ``two_pass_rerank`` no-ops safely on a ``None`` adapter.
+
+        Deliberately NOT passed to ``UniversalMemoryManager``: with
+        ``sibling_similarity_threshold > 0`` the manager would switch sibling
+        selection to pure-embedding mode, bypassing the LLM sibling reranker
+        and its deterministic fallback.
+        """
+        if self._embed_adapter is None and not self._embed_adapter_failed:
+            from kumiho_memory import OpenAICompatEmbeddingAdapter
+
+            try:
+                self._embed_adapter = OpenAICompatEmbeddingAdapter.create(
+                    api_key=self.config.openai_api_key
+                    or os.environ.get("OPENAI_API_KEY"),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Embedding adapter unavailable for two-pass rerank: %s", e,
+                )
+                self._embed_adapter_failed = True
+        return self._embed_adapter
 
     def rerank_memories(
         self,
         memories: list[dict[str, Any]],
         query: str,
     ) -> list[dict[str, Any]]:
-        """Two-pass re-ranking: replace server-scored ``_score`` on siblings
-        with focused cosine similarity computed from **title+summary only**.
+        """Two-pass focused rerank — delegates to ``kumiho_memory.two_pass_rerank``.
 
-        Pass 1 (already done): server recall + server sibling scoring used
-        enriched SEMANTIC_KEYS embeddings (title, summary, implications,
-        events) to cast a wide net.
-
-        Pass 2 (this method): re-score every sibling using client-side
-        ``text-embedding-3-small`` on *only* ``title: summary`` text.
-        This strips implications/events from the scoring signal so the
-        most directly relevant revision ranks highest.
-
-        The returned memories have updated ``_score`` values on their
-        ``sibling_revisions``; ``build_recalled_context`` picks the
-        correct top-K downstream.
+        Re-scores primaries AND siblings with focused title+summary
+        embeddings on one cosine scale; safe no-op without an embedding
+        adapter.
         """
-        if not query:
-            return memories
+        from kumiho_memory import two_pass_rerank
 
-        # Collect all sibling revisions across all memories
-        all_sibs: list[dict[str, Any]] = []
-        for mem in memories:
-            for sib in mem.get("sibling_revisions", []):
-                all_sibs.append(sib)
-
-        if not all_sibs:
-            return memories
-
-        # Build focused text for each sibling (title + summary, no implications)
-        sib_texts = []
-        for sib in all_sibs:
-            t = sib.get("title", "")
-            s = sib.get("summary", "")
-            sib_texts.append(f"{t}: {s}" if t else (s or t or ""))
-
-        try:
-            all_texts = [query] + sib_texts
-            embeddings = self._embed_texts(all_texts, self.config.openai_api_key)
-            query_vec = embeddings[0]
-            sib_matrix = embeddings[1:]
-            scores = self._cosine_similarities(query_vec, sib_matrix)
-
-            # Write focused scores back onto siblings
-            for i, sib in enumerate(all_sibs):
-                old_score = sib.get("_score", 0.0)
-                sib["_score"] = float(scores[i])
-                logger.debug(
-                    "Two-pass rerank: %s — %.3f → %.3f",
-                    sib.get("title", "?")[:50],
-                    old_score,
-                    sib["_score"],
-                )
-
-            logger.info(
-                "Two-pass rerank: re-scored %d siblings "
-                "(top: %.3f, bottom: %.3f)",
-                len(all_sibs),
-                float(scores.max()) if len(scores) else 0,
-                float(scores.min()) if len(scores) else 0,
-            )
-        except Exception as e:
-            logger.warning("Two-pass rerank failed, keeping original scores: %s", e)
-
-        return memories
+        return two_pass_rerank(query, memories, self._get_embedding_adapter())
 
     # -----------------------------------------------------------------
     # Context builder
@@ -1379,75 +792,20 @@ Example: ["feeling overwhelmed with commitments", "declining social invitations"
         *,
         top_k: int | None = None,
     ) -> str:
+        """Context assembly — delegates to ``kumiho_memory.compose_context``.
+
+        Revision-centric assembly (siblings subsume the primary, global score
+        ranking, top-k cap, full/summarized modes) is SDK logic.  *top_k*
+        overrides ``config.context_top_k`` for this call.
         """
-        Build text context from recalled memories based on recall_mode.
+        from kumiho_memory import compose_context
 
-        - "full": includes artifact content (raw conversation text) — lossless
-        - "summarized": only title + summary — lossy, comparable to Mem0/Graphiti
-
-        **Revision-centric assembly**: flattens all revisions (primary +
-        siblings) from every recalled memory, ranks them globally by
-        ``_score``, and takes the top ``context_top_k``.  Item-level
-        metadata is skipped — only revision-level content appears.
-
-        *top_k* overrides ``self.config.context_top_k`` for this call (e.g.
-        callers that widen recall breadth for a specific question category
-        need the context cap widened to match, or the extra memories are
-        just trimmed back off here).
-        """
-        full_mode = self.config.recall_mode == "full"
-
-        # --- Collect all revisions across all memories into one flat list ---
-        all_revisions: list[dict[str, Any]] = []
-
-        for mem in memories:
-            siblings = mem.get("sibling_revisions", [])
-
-            if siblings:
-                # Siblings now include ALL revisions (including the
-                # published/primary one) — the LLM reranker decides which
-                # are relevant.  Skip the primary entry to avoid double-
-                # counting; its data is in the sibling list if selected.
-                for sib in siblings:
-                    all_revisions.append({
-                        "title": sib.get("title", ""),
-                        "summary": sib.get("summary", ""),
-                        "content": sib.get("content", ""),
-                        "_score": sib.get("_score", 0.0),
-                    })
-            else:
-                # No siblings (non-stacked item or single revision) —
-                # use the primary memory directly.
-                all_revisions.append({
-                    "title": mem.get("title", ""),
-                    "summary": mem.get("summary", ""),
-                    "content": mem.get("content", ""),
-                    "_score": mem.get("score", 0.0),
-                })
-
-        # --- Global ranking by score (best revisions first) ---
-        has_scores = any(r.get("_score", 0) > 0 for r in all_revisions)
-        if has_scores:
-            all_revisions.sort(key=lambda r: r.get("_score", 0.0), reverse=True)
-
-        # --- Apply global top-K cap ---
-        effective_top_k = top_k if top_k is not None else self.config.context_top_k
-        if effective_top_k > 0 and len(all_revisions) > effective_top_k:
-            all_revisions = all_revisions[:effective_top_k]
-
-        # --- Build text from surviving revisions ---
-        texts = []
-        for rev in all_revisions:
-            title = rev.get("title", "")
-            summary = rev.get("summary", "")
-            content = rev.get("content", "")
-
-            if full_mode and content:
-                texts.append(content[:8000])
-            elif summary:
-                texts.append(f"{title}: {summary}" if title else summary)
-
-        return "\n\n".join(texts) if texts else ""
+        return compose_context(
+            memories,
+            query,
+            mode=self.config.recall_mode,
+            top_k=top_k if top_k is not None else self.config.context_top_k,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1593,9 +951,25 @@ def generate_run_manifest(
             template.encode("utf-8"),
         ).hexdigest()[:16]
 
+    # SDK provenance: benchmarks measure kumiho-memory, so every manifest
+    # must prove exactly which build ran (a stale site-packages install once
+    # went unnoticed because nothing recorded this).
+    try:
+        import kumiho_memory
+
+        sdk_provenance = {
+            "kumiho_memory_version": getattr(kumiho_memory, "__version__", "?"),
+            "kumiho_memory_path": str(getattr(kumiho_memory, "__file__", "?")),
+        }
+    except Exception:
+        sdk_provenance = {
+            "kumiho_memory_version": None, "kumiho_memory_path": None,
+        }
+
     return {
         "harness_git_sha": _get_git_sha(repo_root),
         "dataset_shas": _get_submodule_shas(repo_root),
+        **sdk_provenance,
         "benchmarks": benchmarks,
         "config": {
             "answer_model": config.answer_model,
