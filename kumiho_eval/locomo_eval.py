@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -511,6 +512,7 @@ async def evaluate_locomo(
                         # modifications (not system prompt changes) per the
                         # original gpt_utils.py.
                         t1 = time.perf_counter()
+                        user_instruction = "Answer concisely with exact information from the context."
 
                         # Question modifications per category
                         eval_question = question
@@ -541,6 +543,7 @@ async def evaluate_locomo(
                             eval_question,
                             answer_context,
                             system_prompt=system,
+                            user_instruction=user_instruction,
                             model=config.answer_model,
                             api_key=config.openai_api_key,
                             max_tokens=50,
@@ -810,6 +813,7 @@ def main():
         project_name=args.project,
         answer_model=args.answer_model,
         judge_model=args.judge_model,
+        llm_model=os.environ.get("KUMIHO_LLM_MODEL", "gpt-4o-mini"),  # summarizer model
         output_dir=args.output,
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,

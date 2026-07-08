@@ -1195,7 +1195,7 @@ def main():
                         help="Start at entry index (e.g. --start-at 201 for cog-201)")
     parser.add_argument("--answer-model", type=str, default="gpt-4o")
     parser.add_argument("--judge-model", type=str, default="gpt-4o-mini")
-    parser.add_argument("--recall-limit", type=int, default=10)
+    parser.add_argument("--recall-limit", type=int, default=5)
     parser.add_argument("--recall-mode", type=str, default="full",
                         choices=["full", "summarized"],
                         help="Recall mode: full (artifact content) or summarized (title+summary)")
@@ -1212,7 +1212,7 @@ def main():
                         help="Sibling similarity threshold (0=budget mode, 0.30=server-scored)")
     parser.add_argument("--sibling-top-k", type=int, default=0,
                         help="Max siblings to keep after scoring (0=unlimited)")
-    parser.add_argument("--context-top-k", type=int, default=0,
+    parser.add_argument("--context-top-k", type=int, default=7,
                         help="Global cap on revisions in final context (0=unlimited)")
     parser.add_argument("--no-stack", action="store_true",
                         help="Disable revision stacking (one item per session)")

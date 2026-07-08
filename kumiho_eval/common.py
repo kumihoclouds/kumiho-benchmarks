@@ -178,6 +178,24 @@ def register_prompt_template(name: str, template: str) -> None:
 
 _ARTICLES_RE = re.compile(r"\b(a|an|the|and)\b", re.IGNORECASE)
 
+# Runtime (no gold-label) detector for date/duration questions. Used to decide
+# whether to surface atomic facts in the recalled context: facts sharpen
+# factual recall but their competing dates distract a temporal answer, so we
+# withhold them ONLY when the question itself asks about time. This infers the
+# query type from the question text — exactly what a real deployment can do —
+# instead of reading the dataset's ground-truth category label.
+_TEMPORAL_QUERY_RE = re.compile(
+    r"\b(when|what year|which year|what date|what day|what month|what time|"
+    r"how long|how many (?:years?|months?|weeks?|days?|hours?)|how old|"
+    r"since when|for how long|how much time|at what point)\b",
+    re.IGNORECASE,
+)
+
+
+def is_temporal_query(question: str) -> bool:
+    """True if the question asks for a date/duration (query-text heuristic)."""
+    return bool(_TEMPORAL_QUERY_RE.search(question or ""))
+
 
 def normalize_answer(text: str) -> str:
     """Lowercase, strip articles/punctuation/whitespace — matches LoCoMo eval."""
@@ -324,13 +342,21 @@ async def generate_answer(
     model: str = "gpt-4o",
     api_key: str | None = None,
     max_tokens: int = 256,
+    user_instruction: str = "Answer concisely with exact information from the context.",
     temperature: float = 0.0,
 ) -> str:
-    """Generate an answer to a question given retrieved context."""
+    """Generate an answer to a question given retrieved context.
+
+    ``user_instruction`` is the trailing instruction in the user turn. It
+    defaults to context-grounded extraction (correct for single/multi-hop/
+    temporal), but callers can relax it for categories like open-domain that
+    legitimately require combining the context with world/commonsense knowledge.
+    """
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-    user_msg = f"Context:\n{context}\n\n{question}"
+    user_msg = f"Context:\n{context}\n\n{question}\n\n{user_instruction}"
+    text = ""
     for _answer_attempt in range(3):
         resp = await client.chat.completions.create(
             model=model,
@@ -478,6 +504,21 @@ class KumihoMemoryAdapter:
 
         pii_redactor = PIIRedactor()
 
+        # Sibling ranking: give the manager an embedding adapter so stacked-
+        # revision ranking uses cosine similarity (discriminative for direct
+        # factual recall) instead of the LLM-only reranker fallback, which
+        # hard-filters to 1-3 picks and drops the fact-bearing revision on
+        # direct single-hop questions. No key → None → SDK falls back as before.
+        embedding_adapter = None
+        _emb_key = self.config.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        if _emb_key:
+            from kumiho_memory import OpenAICompatEmbeddingAdapter
+            embedding_adapter = OpenAICompatEmbeddingAdapter.create(
+                api_key=_emb_key,
+                base_url=os.environ.get("OPENAI_EMBEDDINGS_BASE_URL"),
+                model="text-embedding-3-small",
+            )
+
         # Import store/retrieve from the MCP server module, then patch
         # _ensure_configured to a no-op so it doesn't re-discover and
         # override our local client on every call.
@@ -512,6 +553,7 @@ class KumihoMemoryAdapter:
             memory_store=_store,
             memory_retrieve=_retrieve,
             recall_mode=self.config.recall_mode,
+            embedding_adapter=embedding_adapter,
             sibling_similarity_threshold=self.config.sibling_similarity_threshold,
             sibling_top_k=self.config.sibling_top_k,
             sibling_score_fields=self.config.sibling_score_fields,

@@ -66,9 +66,22 @@ breakdown, and paper integration notes.
 
 **0.565 overall F1** on all 1,986 questions across 10 conversations —
 the highest score we are aware of on the official LoCoMo token-level F1 metric
-as of February 2026. Achieved in **summarized mode** (title + summary only,
-no raw conversation artifacts), demonstrating that the graph's metadata layer
-alone is sufficient to outperform systems with full-context retrieval.
+**as of February 2026** (on the then-current cosine sibling-ranking pipeline).
+Achieved in **summarized mode** (title + summary only, no raw conversation
+artifacts), demonstrating that the graph's metadata layer alone is sufficient
+to outperform systems with full-context retrieval.
+
+> **⚠ Honest re-measurement (2026-07-06).** A full re-run on the current SDK
+> measured **0.495 overall**, not 0.565. Root cause: a later change (the LLM
+> sibling reranker) replaced the cosine sibling ranking the Feb result relied
+> on, which dropped standard-LoCoMo direct-fact retrieval (single/multi-hop) to
+> **≈0.46 on the shipped SDK**. Restoring cosine ranking and surfacing the
+> already-extracted atomic facts in recall recovers it to **0.495** — with
+> **open-domain 0.311 now above the Feb 0.290** and **multi-hop 0.310 still #1
+> among competitors**, but single-hop not yet fully recovered (0.353 vs 0.462).
+> The proper fix (a hybrid cosine+LLM ranking so both LoCoMo and LoCoMo-Plus
+> win, plus fact-level ranking) is in progress. Both the Feb and the 07-06
+> numbers are shown below.
 
 The official LoCoMo evaluation metric is **token-level F1 with Porter stemming**
 ([Maharana et al. 2024](https://arxiv.org/abs/2402.17753), `evaluation.py`).
@@ -88,7 +101,8 @@ and Memobase's published evaluation
 | Mem0 | 0.387 | 0.286 | 0.489 | 0.477 | ~0.40 | arXiv 2504.19413 |
 | Mem0-Graph | 0.381 | 0.243 | 0.516 | 0.493 | ~0.40 | arXiv 2504.19413 |
 | Memobase | 0.463 | 0.229 | 0.642 | 0.516 | — | GitHub |
-| **Kumiho** | **0.462** | **0.355** | **0.533** | **0.290** | **0.565** | This work |
+| **Kumiho** (Feb 2026, cosine) | **0.462** | **0.355** | **0.533** | **0.290** | **0.565** | This work |
+| **Kumiho** (2026-07-06, current SDK + fix) | 0.353 | 0.310 | 0.447 | 0.311 | 0.495 | This work |
 
 *Kumiho's overall includes adversarial category (0.975 F1, n=446) which most
 baselines do not report separately. Excluding adversarial, Kumiho's F1 across
@@ -172,6 +186,50 @@ export KUMIHO_AUTH_TOKEN="your-kumiho-api-token"  # from kumiho.io dashboard
 ```
 
 Or create a `.env.local` file in `kumiho_eval/`.
+
+### Run without an API key (ChatGPT / Codex OAuth)
+
+If you have a ChatGPT subscription and are logged in with the
+[`codex`](https://github.com/openai/codex) CLI (`codex login`), you can run the
+whole harness — answer generation, LLM-as-Judge, query reformulation, **and**
+the kumiho-memory summarizer — through your subscription instead of a paid API
+key. No `OPENAI_API_KEY` required.
+
+`kumiho_eval/codex_proxy.py` is a small local OpenAI-compatible server that
+translates `/v1/chat/completions` and `/v1/responses` into the ChatGPT backend
+Responses API (`https://chatgpt.com/backend-api/codex/responses`), reusing the
+OAuth token the `codex` CLI stored in `~/.codex/auth.json` (auto-refreshed).
+Because the `openai` SDK honours `OPENAI_BASE_URL`, pointing it at the proxy
+routes every LLM call through Codex without changing any harness code.
+
+```bash
+# 0. sanity-check the OAuth token works
+python -m kumiho_eval.codex_proxy --self-test
+
+# One-command runner (starts the proxy in-process, then runs the benchmark)
+python -m kumiho_eval.run_codex --locomo --max-samples 1 \
+    --recall-mode summarized --recall-limit 3 --graph-augmented
+
+# ...or run the proxy and benchmark separately:
+python -m kumiho_eval.codex_proxy --port 8123 &
+export OPENAI_BASE_URL=http://127.0.0.1:8123/v1
+export OPENAI_API_KEY=codex-oauth      # any non-empty placeholder
+python -m kumiho_eval.run_benchmarks --locomo --max-samples 1
+```
+
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `CODEX_MODEL` | `gpt-5.5` | Codex model to use (e.g. `gpt-5.4-mini` for speed). `gpt-4o*` requests are auto-mapped to this. |
+| `CODEX_REASONING_EFFORT` | `low` | `none`/`low`/`medium`/`high`/`xhigh` (`minimal` is auto-clamped to `low`). |
+| `CODEX_HOME` | `~/.codex` | Location of the `codex` CLI `auth.json`. |
+
+**Limits.** ChatGPT-subscription Codex enforces per-plan rate limits (Plus <
+Pro); large runs will hit 429s — the harness already retries with exponential
+backoff. There is no embeddings endpoint, so client-side embedding features are
+off by default under `run_codex` (sibling similarity threshold 0, no two-pass
+rerank); core recall still embeds server-side on the Kumiho tenant. Runs made
+this way use a reasoning LLM over your subscription, **not** the published
+`gpt-4o` harness — label results accordingly.
 
 ## Usage
 
