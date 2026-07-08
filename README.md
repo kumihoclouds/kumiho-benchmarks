@@ -64,24 +64,26 @@ breakdown, and paper integration notes.
 
 ### LoCoMo (Original QA Benchmark)
 
-**0.565 overall F1** on all 1,986 questions across 10 conversations —
-the highest score we are aware of on the official LoCoMo token-level F1 metric
-**as of February 2026** (on the then-current cosine sibling-ranking pipeline).
+**0.564 overall F1** on all 1,986 questions across 10 conversations —
+matching the February 2026 record (0.565) and now **shipping and reproducible
+in kumiho-memory v0.9.0** (consolidated recall pipeline, clean backend).
 Achieved in **summarized mode** (title + summary only, no raw conversation
 artifacts), demonstrating that the graph's metadata layer alone is sufficient
 to outperform systems with full-context retrieval.
 
-> **⚠ Honest re-measurement (2026-07-06).** A full re-run on the current SDK
-> measured **0.495 overall**, not 0.565. Root cause: a later change (the LLM
-> sibling reranker) replaced the cosine sibling ranking the Feb result relied
-> on, which dropped standard-LoCoMo direct-fact retrieval (single/multi-hop) to
-> **≈0.46 on the shipped SDK**. Restoring cosine ranking and surfacing the
-> already-extracted atomic facts in recall recovers it to **0.495** — with
-> **open-domain 0.311 now above the Feb 0.290** and **multi-hop 0.310 still #1
-> among competitors**, but single-hop not yet fully recovered (0.353 vs 0.462).
-> The proper fix (a hybrid cosine+LLM ranking so both LoCoMo and LoCoMo-Plus
-> win, plus fact-level ranking) is in progress. Both the Feb and the 07-06
-> numbers are shown below.
+> **✅ Recovered and shipped (kumiho-memory v0.9.0, 2026-07-08).** An interim
+> 07-06 re-run measured only **0.495** — the shipped SDK had regressed to ≈0.46
+> after a later LLM-only sibling reranker replaced the cosine ranking the Feb
+> result relied on. v0.9.0 completes the fix: a **hybrid cosine+LLM sibling
+> ranking** plus **per-sub-query cross-encoder placement**, restoring **overall
+> 0.564** (Feb parity) on a clean backend — reproducible from the shipped SDK,
+> not a stale claim. Versus the Feb pipeline it is **higher on multi-hop
+> (0.393 vs 0.355) and open-domain (0.313 vs 0.290)**, level on temporal and
+> overall, slightly lower on single-hop (0.449 vs 0.462). Critically, the
+> **LoCoMo-Plus crown (93.3%) was verified to hold** — the standard-LoCoMo
+> recovery did not cost the cognitive benchmark (entry-by-entry vs the prior
+> 93.3% run). The table below shows the shipped v0.9.0 numbers next to the Feb
+> record.
 
 The official LoCoMo evaluation metric is **token-level F1 with Porter stemming**
 ([Maharana et al. 2024](https://arxiv.org/abs/2402.17753), `evaluation.py`).
@@ -101,10 +103,10 @@ and Memobase's published evaluation
 | Mem0 | 0.387 | 0.286 | 0.489 | 0.477 | ~0.40 | arXiv 2504.19413 |
 | Mem0-Graph | 0.381 | 0.243 | 0.516 | 0.493 | ~0.40 | arXiv 2504.19413 |
 | Memobase | 0.463 | 0.229 | 0.642 | 0.516 | — | GitHub |
-| **Kumiho** (Feb 2026, cosine) | **0.462** | **0.355** | **0.533** | **0.290** | **0.565** | This work |
-| **Kumiho** (2026-07-06, current SDK + fix) | 0.353 | 0.310 | 0.447 | 0.311 | 0.495 | This work |
+| Kumiho (Feb 2026, cosine) | 0.462 | 0.355 | 0.533 | 0.290 | 0.565 | This work |
+| **Kumiho** (v0.9.0, 2026-07-08, shipped) | **0.449** | **0.393** | **0.530** | **0.313** | **0.564** | This work |
 
-*Kumiho's overall includes adversarial category (0.975 F1, n=446) which most
+*Kumiho's overall includes adversarial category (0.969 F1, n=446) which most
 baselines do not report separately. Excluding adversarial, Kumiho's F1 across
 the four standard categories is 0.447.*
 
@@ -112,12 +114,14 @@ the four standard categories is 0.447.*
 
 | Category | Count | F1 |
 | -------- | ----: | --: |
-| Single-hop | 841 | 0.462 |
-| Multi-hop | 282 | 0.355 |
-| Temporal | 321 | 0.533 |
-| Open-domain | 96 | 0.290 |
-| Adversarial | 446 | 0.975 |
-| **Overall** | **1,986** | **0.565** |
+| Single-hop | 841 | 0.449 |
+| Multi-hop | 282 | 0.393 |
+| Temporal | 321 | 0.530 |
+| Open-domain | 96 | 0.313 |
+| Adversarial | 446 | 0.969 |
+| **Overall** | **1,986** | **0.564** |
+
+<sub>Shipped kumiho-memory v0.9.0 (a3c7938), full 10-conversation run, token-F1, gpt-4o answer, summarized mode, clean backend. Feb 2026 record (0.565) retained above for comparison.</sub>
 
 Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge --graph-augmented (default)`
 
