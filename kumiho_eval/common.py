@@ -374,6 +374,7 @@ class BenchmarkConfig:
     consolidation_threshold: int = 20
     recall_limit: int = 5
     recall_candidate_multiplier: float = 1.0  # SDK retrieve-wide-then-trim: over-fetch ceil(limit * multiplier) candidates, rerank, trim back to limit (1.0 = off). Uniform across all queries -- never keyed on benchmark categories.
+    answer_only: bool = False  # Skip ingest; answer against an existing project's corpus. Enables same-corpus A/B across SDK builds (one ingest, N answer runs) -- removes consolidation nondeterminism from cross-build comparisons.
     recall_mode: str = "full"  # "full" = artifact content, "summarized" = title+summary only
     concurrency: int = 4
     entry_concurrency: int = 1  # How many entries to process in parallel (pipeline parallelism)

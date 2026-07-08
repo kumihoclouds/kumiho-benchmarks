@@ -342,6 +342,21 @@ async def evaluate_locomo(
     output_dir = Path(config.output_dir) / "locomo"
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Backend health probe (provenance): one timed recall round-trip before
+    # any evaluation. Degraded-backend runs (index bloat, zombie servers)
+    # produce numbers indistinguishable from code regressions -- record the
+    # latency so every result carries its environment state. Healthy local
+    # CE baseline is well under ~1s cold; 2.5s+ has correlated with
+    # measurably depressed scores.
+    backend_probe_s: float | None = None
+    try:
+        _t0 = time.perf_counter()
+        await adapter.recall("backend health probe", limit=1)
+        backend_probe_s = round(time.perf_counter() - _t0, 3)
+        logger.info("Backend probe: recall round-trip %.2fs", backend_probe_s)
+    except Exception as e:
+        logger.warning("Backend probe failed: %s", e)
+
     # Load checkpoint for resume
     if resume:
         all_results, completed_ids = _load_checkpoint(output_dir)
@@ -374,11 +389,27 @@ async def evaluate_locomo(
             last_conv_error: Exception | None = None
             for conv_attempt in range(1, MAX_CONV_RETRIES + 1):
                 try:
-                    # Create isolated evaluation space
-                    space_name = await adapter.create_eval_space(conv_id)
+                    user_id = f"locomo-{conv_id}"
+
+                    # --- Answer-only mode: reuse an existing ingested corpus ---
+                    # For same-corpus A/B: ingest ONCE (a normal run), then
+                    # evaluate any number of SDK builds against the identical
+                    # stored memories.  Removes LLM-consolidation
+                    # nondeterminism from cross-build comparisons (each normal
+                    # run re-ingests, so two runs answer over DIFFERENT
+                    # corpora) and roughly halves wall-clock per arm.
+                    if config.answer_only:
+                        total_ingest_ms = 0.0
+                        avg_ingest_ms = 0.0
+                        logger.info(
+                            "Answer-only mode: skipping ingest for %s, "
+                            "reusing project %s", conv_id, config.project_name,
+                        )
+                    else:
+                        # Create isolated evaluation space
+                        space_name = await adapter.create_eval_space(conv_id)
 
                     # --- Phase 1: Ingest all sessions (parallel) ---
-                    user_id = f"locomo-{conv_id}"
                     t_ingest = time.perf_counter()
 
                     async def _ingest_one(session: dict) -> str | None:
@@ -414,18 +445,19 @@ async def evaluate_locomo(
                                     logger.warning("Consolidation failed for session: %s", e)
                             return sid
 
-                    ingest_results = await asyncio.gather(
-                        *[_ingest_one(s) for s in sessions],
-                        return_exceptions=True,
-                    )
-                    for r in ingest_results:
-                        if isinstance(r, _RETRYABLE_ERRORS):
-                            raise r
-                        if isinstance(r, Exception):
-                            logger.warning("Session ingestion error: %s", r)
+                    if not config.answer_only:
+                        ingest_results = await asyncio.gather(
+                            *[_ingest_one(s) for s in sessions],
+                            return_exceptions=True,
+                        )
+                        for r in ingest_results:
+                            if isinstance(r, _RETRYABLE_ERRORS):
+                                raise r
+                            if isinstance(r, Exception):
+                                logger.warning("Session ingestion error: %s", r)
 
-                    total_ingest_ms = (time.perf_counter() - t_ingest) * 1000
-                    avg_ingest_ms = total_ingest_ms / max(len(sessions), 1)
+                        total_ingest_ms = (time.perf_counter() - t_ingest) * 1000
+                        avg_ingest_ms = total_ingest_ms / max(len(sessions), 1)
 
                     # --- Phase 2: Answer questions ---
                     # Scope recall to this conversation's space so memories
@@ -599,6 +631,8 @@ async def evaluate_locomo(
         {r.metadata.get("conv_id") for r in all_results if r.metadata.get("conv_id")}
     )
     metrics["judge_enabled"] = judge
+    metrics["backend_probe_seconds"] = backend_probe_s
+    metrics["answer_only"] = config.answer_only
 
     # Also compute per-category metrics (LoCoMo standard)
     cat_metrics: dict[str, Any] = {}
@@ -735,6 +769,12 @@ def main():
     parser.add_argument("--answer-model", type=str, default="gpt-4o", help="Model for answer generation")
     parser.add_argument("--judge-model", type=str, default="gpt-4o", help="Model for LLM judge")
     parser.add_argument("--recall-limit", type=int, default=3, help="Max memories to recall")
+    parser.add_argument("--answer-only", action="store_true",
+                        help="Skip ingest and answer against the project's existing corpus. "
+                        "Use for same-corpus A/B: ingest once with a normal run, then evaluate "
+                        "each SDK build with --answer-only --no-resume against the SAME stored "
+                        "memories (pass the same --project). Removes LLM-consolidation "
+                        "nondeterminism from cross-build comparisons and ~halves wall-clock.")
     parser.add_argument("--recall-candidate-multiplier", type=float, default=1.0,
                         help="SDK retrieve-wide-then-trim: over-fetch ceil(limit * multiplier) "
                         "candidates, run the full rerank stack on the wide set, then trim back "
@@ -774,6 +814,7 @@ def main():
         max_samples=args.max_samples,
         recall_limit=args.recall_limit,
         recall_candidate_multiplier=args.recall_candidate_multiplier,
+        answer_only=args.answer_only,
         recall_mode=args.recall_mode,
         concurrency=args.concurrency,
         graph_augmented=not args.no_graph_augmented,
