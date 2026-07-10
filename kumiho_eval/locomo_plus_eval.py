@@ -1200,7 +1200,8 @@ def main():
                         help="Start at entry index (e.g. --start-at 201 for cog-201)")
     parser.add_argument("--answer-model", type=str, default=DEFAULT_ANSWER_MODEL,
                         help="Pin a dated snapshot; bare aliases are moving targets")
-    parser.add_argument("--judge-model", type=str, default="gpt-4o-mini")
+    parser.add_argument("--judge-model", type=str, default="gpt-4o-mini-2024-07-18",
+                        help="Pin a dated snapshot; the cognitive judge is drift-exposed too")
     parser.add_argument("--recall-limit", type=int, default=5)
     parser.add_argument("--recall-mode", type=str, default="full",
                         choices=["full", "summarized"],
@@ -1228,6 +1229,7 @@ def main():
                         help="Server-side focused scoring fields (e.g. --score-fields title summary)")
     args = parser.parse_args()
     warn_if_alias(args.answer_model, role="answer")
+    warn_if_alias(args.judge_model, role="judge")
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
