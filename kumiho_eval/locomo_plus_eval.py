@@ -46,7 +46,9 @@ from .common import (
     KumihoMemoryAdapter,
     _OPENAI_ERRORS,
     compute_aggregate_metrics,
+    DEFAULT_ANSWER_MODEL,
     generate_answer,
+    warn_if_alias,
     register_prompt_template,
     save_results,
     token_tracker,
@@ -902,6 +904,7 @@ async def evaluate_locomo_plus(
                 )
 
                 t_answer = time.perf_counter()
+                answer_meta: dict = {}
                 prediction = await generate_answer(
                     trigger_text,
                     recalled_context,
@@ -910,6 +913,7 @@ async def evaluate_locomo_plus(
                     api_key=config.openai_api_key,
                     max_tokens=1024,
                     temperature=0.3,
+                    meta_out=answer_meta,
                 )
                 answer_ms = (time.perf_counter() - t_answer) * 1000
                 logger.info(
@@ -946,6 +950,7 @@ async def evaluate_locomo_plus(
                     latency_recall_ms=recall_ms,
                     latency_answer_ms=answer_ms,
                     metadata={
+                        **answer_meta,
                         "relation_type": relation_type,
                         "time_gap": time_gap,
                         "time_gap_days": parse_time_gap(time_gap),
@@ -1193,7 +1198,8 @@ def main():
     parser.add_argument("--max-samples", type=int, default=None, help="Limit entries")
     parser.add_argument("--start-at", type=int, default=0,
                         help="Start at entry index (e.g. --start-at 201 for cog-201)")
-    parser.add_argument("--answer-model", type=str, default="gpt-4o")
+    parser.add_argument("--answer-model", type=str, default=DEFAULT_ANSWER_MODEL,
+                        help="Pin a dated snapshot; bare aliases are moving targets")
     parser.add_argument("--judge-model", type=str, default="gpt-4o-mini")
     parser.add_argument("--recall-limit", type=int, default=5)
     parser.add_argument("--recall-mode", type=str, default="full",
@@ -1221,6 +1227,7 @@ def main():
     parser.add_argument("--score-fields", nargs="+", default=None,
                         help="Server-side focused scoring fields (e.g. --score-fields title summary)")
     args = parser.parse_args()
+    warn_if_alias(args.answer_model, role="answer")
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
