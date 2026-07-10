@@ -1203,6 +1203,10 @@ def main():
     parser.add_argument("--judge-model", type=str, default="gpt-4o-mini-2024-07-18",
                         help="Pin a dated snapshot; the cognitive judge is drift-exposed too")
     parser.add_argument("--recall-limit", type=int, default=5)
+    parser.add_argument("--context-top-k", type=int, default=5,
+                        help="Bounded context activates the additive bridge/fact "
+                             "partition; 0 (old default) let typed one-liners "
+                             "displace grounding conversations")
     parser.add_argument("--recall-mode", type=str, default="full",
                         choices=["full", "summarized"],
                         help="Recall mode: full (artifact content) or summarized (title+summary)")
