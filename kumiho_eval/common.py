@@ -497,6 +497,13 @@ class KumihoMemoryAdapter:
         if self._initialised:
             return
 
+        # KUMIHO_LLM_MODEL drives consolidation, reformulation, AND the LLM
+        # half of sibling ranking — recall quality itself. An unpinned alias
+        # here is the same reproducibility hole as the answer model.
+        env_model = os.environ.get("KUMIHO_LLM_MODEL", "")
+        if env_model:
+            warn_if_alias(env_model, role="KUMIHO_LLM_MODEL (consolidation/sibling-ranking)")
+
         import kumiho
         from kumiho_memory import (
             RedisMemoryBuffer,
