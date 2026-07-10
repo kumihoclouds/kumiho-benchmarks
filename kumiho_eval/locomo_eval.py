@@ -33,11 +33,13 @@ from .common import (
     EvalResult,
     KumihoMemoryAdapter,
     compute_aggregate_metrics,
+    DEFAULT_ANSWER_MODEL,
     exact_match,
     generate_answer,
     llm_judge,
     multihop_f1,
     normalize_answer,
+    warn_if_alias,
     print_metrics_table,
     save_results,
     token_f1,
@@ -539,6 +541,7 @@ async def evaluate_locomo(
                         # Use recalled context, fall back to a truncated version of full context
                         answer_context = recalled_context if recalled_context else full_context[:8000]
 
+                        answer_meta: dict = {}
                         prediction = await generate_answer(
                             eval_question,
                             answer_context,
@@ -547,6 +550,7 @@ async def evaluate_locomo(
                             model=config.answer_model,
                             api_key=config.openai_api_key,
                             max_tokens=50,
+                            meta_out=answer_meta,
                         )
                         answer_ms = (time.perf_counter() - t1) * 1000
 
@@ -587,6 +591,10 @@ async def evaluate_locomo(
                                 "conv_id": conv_id,
                                 "evidence": qa.get("evidence", []),
                                 "memories_recalled": len(memories),
+                                # Resolved model + fingerprint of THIS row's
+                                # answer call — silent provider swaps must be
+                                # visible in the artifact (2026-07-10 lesson).
+                                **answer_meta,
                             },
                         )
                         all_results.append(result)
@@ -719,6 +727,17 @@ async def evaluate_locomo(
     }
     metrics["locomo_field_report"] = field_report
 
+    # Provenance: the configured model string AND what the API actually
+    # served (resolved model + system_fingerprint, with call counts). A
+    # silent provider-side swap shows up here instead of as an unexplained
+    # score shift (the 2026-07-10 gpt-4o drift cost three days to isolate).
+    from kumiho_eval.common import answer_model_registry
+    metrics["configured_answer_model"] = config.answer_model
+    metrics["answer_models_served"] = {
+        f"{m}|{fp or 'no-fingerprint'}": n
+        for (m, fp), n in sorted(answer_model_registry.items())
+    }
+
     # Save metrics (now includes locomo_categories + locomo_field_report,
     # not just stdout)
     with open(output_dir / "metrics.json", "w") as f:
@@ -769,8 +788,13 @@ def main():
     parser.add_argument("--data", type=str, default=None, help="Path to locomo10.json")
     parser.add_argument("--output", type=str, default="./results", help="Output directory")
     parser.add_argument("--max-samples", type=int, default=None, help="Limit conversations")
-    parser.add_argument("--answer-model", type=str, default="gpt-4o", help="Model for answer generation")
-    parser.add_argument("--judge-model", type=str, default="gpt-4o", help="Model for LLM judge")
+    parser.add_argument(
+        "--answer-model", type=str, default=DEFAULT_ANSWER_MODEL,
+        help="Model for answer generation (pin a dated snapshot — a bare "
+             "alias is a moving target and makes scores irreproducible)")
+    parser.add_argument(
+        "--judge-model", type=str, default=DEFAULT_ANSWER_MODEL,
+        help="Model for LLM judge (pin a dated snapshot)")
     parser.add_argument("--recall-limit", type=int, default=3, help="Max memories to recall")
     parser.add_argument("--answer-only", action="store_true",
                         help="Skip ingest and answer against the project's existing corpus. "
@@ -806,6 +830,8 @@ def main():
     parser.add_argument("--score-fields", nargs="+", default=None,
                         help="Server-side focused scoring fields (e.g. --score-fields title summary)")
     args = parser.parse_args()
+    warn_if_alias(args.answer_model, role="answer")
+    warn_if_alias(args.judge_model, role="judge")
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 

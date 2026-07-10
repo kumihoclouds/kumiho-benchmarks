@@ -333,19 +333,51 @@ async def llm_judge(
 # ---------------------------------------------------------------------------
 
 
+# Pinned default for answer generation. A bare alias ("gpt-4o") is a moving
+# target: on 2026-07-10 a frozen-context re-answer of the record run's own
+# stored contexts scored 0.486 where the same contexts had scored 0.543 two
+# days earlier — the provider changed the model behind the name, silently.
+# Scores produced through an alias are irreproducible; pin, and log what the
+# API actually served (see ``answer_model_registry``).
+DEFAULT_ANSWER_MODEL = "gpt-4o-2024-08-06"
+
+#: Aggregate of what the API ACTUALLY served this process:
+#: {(resolved_model, system_fingerprint): call_count}. Harnesses dump this
+#: into metrics.json so a silent model swap is visible in the artifact.
+answer_model_registry: dict[tuple[str, str | None], int] = {}
+
+
+def warn_if_alias(model: str, *, role: str = "answer") -> None:
+    """Warn when *model* has no date suffix — an alias the provider can move."""
+    import re
+
+    if not re.search(r"\d{4}-\d{2}-\d{2}$", model):
+        logger.warning(
+            "%s model %r is a bare alias — the provider can silently repoint "
+            "it (measured 2026-07-10: -0.056 F1 on frozen contexts). Pin a "
+            "dated snapshot for reproducible scores.", role, model,
+        )
+
+
 @backoff.on_exception(backoff.expo, Exception, max_tries=3)
 async def generate_answer(
     question: str,
     context: str,
     *,
     system_prompt: str = "",
-    model: str = "gpt-4o",
+    model: str = DEFAULT_ANSWER_MODEL,
     api_key: str | None = None,
     max_tokens: int = 256,
     user_instruction: str = "Answer concisely with exact information from the context.",
     temperature: float = 0.0,
+    meta_out: dict | None = None,
 ) -> str:
     """Generate an answer to a question given retrieved context.
+
+    When *meta_out* is given, the resolved model id (``resp.model``) and
+    ``system_fingerprint`` of the successful call are written into it —
+    callers persist these per row so a silent provider-side model change
+    is detectable after the fact.
 
     ``user_instruction`` is the trailing instruction in the user turn. It
     defaults to context-grounded extraction (correct for single/multi-hop/
@@ -368,6 +400,14 @@ async def generate_answer(
             temperature=temperature,
         )
         token_tracker.record("answer", resp)
+        resolved = getattr(resp, "model", model) or model
+        fingerprint = getattr(resp, "system_fingerprint", None)
+        answer_model_registry[(resolved, fingerprint)] = (
+            answer_model_registry.get((resolved, fingerprint), 0) + 1
+        )
+        if meta_out is not None:
+            meta_out["answer_model"] = resolved
+            meta_out["system_fingerprint"] = fingerprint
         text = (resp.choices[0].message.content or "").strip()
         if text:
             return text

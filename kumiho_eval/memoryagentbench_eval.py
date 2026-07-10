@@ -38,7 +38,9 @@ from .common import (
     _OPENAI_ERRORS,
     compute_aggregate_metrics,
     exact_match,
+    DEFAULT_ANSWER_MODEL,
     generate_answer,
+    warn_if_alias,
     llm_judge,
     normalize_answer,
     print_metrics_table,
@@ -452,6 +454,7 @@ async def evaluate_memoryagentbench(
                                 )
 
                             t_answer = time.perf_counter()
+                            answer_meta: dict = {}
                             prediction = await generate_answer(
                                 question,
                                 recalled_context,
@@ -459,6 +462,7 @@ async def evaluate_memoryagentbench(
                                 model=config.answer_model,
                                 api_key=config.openai_api_key,
                                 max_tokens=200,
+                                meta_out=answer_meta,
                             )
                             answer_ms = (time.perf_counter() - t_answer) * 1000
 
@@ -492,6 +496,7 @@ async def evaluate_memoryagentbench(
                                 latency_recall_ms=recall_ms,
                                 latency_answer_ms=answer_ms,
                                 metadata={
+                                    **answer_meta,
                                     "split": split,
                                     "source": source,
                                     "sample_index": si,
@@ -625,7 +630,8 @@ def main():
                         help="Limit samples per split")
     parser.add_argument("--chunk-size", type=int, default=16384,
                         help="Context chunk size for memory ingestion (chars)")
-    parser.add_argument("--answer-model", type=str, default="gpt-4o")
+    parser.add_argument("--answer-model", type=str, default=DEFAULT_ANSWER_MODEL,
+                        help="Pin a dated snapshot; bare aliases are moving targets")
     parser.add_argument("--judge-model", type=str, default="gpt-4o")
     parser.add_argument("--recall-limit", type=int, default=10)
     parser.add_argument("--recall-mode", type=str, default="full",
@@ -649,6 +655,7 @@ def main():
     parser.add_argument("--entry-concurrency", type=int, default=1,
                         help="How many entries to process in parallel")
     args = parser.parse_args()
+    warn_if_alias(args.answer_model, role="answer")
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
