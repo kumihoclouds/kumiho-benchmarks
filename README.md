@@ -64,26 +64,33 @@ breakdown, and paper integration notes.
 
 ### LoCoMo (Original QA Benchmark)
 
-**0.564 overall F1** on all 1,986 questions across 10 conversations —
-matching the February 2026 record (0.565) and now **shipping and reproducible
-in kumiho-memory v0.9.0** (consolidated recall pipeline, clean backend).
-Achieved in **summarized mode** (title + summary only, no raw conversation
-artifacts), demonstrating that the graph's metadata layer alone is sufficient
-to outperform systems with full-context retrieval.
+**0.531 overall F1** on all 1,986 questions across 10 conversations, on the
+**shipped ontology stack** (kumiho-memory **0.10.1** + kumiho-server **v1.5.0**)
+with the answer model **pinned to `gpt-4o-2024-08-06`** and every response's
+`system_fingerprint` logged. Achieved in **summarized mode** (title + summary
+only, no raw conversation artifacts), demonstrating that the graph's metadata
+layer alone is sufficient to outperform systems with full-context retrieval.
 
-> **✅ Recovered and shipped (kumiho-memory v0.9.0, 2026-07-08).** An interim
-> 07-06 re-run measured only **0.495** — the shipped SDK had regressed to ≈0.46
-> after a later LLM-only sibling reranker replaced the cosine ranking the Feb
-> result relied on. v0.9.0 completes the fix: a **hybrid cosine+LLM sibling
-> ranking** plus **per-sub-query cross-encoder placement**, restoring **overall
-> 0.564** (Feb parity) on a clean backend — reproducible from the shipped SDK,
-> not a stale claim. Versus the Feb pipeline it is **higher on multi-hop
-> (0.393 vs 0.355) and open-domain (0.313 vs 0.290)**, level on temporal and
-> overall, slightly lower on single-hop (0.449 vs 0.462). Critically, the
-> **LoCoMo-Plus crown (93.3%) was verified to hold** — the standard-LoCoMo
-> recovery did not cost the cognitive benchmark (entry-by-entry vs the prior
-> 93.3% run). The table below shows the shipped v0.9.0 numbers next to the Feb
-> record.
+> **⏱️ Read the numbers by era, not by absolute value.** The February 2026
+> peak (**0.565**) and the 2026-07-08 v0.9.0 run (**0.564**) were measured with
+> *that day's* `gpt-4o`, which is **not version-stable** — the same recalled
+> contexts, re-answered on later `gpt-4o` snapshots, scored **−0.056** across
+> every snapshot we tested (frozen-context experiment). Those peaks are
+> therefore **historical, not reproducible** on current models, and are **not
+> directly comparable** to a run made on a different date. The **0.531** headline
+> is the number a reader can reproduce *today* on a pinned model.
+>
+> **The apples-to-apples "did the ontology help" test is same-corpus,
+> same-era, same-pins:** ontology **ON = 0.531** vs an **OFF-era control
+> (0.521)** measured the same day on the same model → **+0.010** from the
+> write-time ontology + graph-augmented recall. And the retrieval layer's
+> **multi-hop F1 (0.361) beats the February record (0.355)** *despite* the
+> weaker answer model — recall improved even as the answer model regressed.
+> The recall layer is what Kumiho controls; end-to-end F1 additionally scales
+> with whatever answer model the application chooses.
+>
+> **LoCoMo-Plus crown (93.3%) is unaffected** — a separate external benchmark
+> ([arXiv 2602.10715](https://arxiv.org/abs/2602.10715)); see above.
 
 The official LoCoMo evaluation metric is **token-level F1 with Porter stemming**
 ([Maharana et al. 2024](https://arxiv.org/abs/2402.17753), `evaluation.py`).
@@ -103,27 +110,39 @@ and Memobase's published evaluation
 | Mem0 | 0.387 | 0.286 | 0.489 | 0.477 | ~0.40 | arXiv 2504.19413 |
 | Mem0-Graph | 0.381 | 0.243 | 0.516 | 0.493 | ~0.40 | arXiv 2504.19413 |
 | Memobase | 0.463 | 0.229 | 0.642 | 0.516 | — | GitHub |
-| Kumiho (Feb 2026, cosine) | 0.462 | 0.355 | 0.533 | 0.290 | 0.565 | This work |
-| **Kumiho** (v0.9.0, 2026-07-08, shipped) | **0.449** | **0.393** | **0.530** | **0.313** | **0.564** | This work |
+| Kumiho (Feb 2026, cosine) <sup>†</sup> | 0.462 | 0.355 | 0.533 | 0.290 | 0.565 | This work |
+| Kumiho (v0.9.0, 2026-07-08) <sup>†</sup> | 0.449 | 0.393 | 0.530 | 0.313 | 0.564 | This work |
+| **Kumiho** (0.10.1 ontology, 2026-07-11, pinned) | **0.424** | **0.361** | **0.457** | **0.248** | **0.531** | This work |
 
-*Kumiho's overall includes adversarial category (0.969 F1, n=446) which most
-baselines do not report separately. Excluding adversarial, Kumiho's F1 across
-the four standard categories is 0.447.*
+<sup>†</sup> *Measured on an unpinned, since-drifted `gpt-4o`; historical peaks,
+not reproducible on current snapshots (see era note above). The bold row is the
+reproducible-today figure on `gpt-4o-2024-08-06`.*
+
+*Kumiho's overall includes the adversarial category (0.955 F1, n=446), which
+most baselines do not report separately. Excluding adversarial, Kumiho's F1
+across the four standard categories is **0.408**.*
 
 #### Per-Category Breakdown
 
-| Category | Count | F1 |
-| -------- | ----: | --: |
-| Single-hop | 841 | 0.449 |
-| Multi-hop | 282 | 0.393 |
-| Temporal | 321 | 0.530 |
-| Open-domain | 96 | 0.313 |
-| Adversarial | 446 | 0.969 |
-| **Overall** | **1,986** | **0.564** |
+| Category | Count | F1 | same-era OFF control |
+| -------- | ----: | --: | --: |
+| Single-hop | 841 | 0.424 | 0.401 |
+| Multi-hop | 282 | **0.361** | 0.353 |
+| Temporal | 321 | 0.457 | 0.471 |
+| Open-domain | 96 | 0.248 | 0.232 |
+| Adversarial | 446 | 0.955 | 0.951 |
+| **Overall** | **1,986** | **0.531** | **0.521** |
 
-<sub>Shipped kumiho-memory v0.9.0 (a3c7938), full 10-conversation run, token-F1, gpt-4o answer, summarized mode, clean backend. Feb 2026 record (0.565) retained above for comparison.</sub>
+<sub>kumiho-memory 0.10.1 (ontology ON by default) + kumiho-server v1.5.0, full
+10-conversation run, token-F1, answer model pinned to `gpt-4o-2024-08-06`
+(`system_fingerprint` logged per response), summarized mode. "Same-era OFF
+control" = `KUMIHO_MEMORY_ONTOLOGY=0` on the same corpus, same day, same pins
+(the gate-v2 control) — the like-for-like measure of the ontology's effect.
+Multi-hop (0.361) exceeds the February peak (0.355) despite the weaker pinned
+answer model. February 2026 (0.565) and v0.9.0 (0.564) retained above as
+drift-era peaks.</sub>
 
-Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 7 --no-judge --graph-augmented (default)`
+Run configuration: `--recall-mode summarized --recall-limit 3 --context-top-k 5 --recall-candidate-multiplier 3 --answer-model gpt-4o-2024-08-06 --no-judge --graph-augmented (default, ontology on)`
 
 ---
 
