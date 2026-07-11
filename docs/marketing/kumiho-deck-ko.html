@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Kumiho Memory 기술 덱 — 그래프 네이티브 인지 메모리</title>
+<style>
+  :root{
+    --ink:#0d1117; --panel:#141b23; --panel2:#1a2330; --line:#25313f;
+    --fg:#e8eef4; --dim:#94a3b3; --faint:#5c6b7a;
+    --fox:#41e0c8; --amber:#e8a33d; --good:#5fd68a; --bad:#e07a6b;
+    --mono:ui-monospace,'Cascadia Code',Consolas,monospace;
+  }
+  html{background:var(--ink)}
+  body{background:var(--ink);color:var(--fg);font:15.5px/1.66 'Avenir Next','Segoe UI','Malgun Gothic',system-ui,sans-serif;margin:0}
+  .wrap{max-width:960px;margin:0 auto;padding:0 26px 80px}
+  a{color:var(--fox);text-decoration:none}
+
+  .slide{border:1px solid var(--line);border-radius:14px;background:var(--panel);
+         padding:34px 38px;margin:26px 0;position:relative;min-height:120px}
+  .slide.cover{background:linear-gradient(160deg,#10161e, #0d1117 55%);padding:70px 48px}
+  .sn{position:absolute;top:16px;right:20px;font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .kicker{font-size:12px;letter-spacing:.28em;color:var(--fox);text-transform:uppercase;margin-bottom:10px}
+  h1{font:600 clamp(30px,4.6vw,46px)/1.15 Georgia,serif;margin:0 0 16px;text-wrap:balance}
+  h1 em{font-style:normal;color:var(--fox)}
+  h2{font:600 22px/1.3 Georgia,serif;margin:0 0 4px;text-wrap:balance}
+  h2 .no{color:var(--fox);font-family:var(--mono);font-size:13px;margin-right:10px}
+  .lede{color:var(--dim);font-size:16px;max-width:46em;margin:6px 0 0;text-wrap:pretty}
+  h3{font-size:15px;margin:20px 0 6px}
+  p{max-width:52em}
+  ul{padding-left:20px;color:var(--dim)} li{margin:3px 0}
+  b{color:var(--fg)}
+
+  table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+  .tblwrap{overflow-x:auto;margin:12px 0}
+  th{color:var(--faint);text-align:left;font-weight:600;padding:6px 12px 6px 0;border-bottom:1px solid var(--line);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+  td{padding:7px 12px 7px 0;border-bottom:1px solid #1b2531;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  .hl td{background:rgba(65,224,200,.06)}
+  .up{color:var(--good);font-weight:600} .down{color:var(--bad)}
+  .fox-t{color:var(--fox);font-weight:600} .amber-t{color:var(--amber)}
+
+  .kref{font-family:var(--mono);font-size:11.5px;color:#9fd8ce;word-break:break-all}
+  .kref .kind{color:var(--amber)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:#c9e6df}
+  pre{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.62;color:#c9e6df;margin:10px 0}
+  pre .k{color:var(--amber)} pre .s{color:#9fd8ce} pre .c{color:var(--faint)} pre .g{color:var(--good)} pre .b{color:var(--bad)}
+  .real{display:inline-block;font-size:10.5px;letter-spacing:.12em;color:var(--ink);background:var(--fox);border-radius:4px;padding:1px 8px;margin-left:8px;vertical-align:2px;font-weight:700}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:740px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+  .card h4{margin:0 0 6px;font-size:13.5px;color:var(--fox)}
+  .card p,.card ul{font-size:13px;color:var(--dim);margin:4px 0}
+
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+  .fnode{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:12.5px;white-space:nowrap}
+  .fnode.key{border-color:var(--fox);color:var(--fox)}
+  .farr{color:var(--faint)}
+  .note{font-size:12.5px;color:var(--faint);border-left:2px solid var(--line);padding-left:12px;margin:12px 0;max-width:52em}
+</style>
+
+<div class="wrap">
+
+<!-- ═══════════════ S01 표지 ═══════════════ -->
+<div class="slide cover"><span class="sn">01</span>
+  <div class="kicker">Kumiho · 구미호 · Graph-Native Cognitive Memory</div>
+  <h1>에이전트의 기억을<br><em>타입 지식 그래프</em>로 짓는 방법</h1>
+  <p class="lede">대화를 저장하는 순간 엔티티·사실·결정·사건의 그래프가 만들어지고,
+  질문이 들어오면 그래프 구조를 타고 세션을 넘나들며 근거를 조인한다.
+  이 덱의 모든 예제는 <b>지금 Kumiho 서버에 실제로 저장되어 있는 LoCoMo 벤치마크 메모리</b>에서 그대로 가져왔다.</p>
+  <p style="font-size:12.5px;color:var(--faint);margin-top:14px">아키텍처의 원천 —
+  prospective indexing · event extraction · 버저닝 메모리의 AGM 신념수정 형식 의미론 — 은
+  <a href="https://arxiv.org/abs/2603.17244">Park, <i>Graph-Native Cognitive Memory for AI Agents</i>
+  (arXiv:2603.17244, 2026)</a>에서 최초 제안되었다. 이 덱은 그 논문이 프로덕션에서 실동작하는 기록이다.</p>
+  <div style="margin-top:28px;display:flex;gap:26px;flex-wrap:wrap;font-variant-numeric:tabular-nums">
+    <div><b style="font:600 26px Georgia,serif;color:var(--fox)">0.531</b><br><span style="font-size:12px;color:var(--dim)">LoCoMo F1 (1,986문항 · gpt-4o-2024-08-06 고정 · 오늘 재현가능)</span></div>
+    <div><b style="font:600 26px Georgia,serif;color:var(--fox)">93.3%</b><br><span style="font-size:12px;color:var(--dim)">LoCoMo-Plus (인지 벤치마크)</span></div>
+    <div><b style="font:600 26px Georgia,serif;color:var(--fox)">+0.054</b><br><span style="font-size:12px;color:var(--dim)">타입 그래프 리콜 기여 (4카테고리, 페어 실측)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ S02 요약 ═══════════════ -->
+<div class="slide"><span class="sn">02</span>
+  <h2><span class="no">요약</span>이 덱에서 다루는 것</h2>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card"><h4>Part 1 · 저장 (S05–S13)</h4>
+      <p>대화가 어떤 형식으로 저장되는가 — 실제 리비전 metadata 원문, kref 주소 체계,
+      리비전 스태킹(한 아이템에 19개 리비전), 온톨로지 분해(한 대화 → 타입 노드 221개),
+      엣지 501개의 생성 규칙, 인덱스 위생.</p></div>
+    <div class="card"><h4>Part 2 · 리콜 (S14–S19)</h4>
+      <p>질문이 어떻게 답이 되는가 — 하이브리드 검색, 엔티티-브리지 조인(그래프 JOIN),
+      fact-recall 레그, 증거 가중 재랭크, 추가-비대체 컨텍스트 조립.</p></div>
+    <div class="card"><h4>Part 3 · 증거 (S20–S22)</h4>
+      <p>실전 win 사례(오답→정답 전환의 원문 증거), 페어 A/B 측정 방법론, 경쟁사 F1 비교.</p></div>
+    <div class="card"><h4>Part 4 · 기술/구조 (S23–S24)</h4>
+      <p>기술 스택 상세, 오픈코어 경계 — 무엇이 열려 있고 무엇이 모트인가.</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════ S03 문제 ═══════════════ -->
+<div class="slide"><span class="sn">03</span>
+  <h2><span class="no">문제</span>평면 메모리(로그 + 벡터)의 세 가지 실패 모드</h2>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card"><h4>① 멀티홉 — JOIN이 없다</h4>
+      <p>"Max를 입양한 사람은 어디서 일해?" — 근거 두 개가 <b>다른 세션</b>에 있고 공통 어휘가 없으면
+      벡터 유사도는 둘을 연결할 방법 자체가 없다. 검색은 similarity지 join이 아니다.</p></div>
+    <div class="card"><h4>② 시간 — 날짜는 임베딩에 안 실린다</h4>
+      <p>"언제 프라이드 퍼레이드에 갔지?" — 날짜는 임베딩 공간에서 거의 구분되지 않는다.
+      시간 정보는 <b>구조화된 필드</b>로 뽑아둬야 랭킹에 쓸 수 있다.</p></div>
+    <div class="card"><h4>③ 신념 갱신 — 무엇이 최신인지 모른다</h4>
+      <p>어제는 "3 July"라 했고 오늘 "11 August"라 하면? 로그 더미에선 둘 다 검색되고
+      모델이 알아서 고르길 빈다. 갱신 이력이 <b>구조</b>여야 한다.</p></div>
+    <div class="card"><h4>Kumiho의 답</h4>
+      <p>저장 시점에 타입 그래프를 짓고(write-time ontology), 리콜 시점에 구조를 탄다
+      (structure-aware recall). 셋 다 아래에서 실데이터로 보인다.</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════ S04 아키텍처 ═══════════════ -->
+<div class="slide"><span class="sn">04</span>
+  <h2><span class="no">구조</span>시스템 아키텍처</h2>
+  <div class="flow" style="margin-top:16px">
+    <span class="fnode">에이전트 / 앱</span><span class="farr">→</span>
+    <span class="fnode key">kumiho-memory SDK (Python · 오픈소스)</span><span class="farr">→ gRPC →</span>
+    <span class="fnode key">Kumiho Server (Rust · 프로프라이어터리)</span><span class="farr">→</span>
+    <span class="fnode">Neo4j (그래프+벡터)</span>
+  </div>
+  <div class="tblwrap"><table>
+    <tr><th>레이어</th><th>역할</th><th>핵심 기술</th></tr>
+    <tr><td><b>kumiho-memory</b> (오픈)</td><td>인지 레이어 — 통합·분해·리콜의 모든 정책</td><td>Python · LLM 구조화 출력 · asyncio 파이프라인</td></tr>
+    <tr><td><b>kumiho</b> core SDK (오픈)</td><td>kref/아이템/리비전/엣지 클라이언트</td><td>gRPC · Python</td></tr>
+    <tr><td><b>Kumiho Server</b> (모트)</td><td>그래프 엔진 — 저장·검색·멀티테넌시</td><td>Rust · tokio · Lucene 풀텍스트+벡터 하이브리드 융합 · lindera ko-dic 한국어 형태소 인덱싱</td></tr>
+    <tr><td>스토리지</td><td>장기 그래프 + 작업 기억</td><td>Neo4j (VECTOR 인덱스 포함) · Redis (세션 버퍼)</td></tr>
+  </table></div>
+  <p class="note">임베딩은 서버가 생성/저장한다 (기본 text-embedding-3-small, 1536차원) — 클라이언트는 벡터를 만질 일이 없다.</p>
+</div>
+
+<!-- ═══════════════ S05 kref ═══════════════ -->
+<div class="slide"><span class="sn">05</span>
+  <h2><span class="no">저장 · 1</span>모든 기억에는 주소가 있다 — kref 해부</h2>
+  <p class="lede">kref는 Kumiho의 URI다. 프로젝트/스페이스/아이템/종류/리비전이 주소 하나에 담긴다.</p>
+  <pre>kref://<span class="k">locomo-c26-p41facts</span>/<span class="g">personal/locomo-conv-26</span>/<span class="s">caroline-shares-her-transgender-journey-…</span>.<span class="k">conversation</span>?r=<span class="g">1</span>
+        └─ 프로젝트            └─ 스페이스 (경로형)        └─ 아이템 슬러그 (내용 기반 아이덴티티)      └─ kind   └─ 리비전 번호</pre>
+  <ul>
+    <li><b>스페이스가 타입을 인코딩</b>: 대화는 <code>personal/…</code>, 사실은 <code>facts/</code>, 결정은 <code>decisions/</code> — 조회·격리·정리가 경로 연산이 된다.</li>
+    <li><b>슬러그 = 아이덴티티</b>: 같은 주제를 다시 배우면 새 노드가 아니라 <b>같은 아이템에 리비전이 쌓인다</b> (get-or-create).</li>
+    <li><b>?r=N = 시간축</b>: 모든 기억이 코드처럼 버저닝된다. 최신이 head, 역사는 한 홉 뒤.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S06 저장 파이프라인 ═══════════════ -->
+<div class="slide"><span class="sn">06</span>
+  <h2><span class="no">저장 · 2</span>파이프라인 — 대화에서 그래프까지</h2>
+  <div class="flow" style="margin-top:16px">
+    <span class="fnode">대화 턴</span><span class="farr">→</span>
+    <span class="fnode">Redis 작업기억 (세션 버퍼)</span><span class="farr">→ 임계치 →</span>
+    <span class="fnode key">Consolidation<br><span style="color:var(--faint);font-size:11px">LLM 1콜 · 스키마 강제 구조화 출력</span></span><span class="farr">→</span>
+    <span class="fnode">대화 리비전 저장<br><span style="color:var(--faint);font-size:11px">+ 서버측 임베딩</span></span><span class="farr">→</span>
+    <span class="fnode key">온톨로지 분해<br><span style="color:var(--faint);font-size:11px">타입 노드 + 엣지 (결정론적)</span></span>
+  </div>
+  <ul style="margin-top:14px">
+    <li>통합은 <b>LLM 1콜</b> — JSON 스키마가 강제되므로 (structured output) 출력이 파싱 실패할 수 없다.</li>
+    <li>스키마는 온톨로지 스위치와 무관하게 <b>바이트 동일</b> — 분해를 켜도 기본 요약 품질이 변하지 않는다 (테스트로 보증).</li>
+    <li>분해는 요약 JSON에서 <b>결정론적으로</b> 그래프를 짓는다 — 추가 LLM 콜 0회, 환각 엣지 0개.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S07 실제 리비전 ═══════════════ -->
+<div class="slide"><span class="sn">07</span>
+  <h2><span class="no">저장 · 3</span>실제 저장된 대화 리비전 <span class="real">LIVE DATA</span></h2>
+  <p class="lede">지금 서버에 있는 LoCoMo conv-26의 리비전 하나를 Neo4j에서 그대로 읽었다 (요약 발췌).</p>
+  <pre><span class="c"># kref://locomo-c26-p41facts/personal/locomo-conv-26/caroline-shares-her-transgender-journey-….conversation?r=1</span>
+<span class="k">schema</span>        : kumiho.agent_memory.v1
+<span class="k">title</span>         : Caroline shares her transgender journey at a school event
+<span class="k">summary</span>       : On 9 June 2023, Caroline recounted her experience at a school event where she
+                spoke about her transgender journey and advocated for increased involvement…
+<span class="k">facts</span>         : Caroline started transitioning three years ago; Caroline spoke about her
+                journey at a school event on 9 June 2023; Caroline has known her friends for 4 years…
+<span class="k">events</span>        : [one week before 9 June 2023] Caroline spoke about her transgender journey…;
+                [4 years ago] Caroline moved from her home country and formed a s…
+<span class="k">entities</span>      : Caroline, Melanie
+<span class="k">topics</span>        : LGBTQ advocacy, support systems, family
+<span class="k">event_date</span>    : 2019-06                     <span class="c"># 시간 질의 랭킹에 쓰이는 valid-time</span>
+<span class="k">implications</span>  : Caroline organizes a series of educational workshops…  <span class="c"># 미래 연결용 추론</span>
+<span class="k">message_count</span> : 23        <span class="k">session_id</span> : personal:user-0e90700f10:20260709:221
+<span class="k">embedding</span>     : [1536-dim vector]            <span class="c"># 서버가 title+summary로 생성·저장</span>
+<span class="k">tag_history</span>   : summarized → published        <span class="c"># 라이프사이클이 태그로 기록됨</span></pre>
+  <p class="note">요약(summary)만이 아니라 <b>facts / events / entities / topics / implications / event_date</b>가
+  구조화 필드로 함께 저장된다 — 리콜 시점에 각각 다른 용도로 쓰인다.</p>
+</div>
+
+<!-- ═══════════════ S08 스태킹 ═══════════════ -->
+<div class="slide"><span class="sn">08</span>
+  <h2><span class="no">저장 · 4</span>리비전 스태킹 — 기억은 덮어쓰지 않고 쌓인다 <span class="real">LIVE DATA</span></h2>
+  <pre><span class="c"># 위 대화 아이템의 실제 상태:</span>
+kref://…/caroline-shares-her-transgender-journey-….conversation   → <span class="g">리비전 19개 스택</span></pre>
+  <ul>
+    <li>conv-26의 세션들이 통합될 때마다 <b>같은 아이템에 ?r=1 … ?r=19로 쌓였다</b> — 아이템은 "주제", 리비전은 "그 주제에 대해 그때 안 것".</li>
+    <li>리콜은 기본적으로 head(최신)를 보고, <b>sibling 리비전들</b>은 질문과의 관련도로 선별되어 컨텍스트에 합류한다 (하이브리드 코사인+LLM 랭킹).</li>
+    <li>덮어쓰기가 없으므로 "그때 뭐라고 했었지?"가 언제나 답 가능 — <code>get_revision_as_of</code>로 시점 조회.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S09 분해 원장 ═══════════════ -->
+<div class="slide"><span class="sn">09</span>
+  <h2><span class="no">저장 · 5</span>온톨로지 분해 — 한 대화가 만든 타입 노드 원장 <span class="real">LIVE DATA</span></h2>
+  <p class="lede">conv-26 대화 하나(세션 19개 분량)를 온톨로지 모드로 저장한 실제 결과:</p>
+  <div class="tblwrap"><table>
+    <tr><th>kind</th><th>개수</th><th>스페이스</th><th>내용물</th></tr>
+    <tr class="hl"><td><b>fact</b></td><td>103</td><td class="kref">/facts</td><td>원자적 주장 + certainty — "answer-shaped" 단위</td></tr>
+    <tr><td><b>event</b></td><td>77</td><td class="kref">/events</td><td>사건 + when + participants</td></tr>
+    <tr><td><b>entity</b></td><td>15</td><td class="kref">/entities</td><td>순수 앵커 (display_name만 — 내용 없음, 연결이 존재 이유)</td></tr>
+    <tr><td>question</td><td>10</td><td class="kref">/questions</td><td>미해결 질문</td></tr>
+    <tr><td>action / decision</td><td>8 / 8</td><td class="kref">/actions /decisions</td><td>할 일 · 결정+이유</td></tr>
+  </table></div>
+  <p class="note">타입 노드도 각각 임베딩을 가진 1급 리비전이다 — 시맨틱으로 직접 검색되고(리콜 §17),
+  kref로 직접 접근되며, 같은 주장이 재등장하면 리비전이 쌓인다.</p>
+</div>
+
+<!-- ═══════════════ S10 fact 클러스터 ═══════════════ -->
+<div class="slide"><span class="sn">10</span>
+  <h2><span class="no">저장 · 6</span>실제 fact 노드와 ABOUT 클러스터 <span class="real">LIVE DATA</span></h2>
+  <pre><span class="s">kref://locomo-c26-p41facts/facts/becoming-nicole-by-amy-ellis-nutt-inspi-05578a27.<span class="k">fact</span>?r=1</span>
+  claim = "'Becoming Nicole' by Amy Ellis Nutt inspired Caroline"
+  ──ABOUT──▶ <span class="s">…/entities/caroline.<span class="k">entity</span>?r=1</span>
+
+<span class="s">kref://locomo-c26-p41facts/facts/caroline-and-melanie-attended-a-pride-f-587bdd8b.<span class="k">fact</span>?r=1</span>
+  claim = "Caroline and Melanie attended a Pride fest together last year."
+  ──ABOUT──▶ <span class="s">…/entities/caroline.<span class="k">entity</span></span>   ──ABOUT──▶ <span class="s">…/entities/melanie.<span class="k">entity</span></span>   <span class="c"># 두 앵커에 동시 연결</span></pre>
+  <ul>
+    <li>ABOUT 연결은 <b>토큰 경계 매칭</b>으로 결정 — 부분 문자열 오탐이 없다 ("AI"가 "plan finalized"에 안 붙음, 한글 "김"이 "김치"에 안 붙음).</li>
+    <li>한 fact가 여러 엔티티에 연결되면 그 fact는 나중에 <b>브리지 조인의 후보 증거</b>가 된다 (§16).</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S11 엣지 ═══════════════ -->
+<div class="slide"><span class="sn">11</span>
+  <h2><span class="no">저장 · 7</span>엣지 시스템 — conv-26 한 대화의 실측 그래프 <span class="real">LIVE DATA</span></h2>
+  <div class="tblwrap"><table>
+    <tr><th>엣지</th><th>실측 개수</th><th>의미</th><th>생성 규칙 (전부 결정론적 — LLM 추측 없음)</th></tr>
+    <tr><td><code>DERIVED_FROM</code></td><td class="num">208</td><td>출처: 타입 노드 → 원본 대화</td><td>materialization 시 항상</td></tr>
+    <tr><td><code>ABOUT</code></td><td class="num">175</td><td>fact/decision → 언급된 엔티티</td><td>토큰 경계 멘션 매칭 (Hangul-aware)</td></tr>
+    <tr><td><code>INVOLVES</code></td><td class="num">89</td><td>event → 참여 엔티티</td><td>participants 필드에서 직접</td></tr>
+    <tr><td><code>SUPERSEDES</code></td><td class="num">29</td><td>신념 갱신: 새 주장 → 대체된 옛 주장</td><td>같은 주제 후보 검색 + 토큰 중첩 Jaccard ≥ 0.6</td></tr>
+    <tr><td><code>DEPENDS_ON</code></td><td class="num">0*</td><td>결정 → 근거 fact</td><td>같은 통합 내 fact와 중첩 ≥ 0.4 (이 대화에선 임계 미달)</td></tr>
+  </table></div>
+  <p class="note">* 임계치를 넘는 근거 결합이 없으면 엣지를 만들지 않는다 — <b>불확실하면 연결하지 않는 것</b>도 설계다.
+  총합: 대화 1개 → 노드 221개 + 엣지 501개, 추가 LLM 비용 0.</p>
+</div>
+
+<!-- ═══════════════ S12 SUPERSEDES ═══════════════ -->
+<div class="slide"><span class="sn">12</span>
+  <h2><span class="no">저장 · 8</span>SUPERSEDES — 신념 갱신이 구조가 되는 순간 <span class="real">LIVE DATA</span></h2>
+  <pre><span class="g">NEW</span> <span class="s">…/facts/caroline-attended-a-pride-parade-on-11-d0bc603e.<span class="k">fact</span>?r=1</span>
+     "Caroline attended a pride parade <span class="g">on 11 August 2023</span>"
+      │ SUPERSEDES  <span class="c">(같은 주제, 토큰 중첩 ≥ 0.6 — 랭킹 점수가 아니라 내용 중첩으로 판정)</span>
+      ▼
+<span class="b">OLD</span> <span class="s">…/facts/caroline-attended-an-lgbtq-pride-parade-5a153231.<span class="k">fact</span>?r=1</span>
+     "Caroline attended an LGBTQ+ pride parade <span class="b">on 3 July 2023</span>"</pre>
+  <ul>
+    <li>최신 주장이 head가 되고 <b>옛 주장은 삭제되지 않는다</b> — "언제부터 그렇게 알았지?"가 그래프 질의가 된다.</li>
+    <li>판정이 <b>코퍼스-독립적</b>(내용 중첩)이라 데이터가 늘어나도 링크 기준이 흔들리지 않는다.</li>
+    <li>이 메커니즘이 LoCoMo-Plus(모순·갱신 처리) 93.3%의 구조적 기반이다.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S13 인덱스 위생 ═══════════════ -->
+<div class="slide"><span class="sn">13</span>
+  <h2><span class="no">저장 · 9</span>인덱스 위생 — 구조가 검색을 오염시키지 않게</h2>
+  <p class="lede">타입 노드 텍스트는 대화의 복제라, 렉시컬 인덱스에 넣으면 코퍼스 전체의 BM25 IDF가 뒤틀린다. 그래서:</p>
+  <pre><span class="c">// Kumiho Server (Rust) — 파생 kind는 풀텍스트 코퍼스에서 제외</span>
+<span class="k">pub const</span> FULLTEXT_EXCLUDED_KINDS: &amp;[&amp;str] =
+    &amp;[<span class="s">"entity"</span>, <span class="s">"fact"</span>, <span class="s">"decision"</span>, <span class="s">"event"</span>, <span class="s">"action"</span>, <span class="s">"question"</span>];</pre>
+  <ul>
+    <li>타입 노드는 <b>렉시컬 검색에서 투명</b> (이름/kind 필드만 남김) — IDF 오염 실측 −0.031을 제거.</li>
+    <li>대신 <b>벡터 검색과 kref 그래프 순회로는 완전히 도달 가능</b> — 정확히 의도된 분업: 구조는 그래프로, 어휘는 대화로.</li>
+    <li>레거시 데이터용 idempotent 백필이 옛 오염 블롭을 정리한다.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S14 리콜 개요 ═══════════════ -->
+<div class="slide"><span class="sn">14</span>
+  <h2><span class="no">리콜 · 1</span>리콜 파이프라인 — 7단계</h2>
+  <div class="flow" style="margin-top:16px">
+    <span class="fnode">① 리포뮬레이션<br><span style="color:var(--faint);font-size:11px">질문→N개 각도</span></span><span class="farr">→</span>
+    <span class="fnode">② 하이브리드 병렬 리콜<br><span style="color:var(--faint);font-size:11px">각도별 BM25+벡터</span></span><span class="farr">→</span>
+    <span class="fnode">③ 구조 순회<br><span style="color:var(--faint);font-size:11px">엣지 따라가기</span></span><span class="farr">→</span>
+    <span class="fnode key">④ 브리지 조인<br><span style="color:var(--faint);font-size:11px">그래프 JOIN</span></span><span class="farr">→</span>
+    <span class="fnode key">⑤ fact 레그<br><span style="color:var(--faint);font-size:11px">타입 주장 직접 검색</span></span><span class="farr">→</span>
+    <span class="fnode">⑥ 재랭크<br><span style="color:var(--faint);font-size:11px">증거·시간·다양성</span></span><span class="farr">→</span>
+    <span class="fnode key">⑦ 추가-비대체 조립<br><span style="color:var(--faint);font-size:11px">additive compose</span></span>
+  </div>
+  <p class="note">④⑤⑦(초록)이 타입 그래프가 만드는 차별점이다. 온톨로지를 끄면 ①②③⑥만 남고
+  출력은 기존 파이프라인과 <b>바이트 동일</b> — 구조는 순수하게 더해지기만 한다.</p>
+</div>
+
+<!-- ═══════════════ S15 하이브리드 ═══════════════ -->
+<div class="slide"><span class="sn">15</span>
+  <h2><span class="no">리콜 · 2</span>하이브리드 검색 — 서버측 융합</h2>
+  <ul>
+    <li>레그 3종: <b>아이템 풀텍스트</b>(이름·kind·메타 블롭) + <b>리비전 풀텍스트</b> + <b>리비전 벡터</b>(1536-dim 코사인).</li>
+    <li>각 레그 점수를 <b>레그별 정규화 후 가중 합산</b> — BM25의 무한 스케일이 0..1 코사인을 짓누르던 고전적 실패를 제거. 여러 레그가 동의하면 가산점.</li>
+    <li>퍼지 질의(<code>getting~1 pet~1</code>, 편집거리 1)로 오타 내성; 한국어는 ko-dic 형태소 토크나이저로 인덱싱.</li>
+    <li>임베딩 생성이 느리면 <b>5초 타임아웃 후 풀텍스트-온리로 우아하게 강등</b> — 검색은 절대 죽지 않는다.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S16 브리지 조인 ═══════════════ -->
+<div class="slide"><span class="sn">16</span>
+  <h2><span class="no">리콜 · 3</span>엔티티-브리지 조인 — 그래프가 하는 JOIN <span class="real">LIVE DATA</span></h2>
+  <p class="lede">멀티홉 질문 = 각도들의 교집합. 서로 다른 각도의 상위 히트가 <b>같은 엔티티를 ABOUT으로 가리키면</b>
+  그 엔티티가 브리지고, 브리지의 fact들이 연결 증거다.</p>
+  <div class="tblwrap"><table>
+    <tr><th>conv-26 실측 앵커</th><th>in-degree</th><th>판정</th></tr>
+    <tr><td class="kref">entities/caroline.entity</td><td class="num">149</td><td><span class="amber-t">허브 — defer</span> (모든 각도가 도달 → 조인 판별력 없음, 후순위로만)</td></tr>
+    <tr><td class="kref">entities/melanie.entity</td><td class="num">82</td><td><span class="amber-t">허브 — defer</span></td></tr>
+    <tr class="hl"><td class="kref">entities/youth-center.entity</td><td class="num">4</td><td><span class="fox-t">판별 브리지 — 우선 채택</span></td></tr>
+  </table></div>
+  <ul>
+    <li>브리지의 fact 노드는 <b>실제 상속 점수</b>(0.9 × 약한 각도의 점수)를 받는다 — 양쪽 각도가 보증한 관련성이므로 1급 히트로 경쟁.</li>
+    <li>허브는 <b>버리지 않고 미룬다</b>(defer) — 2인 대화에선 화자가 곧 조인 키이기 때문. 판별 브리지가 예산을 못 채울 때만 허브 사용.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S17 fact 레그 ═══════════════ -->
+<div class="slide"><span class="sn">17</span>
+  <h2><span class="no">리콜 · 4</span>fact-recall 레그 — 정답 모양의 단위를 직접 가져오기</h2>
+  <ul>
+    <li>원 질문으로 <code>facts</code> 스페이스를 <b>1회 시맨틱 검색</b> — fact는 "Caroline is researching adoption agencies…"처럼
+    <b>정답과 같은 모양</b>의 원자 주장이라, 한 개의 히트가 곧 답이 된다.</li>
+    <li>인덱스 위생(§13) 덕에 이 도달은 <b>벡터-순수</b> — 렉시컬 오염 없이 시맨틱으로만 닿는다.</li>
+    <li>점수는 <b>가장 약한 대화 히트 × 0.9</b> (축-불변 상대점수) — 크로스인코더가 점수 축을 바꿔도
+    fact가 대화를 앞지르거나 밀어낼 수 없다. <b>더하기만 가능한 설계.</b></li>
+    <li>실측 (같은 코퍼스 199문항 페어): <b>4카테고리 +0.054</b>, 5개 카테고리 전부 상승, 문항별 23승 172무 4패.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S18 재랭크 ═══════════════ -->
+<div class="slide"><span class="sn">18</span>
+  <h2><span class="no">리콜 · 5</span>증거 가중 재랭크 — 결정론적 사전확률의 층</h2>
+  <div class="tblwrap"><table>
+    <tr><th>신호</th><th>내용</th></tr>
+    <tr><td>evidence level</td><td>공식 문서 유래 기억이 소문성 기억보다 가중 — 경계 컷에서 살아남게</td></tr>
+    <tr><td>event-proximity</td><td>시간 질문일 때만: 질문 시점과 <code>event_date</code>의 근접도 부스트 (반감기 감쇠) — 평시엔 완전 휴면</td></tr>
+    <tr><td>recency / MMR</td><td>최신성 완만 가중 + 중복 컨텍스트 다양화</td></tr>
+    <tr><td>cross-encoder</td><td><b>각도별 서브쿼리 안에서만</b> 적용 — 병합 후 원 질문으로 재채점하면 멀티홉 증거가 축출되는 실측 버그를 피하는 배치</td></tr>
+  </table></div>
+</div>
+
+<!-- ═══════════════ S19 additive compose ═══════════════ -->
+<div class="slide"><span class="sn">19</span>
+  <h2><span class="no">리콜 · 6</span>추가-비대체 조립 — 구조는 점수를 깎을 수 없다</h2>
+  <pre><span class="c"># 컨텍스트 슬롯 (top_k=5 예시)</span>
+[1..5]  평면 리콜의 top-K 그대로            <span class="c"># 역사적 head-slice, 단 한 슬롯도 대체 금지</span>
+[+1,+2] 브리지 fact (실점수, 자체 예산)      <span class="c"># 그래프 JOIN 증거</span>
+[+1,+2] fact-recall 주장 (자체 예산)         <span class="c"># 정답 모양 단위</span></pre>
+  <ul>
+    <li>기반 컨텍스트는 온톨로지 OFF와 <b>바이트 동일</b> — 구조 증거는 언제나 위에 얹힌다.</li>
+    <li>그래서 회귀가 <b>구조적으로 불가능</b>하고, 실측도 그렇다: 199문항 페어에서 나빠진 문항 4개 vs 좋아진 문항 23개.</li>
+    <li>이 원칙은 재랭크·트림·조립 3단계 전부에 일관 적용된다 (예산 미러링).</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ S20 실전 사례 ═══════════════ -->
+<div class="slide"><span class="sn">20</span>
+  <h2><span class="no">증거 · 1</span>실전 사례 — fact 한 줄이 오답을 정답으로 <span class="real">LIVE DATA</span></h2>
+  <pre><span class="c"># LoCoMo conv-26_q3 [multi-hop] — 동일 코퍼스, fact 레그만 ON/OFF</span>
+Q    : What did Caroline research?
+gold : <span class="g">Adoption agencies</span>
+
+<span class="b">컨트롤 (fact 레그 OFF)</span> : "Counseling and mental health"   → F1 0.00  <span class="c"># 유사 주제에 낚임</span>
+<span class="g">Kumiho (fact 레그 ON)</span>  : "Adoption agencies"              → F1 1.00
+
+<span class="c"># ON 런의 컨텍스트에 실제로 추가돼 있던 조각 (facts 스페이스에서 온 원자 주장):</span>
+<span class="fox-t">+ "Caroline is researching adoption agencies to provide a home for children"</span></pre>
+  <p class="note">같은 패턴의 win이 이 페어에서 23건 — single-hop "아빠와 했던 활동?"(Camping→<b>Horseback riding</b>),
+  adversarial(존재하지 않는 정보에 "No information available"로 정답) 등. 손실은 4건뿐.</p>
+</div>
+
+<!-- ═══════════════ S21 측정 방법론 ═══════════════ -->
+<div class="slide"><span class="sn">21</span>
+  <h2><span class="no">증거 · 2</span>측정 방법론 — 페어 A/B가 아니면 믿지 않는다</h2>
+  <ul>
+    <li><b>같은 코퍼스, 같은 질문, 변수 하나</b>: 인제스트를 고정하고 answer-only 재평가로 읽기 경로만 A/B — LLM 비결정성 노이즈(단일 대화 기준 ±0.05)를 원천 차단.</li>
+    <li>단일 런 델타로는 어떤 코드도 판정하지 않는다 — 대화 단위 슬라이스는 런마다 흔들리는 게 정상이다.</li>
+    <li>공개 수치는 <b>full-suite(1,986문항)</b>에서만 — 큰 n에서 분산이 죽는다. 다만 재현되는 것은 <b>메모리/리콜 레이어와 고정 모델 수치(0.531)</b>이지, 드리프트하는 모델 위의 날짜 간 절대 점수가 아니다. 동일 컨텍스트를 이후 <code>gpt-4o</code> 스냅샷으로 재답변하면 −0.056까지 내려간다 — 그래서 답변 모델을 <code>gpt-4o-2024-08-06</code>로 고정하고 응답마다 <code>system_fingerprint</code>를 남긴다.</li>
+    <li>유료 런은 <b>1문항 프리플라이트</b>(측정 대상 기능의 발화 로그 확인) 후에만 발사.</li>
+  </ul>
+  <div class="tblwrap"><table>
+    <tr><th>페어 측정 (fact 레그, n=199)</th><th>컨트롤</th><th>Kumiho</th><th>Δ</th></tr>
+    <tr><td>multi-hop</td><td class="num">0.213</td><td class="num">0.299</td><td class="up">+0.086</td></tr>
+    <tr><td>temporal</td><td class="num">0.510</td><td class="num">0.561</td><td class="up">+0.051</td></tr>
+    <tr><td>single-hop</td><td class="num">0.272</td><td class="num">0.315</td><td class="up">+0.043</td></tr>
+    <tr><td>open-domain</td><td class="num">0.274</td><td class="num">0.312</td><td class="up">+0.038</td></tr>
+    <tr><td>adversarial</td><td class="num">0.872</td><td class="num">0.894</td><td class="up">+0.021</td></tr>
+    <tr class="hl"><td><b>4카테고리 가중</b></td><td class="num">0.318</td><td class="num"><b>0.371</b></td><td class="up"><b>+0.054</b></td></tr>
+  </table></div>
+</div>
+
+<!-- ═══════════════ S22 벤치마크 ═══════════════ -->
+<div class="slide"><span class="sn">22</span>
+  <h2><span class="no">증거 · 3</span>공개 벤치마크 — F1, 부풀릴 수 없는 지표로</h2>
+  <p class="lede">LoCoMo 공식 지표는 토큰 F1이다. LLM-judge 정확도는 1.5–2× 높게 읽히는 다른 지표 — 우리는 F1로 공개한다.</p>
+  <div class="tblwrap"><table>
+    <tr><th>시스템</th><th>single-hop</th><th>multi-hop</th><th>temporal</th><th>open-domain</th><th>overall F1</th></tr>
+    <tr><td>Zep</td><td class="num">0.357</td><td class="num">0.194</td><td class="num">0.420</td><td class="num">0.496</td><td class="num">—</td></tr>
+    <tr><td>Mem0</td><td class="num">0.387</td><td class="num">0.286</td><td class="num">0.489</td><td class="num">0.477</td><td class="num">~0.40</td></tr>
+    <tr><td>Mem0-Graph</td><td class="num">0.381</td><td class="num">0.243</td><td class="num">0.516</td><td class="num">0.493</td><td class="num">~0.40</td></tr>
+    <tr><td>Memobase</td><td class="num">0.463</td><td class="num">0.229</td><td class="num">0.642</td><td class="num">0.516</td><td class="num">—</td></tr>
+    <tr><td>OpenAI Memory</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">~0.343</td></tr>
+    <tr><td>Kumiho <span class="amber-t">(2026-02, cosine)</span><sup>†</sup></td><td class="num">0.462</td><td class="num">0.355</td><td class="num">0.533</td><td class="num">0.290</td><td class="num">0.565</td></tr>
+    <tr><td>Kumiho <span class="amber-t">(v0.9.0, 2026-07-08)</span><sup>†</sup></td><td class="num">0.449</td><td class="num">0.393</td><td class="num">0.530</td><td class="num">0.313</td><td class="num">0.564</td></tr>
+    <tr class="hl"><td><b>Kumiho</b> (0.10.1 온톨로지, 2026-07-11, 고정)</td><td class="num"><b>0.424</b></td><td class="num"><b>0.361</b></td><td class="num"><b>0.457</b></td><td class="num"><b>0.248</b></td><td class="num"><b>0.531</b></td></tr>
+  </table></div>
+  <p class="note">baseline 출처: arXiv 2504.19413, Memobase 공개 평가. Kumiho overall은 adversarial(0.955, n=446) 포함 —
+  대부분의 baseline이 별도 보고하지 않는 카테고리라 표에 명시. <b>summarized 모드</b>(원문 대화 없이 메타데이터만)로 달성,
+  공개 SDK + 로컬 서버로 재현 가능.<br>
+  <sup>†</sup> 고정하지 않은(이후 드리프트한) <code>gpt-4o</code>에서 측정된 <b>드리프트기 역사 최고치</b> — 현재 스냅샷에서 재현되지 않고
+  날짜 간 직접 비교 불가. 볼드 행이 <code>gpt-4o-2024-08-06</code> 고정으로 <b>오늘 재현되는</b> 수치(0.531)다. 리콜 레이어가 통제 대상이고,
+  end-to-end F1은 앱이 고른 답변 모델에 함께 좌우된다: <b>multi-hop 0.361은 답변 모델이 약해졌음에도 2월 기록(0.355)을 넘어섰다.</b>
+  온톨로지 효과의 동일 시대 대조는 OFF 0.521 → ON 0.531 = <b>+0.010</b>. LoCoMo-Plus 93.3%는 별도 외부 벤치(Li et al. 2026)로 영향 없음.</p>
+</div>
+
+<!-- ═══════════════ S23 기술 스택 ═══════════════ -->
+<div class="slide"><span class="sn">23</span>
+  <h2><span class="no">기술</span>사용 기술 상세</h2>
+  <div class="tblwrap"><table>
+    <tr><th>영역</th><th>기술</th><th>왜</th></tr>
+    <tr><td>서버</td><td>Rust · tokio · tonic gRPC</td><td>검색·순회가 hot path — GC 없는 지연시간, 커넥션 캡·레이트리밋 내장</td></tr>
+    <tr><td>그래프 저장</td><td>Neo4j (+ VECTOR 인덱스)</td><td>엣지 순회와 벡터 검색을 한 스토리지에서 — 조인·순회가 네이티브</td></tr>
+    <tr><td>렉시컬 검색</td><td>Lucene 풀텍스트 · 퍼지(편집거리 1) · lindera ko-dic</td><td>오타 내성 + 한국어 형태소 단위 인덱싱</td></tr>
+    <tr><td>시맨틱 검색</td><td>text-embedding-3-small (1536d) · 서버측 생성/저장</td><td>클라이언트 무부담 · 레그별 정규화 융합으로 BM25와 공존</td></tr>
+    <tr><td>작업 기억</td><td>Redis Streams</td><td>세션 버퍼 + 이벤트 버스</td></tr>
+    <tr><td>통합(요약)</td><td>LLM 구조화 출력 (스키마 강제) · provider-agnostic 어댑터</td><td>파싱 실패 0 · OpenAI/Anthropic/로컬 교체 가능</td></tr>
+    <tr><td>분해(그래프)</td><td>결정론적 materializer — 토큰 경계 매칭 · Jaccard 임계</td><td>LLM 콜 0회, 환각 엣지 0, 재현 가능</td></tr>
+    <tr><td>리콜</td><td>asyncio 파이프라인 · bounded 스레드(타임아웃) · 크로스인코더</td><td>어떤 단계가 죽어도 리콜은 강등만, 실패하지 않음</td></tr>
+    <tr><td>품질</td><td>429+ 유닛테스트 · 페어 A/B 하네스 · 적대적 리뷰</td><td>"측정 없이 선적 없음"</td></tr>
+  </table></div>
+</div>
+
+<!-- ═══════════════ S24 오픈코어 + 클로징 ═══════════════ -->
+<div class="slide"><span class="sn">24</span>
+  <h2><span class="no">구조</span>오픈코어 — 신뢰는 열고, 모트는 닫는다</h2>
+  <div class="grid2" style="margin-top:12px">
+    <div class="card"><h4 style="color:var(--fox)">오픈 — 인지 레이어</h4>
+      <p><code>pip install kumiho-memory</code></p>
+      <ul><li>통합 파이프라인 + 구조화 출력 스키마 전체</li>
+      <li>온톨로지 분해: 타입·스페이스·엣지 규칙 전부</li>
+      <li>리콜 스택 전체 (브리지 조인 · fact 레그 · 재랭크 · 조립)</li>
+      <li>벤치마크 하네스 — <b>이 덱의 모든 숫자는 소스에서 재현 가능</b></li></ul></div>
+    <div class="card"><h4 style="color:var(--amber)">프로프라이어터리 — 엔진</h4>
+      <p>Kumiho Server (로컬 CE + 클라우드)</p>
+      <ul><li>Rust 그래프 엔진: kref·리비전·엣지·스페이스</li>
+      <li>하이브리드 검색 융합 · 파생 kind 인덱스 위생</li>
+      <li>멀티테넌시 · 스코프 가드 · 한국어 형태소 인덱싱</li></ul></div>
+  </div>
+  <p style="margin-top:18px;color:var(--dim)">기억이 어떻게 <b>생각</b>해야 하는지 주장하는 레이어는 열어서 검증받고,
+  그것을 빠르고 안전하게 돌리는 엔진이 제품이다. —
+  <span class="fox-t">Kumiho: 기억을 쌓지 말고, 지으세요.</span> 🦊</p>
+</div>
+
+</div>
+
+</body>
+</html>
