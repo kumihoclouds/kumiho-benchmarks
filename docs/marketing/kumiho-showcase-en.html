@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Kumiho Memory — Graph-Native Cognitive Memory</title>
+<style>
+  :root{
+    --ink:#0d1117; --panel:#141b23; --panel2:#1a2330; --line:#25313f;
+    --fg:#e8eef4; --dim:#94a3b3; --faint:#5c6b7a;
+    --fox:#41e0c8; --fox-dim:#2aa392; --amber:#e8a33d;
+    --good:#5fd68a; --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Consolas,monospace;
+  }
+  html{background:var(--ink)}
+  body{background:var(--ink);color:var(--fg);font:16px/1.65 'Avenir Next','Segoe UI',system-ui,sans-serif;margin:0}
+  .wrap{max-width:980px;margin:0 auto;padding:0 28px 90px}
+  a{color:var(--fox);text-decoration:none}
+
+  /* hero */
+  .hero{padding:84px 0 40px;border-bottom:1px solid var(--line)}
+  .fox-mark{font-size:15px;letter-spacing:.32em;color:var(--fox);text-transform:uppercase;margin-bottom:18px}
+  h1{font:600 clamp(34px,5.4vw,54px)/1.12 Georgia,'Times New Roman',serif;margin:0 0 18px;text-wrap:balance}
+  h1 em{font-style:normal;color:var(--fox)}
+  .lede{font-size:19px;color:var(--dim);max-width:46em;text-wrap:pretty}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:34px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 22px;min-width:190px;flex:1}
+  .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;color:var(--fox);font-family:Georgia,serif}
+  .stat span{font-size:13px;color:var(--dim)}
+  .stat .sub{font-size:11.5px;color:var(--faint);display:block;margin-top:3px}
+
+  h2{font:600 26px/1.25 Georgia,serif;margin:64px 0 6px;text-wrap:balance}
+  h2 .no{color:var(--fox);font-family:var(--mono);font-size:15px;margin-right:12px;letter-spacing:.1em}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--fg)}
+  .sub-lede{color:var(--dim);margin:0 0 20px;max-width:52em}
+  p{max-width:52em}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin:16px 0}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.twocol{grid-template-columns:1fr}}
+
+  table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .tblwrap{overflow-x:auto;margin:12px 0}
+  th{color:var(--faint);text-align:left;font-weight:600;padding:7px 12px 7px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  td{padding:8px 12px 8px 0;border-bottom:1px solid #1b2531;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  .kref{font-family:var(--mono);font-size:12px;color:#9fd8ce}
+  .kref .kind{color:var(--amber)}
+  .hl td{background:rgba(65,224,200,.06)}
+  .num{font-variant-numeric:tabular-nums}
+  .up{color:var(--good);font-weight:600}
+  .fox-t{color:var(--fox);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:#c9e6df}
+  pre{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#c9e6df}
+  pre .k{color:var(--amber)} pre .s{color:#9fd8ce} pre .c{color:var(--faint)}
+
+  .stage{border-left:2px solid var(--line);padding:2px 0 2px 22px;margin:0;position:relative}
+  .stage+.stage{margin-top:22px}
+  .stage::before{content:'';position:absolute;left:-6px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--faint)}
+  .stage.key{border-left-color:var(--fox)}
+  .stage.key::before{background:var(--fox);box-shadow:0 0 12px rgba(65,224,200,.55)}
+  .stage h4{margin:0 0 4px;font-size:15px}
+  .stage h4 code{margin-left:8px}
+  .stage p,.stage ul{color:var(--dim);font-size:14px;margin:4px 0}
+  .stage ul{padding-left:18px}
+
+  .note{font-size:13px;color:var(--faint);border-left:2px solid var(--line);padding-left:14px;max-width:52em}
+  .callout{background:linear-gradient(135deg,rgba(65,224,200,.08),rgba(65,224,200,.02));border:1px solid rgba(65,224,200,.3);border-radius:12px;padding:18px 22px;margin:18px 0}
+  .callout b.title{color:var(--fox);display:block;margin-bottom:6px;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+
+  .svgwrap{overflow-x:auto;margin:18px 0}
+  .foot{margin-top:80px;border-top:1px solid var(--line);padding-top:22px;font-size:13px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+
+<div class="wrap">
+
+<div class="hero">
+  <div class="fox-mark">Kumiho · 九尾狐 · Graph-Native Memory</div>
+  <h1>Your agent's memory shouldn't be a pile of chat logs.<br>It should be a <em>knowledge graph that knows what it knows.</em></h1>
+  <p class="lede">Kumiho Memory decomposes every conversation into a typed graph — entities, facts,
+  decisions, events — at <b>write time</b>, and recalls with <b>structure-aware retrieval</b> that joins
+  evidence across sessions the way a person connects memories. Fully open cognitive layer.
+  Receipts in token-F1, the metric that can't be inflated.</p>
+  <p style="font-size:13px;color:var(--faint);margin-top:14px">The architecture — prospective indexing,
+  event extraction, and formal AGM belief-revision semantics for versioned memory — was first described in
+  <a href="https://arxiv.org/abs/2603.17244">Park, <i>Graph-Native Cognitive Memory for AI Agents</i>
+  (arXiv:2603.17244, 2026)</a>. This page is that paper, running in production.</p>
+  <div class="stats">
+    <div class="stat"><b>0.531</b><span>LoCoMo overall F1 (1,986 Q)</span><span class="sub">0.10.1 ontology · pinned <code>gpt-4o-2024-08-06</code> · reproducible today · above published rivals' F1</span></div>
+    <div class="stat"><b>93.3%</b><span>LoCoMo-Plus (cognitive)</span><span class="sub">contradiction &amp; belief-update suite</span></div>
+    <div class="stat"><b>+0.054</b><span>typed-fact recall lift, 4 core categories</span><span class="sub">paired same-corpus A/B · all 5 categories up (+0.046 overall)</span></div>
+  </div>
+</div>
+
+<!-- ============================ WRITE PATH ============================ -->
+<h2><span class="no">01</span>How memory is written — conversation → typed graph</h2>
+<p class="sub-lede">Every consolidation is a graph build <b>by default</b> (opt out with
+<code>KUMIHO_MEMORY_ONTOLOGY=0</code>). No batch jobs, no offline ETL — the graph exists the moment
+the conversation is saved.</p>
+
+<div class="panel">
+<h3 style="margin-top:0">Input: an ordinary conversation</h3>
+<pre>User: We adopted a golden retriever last weekend — Caroline named him Max.
+User: Also decided to go with Acme for pet insurance, their vet coverage is better.
+Asst: Congrats! I'll remember Max, and that Acme covers his vet bills.</pre>
+
+<h3>Step 1 — Consolidation: one LLM pass, strict structured output</h3>
+<p style="color:var(--dim);font-size:14px">Working memory (Redis) buffers turns; at the threshold, a single
+summarizer call emits a <b>schema-enforced</b> JSON — the same schema whether the ontology is on or off,
+so structured decomposition never perturbs the base summary:</p>
+<pre>{
+  <span class="k">"summary"</span>: <span class="s">"Adopted a puppy named Max; chose Acme for pet insurance"</span>,
+  <span class="k">"classification"</span>: { <span class="k">"entities"</span>: [<span class="s">"Caroline"</span>, <span class="s">"Max"</span>, <span class="s">"Acme"</span>] },
+  <span class="k">"knowledge"</span>: {
+    <span class="k">"facts"</span>: [ {<span class="k">"claim"</span>: <span class="s">"Caroline adopted a puppy named Max"</span>, <span class="k">"certainty"</span>: <span class="s">"high"</span>},
+                {<span class="k">"claim"</span>: <span class="s">"Acme pet insurance covers Max's vet bills"</span>, <span class="k">"certainty"</span>: <span class="s">"high"</span>} ],
+    <span class="k">"decisions"</span>: [ {<span class="k">"decision"</span>: <span class="s">"Use Acme for pet insurance"</span>, <span class="k">"reason"</span>: <span class="s">"better vet coverage"</span>} ],
+    <span class="k">"actions"</span>: [], <span class="k">"open_questions"</span>: []
+  },
+  <span class="k">"events"</span>: [ {<span class="k">"event"</span>: <span class="s">"Adopted Max"</span>, <span class="k">"when"</span>: <span class="s">"last weekend"</span>, <span class="k">"participants"</span>: [<span class="s">"Caroline"</span>]} ]
+}</pre>
+
+<h3>Step 2 — Materialization: every claim becomes an addressable node</h3>
+<p style="color:var(--dim);font-size:14px">Each typed node is a first-class versioned item with its own
+<b>kref</b> (Kumiho reference), its own revision history, and its own embedding. Re-learning the same
+fact stacks a revision instead of duplicating a node (get-or-create by identity slug):</p>
+<div class="tblwrap"><table>
+  <tr><th>node</th><th>kref (space encodes the type)</th><th>carries</th></tr>
+  <tr><td>conversation</td><td class="kref">kref://P/personal/mem-0412.<span class="kind">conversation</span>?r=1</td><td>summary + embedding</td></tr>
+  <tr class="hl"><td>fact F1</td><td class="kref">kref://P/facts/caroline-adopted-a-puppy-named-max.<span class="kind">fact</span>?r=1</td><td>claim, certainty</td></tr>
+  <tr class="hl"><td>fact F3</td><td class="kref">kref://P/facts/acme-pet-insurance-covers-max-s-vet-bills.<span class="kind">fact</span>?r=1</td><td>claim, certainty</td></tr>
+  <tr><td>decision D1</td><td class="kref">kref://P/decisions/use-acme-for-pet-insurance.<span class="kind">decision</span>?r=1</td><td>decision, reason</td></tr>
+  <tr><td>event V1</td><td class="kref">kref://P/events/adopted-max.<span class="kind">event</span>?r=1</td><td>event, when, participants</td></tr>
+  <tr><td>entities</td><td class="kref">kref://P/entities/{caroline · max · acme}.<span class="kind">entity</span>?r=1</td><td>display_name (pure anchors)</td></tr>
+</table></div>
+
+<h3>Step 3 — Edges: provenance, aboutness, grounding, belief update</h3>
+<div class="tblwrap"><table>
+  <tr><th>edge</th><th>meaning</th><th>how it's decided (deterministic — no LLM guessing)</th></tr>
+  <tr><td><code>DERIVED_FROM</code></td><td>provenance: every typed node → its source conversation</td><td>always, at materialization</td></tr>
+  <tr><td><code>ABOUT</code> / <code>INVOLVES</code></td><td>fact/decision → entity · event participant → entity</td><td>token-boundary mention match (no substring false-positives; Hangul-aware — "김" never matches "김치")</td></tr>
+  <tr><td><code>DEPENDS_ON</code></td><td>decision → the fact that grounds it</td><td>token-overlap (Jaccard ≥ 0.4) against the same consolidation's facts</td></tr>
+  <tr><td><code>SUPERSEDES</code></td><td>belief update: new decision/fact replaces an old one about the same subject</td><td>candidate search + token-overlap ≥ 0.6 — corpus-independent, immune to ranking drift</td></tr>
+</table></div>
+
+<div class="svgwrap">
+<svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg" style="min-width:700px;width:100%">
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0 0 L8 4 L0 8 z" fill="#5c6b7a"/></marker></defs>
+  <style>
+    .n{fill:#1a2330;stroke:#25313f;rx:8} .nl{fill:#e8eef4;font:600 12px 'Segoe UI',sans-serif}
+    .nk{fill:#5c6b7a;font:10px ui-monospace,monospace} .e{stroke:#5c6b7a;stroke-width:1.2;marker-end:url(#ar);fill:none}
+    .el{fill:#94a3b3;font:9.5px ui-monospace,monospace}
+    .fox{stroke:#41e0c8} .foxl{fill:#41e0c8}
+  </style>
+  <rect class="n" x="20" y="95" width="150" height="50" rx="8"/><text class="nl" x="35" y="116">conversation</text><text class="nk" x="35" y="132">mem-0412 ?r=1</text>
+  <rect class="n" x="310" y="18" width="180" height="44" rx="8"/><text class="nl" x="325" y="37">fact F1</text><text class="nk" x="325" y="52">caroline-adopted…max</text>
+  <rect class="n" x="310" y="98" width="180" height="44" rx="8"/><text class="nl" x="325" y="117">fact F3</text><text class="nk" x="325" y="132">acme…vet-bills</text>
+  <rect class="n" x="310" y="178" width="180" height="44" rx="8"/><text class="nl" x="325" y="197">decision D1</text><text class="nk" x="325" y="212">use-acme…insurance</text>
+  <rect class="n" x="660" y="18" width="140" height="40" rx="8"/><text class="nl" x="675" y="35">caroline</text><text class="nk" x="675" y="50">.entity</text>
+  <rect class="n" x="660" y="98" width="140" height="40" rx="8"/><text class="nl" x="675" y="115">max</text><text class="nk" x="675" y="130">.entity</text>
+  <rect class="n" x="660" y="178" width="140" height="40" rx="8"/><text class="nl" x="675" y="195">acme</text><text class="nk" x="675" y="210">.entity</text>
+  <path class="e" d="M310 40 C 250 40 230 105 172 112"/><text class="el" x="205" y="60">DERIVED_FROM</text>
+  <path class="e" d="M310 120 L 172 120"/><text class="el" x="205" y="112">DERIVED_FROM</text>
+  <path class="e" d="M310 200 C 250 200 230 135 172 128"/><text class="el" x="200" y="196">DERIVED_FROM</text>
+  <path class="e fox" d="M490 34 L 658 34"/><text class="el foxl" x="540" y="26">ABOUT</text>
+  <path class="e fox" d="M490 46 C 560 55 600 95 658 108"/><text class="el foxl" x="560" y="80">ABOUT</text>
+  <path class="e fox" d="M490 114 L 658 114"/><text class="el foxl" x="540" y="106">ABOUT</text>
+  <path class="e fox" d="M490 126 C 560 135 600 180 658 192"/><text class="el foxl" x="555" y="165">ABOUT</text>
+  <path class="e" d="M400 178 L 400 146"/><text class="el" x="408" y="165">DEPENDS_ON</text>
+</svg></div>
+
+<p class="note">Index hygiene is part of the design: derived nodes are <b>excluded from the lexical
+(BM25) corpus</b> server-side — their text duplicates the conversations and would otherwise skew global
+IDF — while remaining fully reachable by kref traversal and vector search. Structure without pollution.</p>
+</div>
+
+<!-- ============================ READ PATH ============================ -->
+<h2><span class="no">02</span>How memory is recalled — retrieval that can do a JOIN</h2>
+<p class="sub-lede">Query: <b>“Where does the person who adopted Max work?”</b> The two pieces of evidence
+live in different sessions and share almost no vocabulary. Flat vector search — everyone else's
+retrieval — has no mechanism to connect them. A typed graph does.</p>
+
+<div class="panel">
+<div class="stage">
+  <h4>Reformulate <code>LLM → angles</code></h4>
+  <p>The question is decomposed into angles: <i>“who adopted Max”</i> · <i>“Caroline's employer”</i> —
+  each angle is a separate probe into memory.</p>
+</div>
+<div class="stage">
+  <h4>Parallel hybrid recall per angle <code>BM25 + vector · per-angle cross-encoder</code></h4>
+  <p>Each angle hits the server's fused lexical+semantic search; results merge by kref with
+  angle attribution preserved. angle₁ top: adoption session (0.82) · angle₂ top: insurance session (0.61).</p>
+</div>
+<div class="stage key">
+  <h4>Entity-Bridge Join — <span class="fox-t">the typed-graph JOIN</span></h4>
+  <ul>
+    <li>Both angles' hits point <code>ABOUT</code> the same entity → <span class="kref">entities/max.<span class="kind">entity</span></span> is a <b>bridge</b>: the node that connects the question's sub-facts.</li>
+    <li>The bridge's terse fact nodes surface with a <b>real inherited score</b> = 0.9 × the weaker angle (0.9 × 0.61 = <b>0.549</b>) — measured relevance by proxy, vouched for by both angles.</li>
+    <li>Hub entities (a speaker linked from everything) are <b>deferred, not dropped</b> — degree-aware so ubiquitous anchors can't flood the join, but 2-person corpora where the speaker IS the join key still work.</li>
+  </ul>
+</div>
+<div class="stage key">
+  <h4>Fact-Recall leg — <span class="fox-t">answer-shaped claims as first-class candidates</span></h4>
+  <ul>
+    <li>One semantic search of the <span class="kref">facts</span> space with the original question — atomic claims are the exact shape an answer needs (<i>“Acme pet insurance covers Max's vet bills”</i>), and dates ride inside claims for temporal questions.</li>
+    <li>Scored <b>relative to the weakest conversation hit</b> (axis-invariant) — a fact can add evidence but can never outrank or evict a conversation on any score scale.</li>
+    <li>Measured on a paired same-corpus A/B: <b>+0.054 overall, every category up, 23 wins / 4 losses per question</b>.</li>
+  </ul>
+</div>
+<div class="stage">
+  <h4>Structural traversal + entity 2-hop walk <code>DERIVED_FROM · SUPERSEDES · score-less trail</code></h4>
+  <p>Edges from top hits pull in provenance and superseding versions; a bounded entity walk adds
+  same-entity siblings as trailing, reserve-slot context (never competing with scored hits).</p>
+</div>
+<div class="stage">
+  <h4>Evidence-weighted rerank <code>evidence level · recency · event-proximity · MMR</code></h4>
+  <p>Deterministic priors — officially-graded memories, temporal proximity for date questions —
+  applied once, idempotently, to scored entries only.</p>
+</div>
+<div class="stage key">
+  <h4>Additive context composition — <span class="fox-t">augmentation that can't regress</span></h4>
+  <p>The base top-K context is the <b>exact head-slice</b> flat recall would produce; bridge facts and
+  typed claims are <b>appended on top with their own budgets</b>, never displacing it. With the ontology
+  off, output is byte-identical to flat recall — structure is strictly additive, by construction.</p>
+</div>
+<p style="margin:14px 0 0;color:var(--dim)">The answering model reads F1 ⋈ F3 side by side and says
+<b>“Acme”</b> — the join is trivial once the two atomic claims are placed together. That placement is
+what the graph buys.</p>
+</div>
+
+<!-- ============================ RECEIPTS ============================ -->
+<h2><span class="no">03</span>Receipts — token-F1, the metric that can't be inflated</h2>
+<p class="sub-lede">LoCoMo's official metric is token-level F1 (Maharana et al. 2024). Many vendors
+report LLM-as-judge accuracy instead — it reads 1.5–2× higher and isn't comparable. We publish F1.</p>
+
+<div class="tblwrap"><table>
+  <tr><th>system</th><th>single-hop</th><th>multi-hop</th><th>temporal</th><th>open-domain</th><th>overall F1</th></tr>
+  <tr><td>Zep</td><td class="num">0.357</td><td class="num">0.194</td><td class="num">0.420</td><td class="num">0.496</td><td class="num">—</td></tr>
+  <tr><td>Mem0</td><td class="num">0.387</td><td class="num">0.286</td><td class="num">0.489</td><td class="num">0.477</td><td class="num">~0.40</td></tr>
+  <tr><td>Mem0-Graph</td><td class="num">0.381</td><td class="num">0.243</td><td class="num">0.516</td><td class="num">0.493</td><td class="num">~0.40</td></tr>
+  <tr><td>Memobase</td><td class="num">0.463</td><td class="num">0.229</td><td class="num">0.642</td><td class="num">0.516</td><td class="num">—</td></tr>
+  <tr><td>OpenAI Memory</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">~0.343</td></tr>
+  <tr><td>Kumiho (Feb 2026, cosine)<sup>†</sup></td><td class="num">0.462</td><td class="num">0.355</td><td class="num">0.533</td><td class="num">0.290</td><td class="num">0.565</td></tr>
+  <tr><td>Kumiho (v0.9.0, 2026-07-08)<sup>†</sup></td><td class="num">0.449</td><td class="num">0.393</td><td class="num">0.530</td><td class="num">0.313</td><td class="num">0.564</td></tr>
+  <tr class="hl"><td><b>Kumiho</b> (0.10.1 ontology, pinned)</td><td class="num"><b>0.424</b></td><td class="num"><b>0.361</b></td><td class="num"><b>0.457</b></td><td class="num"><b>0.248</b></td><td class="num"><b>0.531</b></td></tr>
+</table></div>
+<p class="note"><sup>†</sup> <b>Drift-era peaks</b> — measured on an unpinned <code>gpt-4o</code> that has since drifted:
+the same recalled contexts, re-answered on later snapshots, scored −0.056, so these figures are historical, <b>not
+reproducible today</b> and not comparable across dates. The highlighted <b>0.531</b> row is the reproducible-today
+number on the pinned <code>gpt-4o-2024-08-06</code> (kumiho-memory 0.10.1, ontology on). The apples-to-apples
+"did the ontology help" test is same-era, same-corpus: OFF-control <b>0.521</b> → ON <b>0.531</b> (<span class="up">+0.010</span>),
+and multi-hop <b>0.361</b> already beats the February <b>0.355</b> record despite the weaker pinned answer model — the
+recall layer improved even as the answer model regressed. Baselines: arXiv 2504.19413 and Memobase's published
+evaluation. Kumiho's overall includes the adversarial category (0.955, n=446) that most baselines don't report.
+Achieved in <b>summarized mode</b> — title + summary metadata only, no raw transcripts in context — and reproducible
+from the shipped SDK against a local server.</p>
+
+<div class="twocol">
+  <div class="callout">
+    <b class="title">Typed recall, measured the hard way</b>
+    Same corpus, same 199 questions, the only variable being the typed-fact leg:
+    <b class="num" style="color:var(--fox)">+0.054 across the four core categories</b>
+    (+0.046 overall incl. adversarial) — multi-hop <span class="up">+0.086</span>,
+    temporal <span class="up">+0.051</span>, single-hop <span class="up">+0.043</span>, open-domain
+    <span class="up">+0.038</span>, adversarial <span class="up">+0.021</span>.
+    Per-question: <b>23 improved, 172 unchanged, 4 declined</b> (sign test p≈0.0002).
+    That near-zero downside is the additive design working as specified.
+  </div>
+  <div class="callout">
+    <b class="title">The cognitive benchmark</b>
+    <b class="num" style="color:var(--fox)">93.3%</b> on LoCoMo-Plus — the extension suite that tests
+    what memory is <i>for</i>: contradiction handling, belief updates, knowing what changed and when.
+    This is where <code>SUPERSEDES</code> chains and typed claims earn their keep, and where flat
+    retrieval systems have no mechanism at all.
+  </div>
+</div>
+
+<!-- ============================ PRINCIPLES ============================ -->
+<h2><span class="no">04</span>Engineering principles</h2>
+<div class="tblwrap"><table>
+  <tr><th>principle</th><th>what it means in the code</th></tr>
+  <tr><td><b>Additive, never displacing</b></td><td>Graph evidence rides on top of flat recall's exact output with its own slot budgets — turning the ontology on cannot make any answer worse by construction, and the paired 23W/4L measurement confirms it.</td></tr>
+  <tr><td><b>Byte-identical off-switch</b></td><td>With <code>KUMIHO_MEMORY_ONTOLOGY=0</code>, prompts, schemas, and recall output are byte-for-byte the legacy pipeline — asserted by tests, not by promise.</td></tr>
+  <tr><td><b>Deterministic edges</b></td><td>Relational edges come from token-boundary matching and overlap thresholds, not LLM guesses — reproducible graphs, no hallucinated links, no per-edge inference cost.</td></tr>
+  <tr><td><b>Everything is versioned</b></td><td>Facts and decisions stack revisions like code: the current belief is the head, history is one hop back, <code>SUPERSEDES</code> records why.</td></tr>
+  <tr><td><b>Multilingual by design</b></td><td>Korean-aware tokenization end to end — mention matching that respects Hangul boundaries, lexical search with ko-dic morphology.</td></tr>
+  <tr><td><b>Paired measurement culture</b></td><td>Every retrieval change ships with a same-corpus paired A/B; single-run deltas don't count. The numbers above survived that bar.</td></tr>
+</table></div>
+
+<!-- ============================ OPEN CORE ============================ -->
+<h2><span class="no">05</span>Open where it builds trust, closed where it's the moat</h2>
+<div class="twocol">
+  <div class="panel" style="margin:0">
+    <h3 style="margin-top:0;color:var(--fox)">Open — the cognitive layer</h3>
+    <p style="font-size:14px;color:var(--dim)"><code>pip install kumiho-memory</code></p>
+    <ul style="font-size:14px;color:var(--dim);padding-left:18px">
+      <li>The full consolidation pipeline and structured-output schema</li>
+      <li>Ontology decomposition: typed nodes, spaces, all edge rules</li>
+      <li>The complete recall stack: reformulation, bridge join, fact leg, evidence rerank, additive compose</li>
+      <li>The benchmark harness — <b>every number on this page is reproducible from source</b></li>
+    </ul>
+  </div>
+  <div class="panel" style="margin:0">
+    <h3 style="margin-top:0;color:var(--amber)">Proprietary — the engine</h3>
+    <p style="font-size:14px;color:var(--dim)">Kumiho Server (local Community Edition &amp; cloud)</p>
+    <ul style="font-size:14px;color:var(--dim);padding-left:18px">
+      <li>Rust graph engine: krefs, revisions, edges, spaces over Neo4j</li>
+      <li>Hybrid search: per-leg normalized BM25+vector fusion, index-hygiene for derived kinds</li>
+      <li>Multi-tenancy, scoping guards, rate limiting, Korean morphological indexing</li>
+    </ul>
+  </div>
+</div>
+<p class="note" style="margin-top:14px">The split is deliberate: the layer that makes claims about how
+memory should <i>think</i> is open and auditable — run the harness, check the numbers. The engine that
+makes it fast, safe, and multi-tenant is the product.</p>
+
+<div class="foot">
+  <span>Kumiho Memory · kumiho-memory (PyPI · GitHub) · LoCoMo numbers from kumiho-memory 0.10.1 + kumiho-server v1.5.0, answer model pinned to <code>gpt-4o-2024-08-06</code></span>
+  <span>2026-07</span>
+</div>
+</div>
+
+</body>
+</html>
