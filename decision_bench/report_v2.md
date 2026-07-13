@@ -59,3 +59,32 @@ into noise. So a prior **null result is plausibly a measurement/selection artifa
 not evidence the mechanism fails**: the effect is concentrated in the
 counterintuitive / measured-surprise band, and an undifferentiated benchmark cannot
 see it. (Limitation: targeted n=3, item-level bootstrap → wide CI; directional.)
+
+## Axis 2 — team conventions (the broad, non-rotting band)
+
+Axis 1 (above) measures CORRECTNESS: does the agent avoid a measured-wrong choice.
+Axis 2 measures ALIGNMENT: does the agent follow the team's ARBITRARY project
+convention — where there is no universal right answer, only what the team decided.
+Deterministic conformance, keyless Opus, 3-arm (A none / B' generic-advice decoy /
+B convention memory), leak-free tasks (the task never reveals the convention).
+
+| convention | A | B' decoy | B memory |
+|---|--:|--:|--:|
+| `config_from_env` toggle | 0.00 | 0.00 | 1.00 |
+| `KUMIHO_MEMORY_` flag prefix | 0.00 | 0.00 | 1.00 |
+| `KUMIHO_SERVER_ENDPOINT` | 0.00 | 0.00 | 1.00 |
+| `code_` KIND prefix | 0.50 | 0.00 | 1.00 |
+| `.as_dict()` stats | 0.25 | 0.50 | 1.00 |
+| `{repo}-code` project | 0.50 | 0.50 | 1.00 |
+| **mean** | **0.21** | **0.17** | **1.00** |
+
+**content effect (B−B') = +0.83; raw gain (B−A) = +0.79.**
+
+Why axis 2 is the bigger story: (1) no "already-known" dilution — baseline is uniformly
+low (0.21) because a model genuinely cannot guess arbitrary org-specific choices;
+(2) generic advice does nothing (B' 0.17 ≈ A 0.21), so the gain is unambiguously the
+*specific* captured convention; (3) it is **non-rotting** — `config_from_env` /
+`KUMIHO_SERVER_ENDPOINT` / `{repo}-code` never enter model training data, so a stronger
+model's baseline stays ~0. Axis 1 (correctness) is the narrow high-stakes peak; axis 2
+(team alignment) is the broad, durable base. (Limits: 6 items, single author,
+deterministic-pattern conformance, single-step — compounding is future work.)
