@@ -115,3 +115,7 @@ truth, a non-blind judge, a near-tautological headline, and a-priori-derivable
 items). v2 is the rebuild: control arm, blind judge, honest buckets, verified
 citations, and cross-model runs. The review and its fixes are the reason the v2
 numbers are trustworthy.
+
+## Visual report
+
+`report_v2.html` — a standalone, self-contained visual of the cross-model result (A/B'/B dot-plots per decision, Opus 4.8 vs gpt-5). Open it directly in a browser.
