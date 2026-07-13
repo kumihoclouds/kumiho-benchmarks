@@ -42,3 +42,20 @@
 - **content effect (B − B′)** is the memory-attributable number: how much more the agent adopts the evidence-backed choice with the REAL brief vs a generic decoy brief. Raw gain (B − A) also credits 'any authoritative in-context text.'
 - R-adoption (not W-avoidance) is the metric; both/neither don't count as wins.
 - verified cite = the item's measured token appeared verbatim (deterministic).
+## Dilution — "why undifferentiated benchmarks measure ~null"
+
+Same memory, same agent (Claude Opus 4.8, keyless). The only thing that changes is
+which decisions you average over. Raw gain B−A, item-level bootstrap 95% CI:
+
+| measured over | n | raw gain (B−A) | 95% CI |
+|---|--:|--:|--:|
+| **broad** — all items (what a null-result benchmark reports) | 12 | **+0.23** | [0.04, 0.46] |
+| **targeted** — only decisions the model does not already know | 3 | **+0.83** | [0.50, 1.00] |
+
+A **3.6×** gap from selection alone. The targeted CI excludes 0 (real effect); the
+broad CI grazes 0 (~null). Real repos have hundreds of decisions, most of which a
+frontier model already knows — averaging over all of them dilutes the true effect
+into noise. So a prior **null result is plausibly a measurement/selection artifact,
+not evidence the mechanism fails**: the effect is concentrated in the
+counterintuitive / measured-surprise band, and an undifferentiated benchmark cannot
+see it. (Limitation: targeted n=3, item-level bootstrap → wide CI; directional.)

@@ -171,6 +171,18 @@ const behavioral = perItem.filter(r => r.bucket === 'behavioral')
 const genk = perItem.filter(r => r.bucket === 'general_knowledge')
 const recall = perItem.filter(r => r.bucket === 'recall')
 
+// --- dilution / "explain-the-null" analysis: same memory+agent, big-vs-null by
+//     item selection. Item-level bootstrap CI, seeded (Math.random is unavailable). ---
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function bootCI(vals,B,seed){const rng=mulberry32(seed);const n=vals.length;if(!n)return[0,0];const m=[];for(let b=0;b<B;b++){let s=0;for(let i=0;i<n;i++)s+=vals[Math.floor(rng()*n)];m.push(s/n)}m.sort((x,y)=>x-y);return[m[Math.floor(0.025*B)],m[Math.floor(0.975*B)]]}
+const _gainAll = perItem.map(r => r.b_R - r.a_R)
+const _disc = perItem.filter(r => r.a_R < 0.5)
+const _gainDisc = _disc.map(r => r.b_R - r.a_R)
+const dilution = {
+  broad_all_items: { n: perItem.length, mean_raw_gain_B_minus_A: mean(_gainAll), ci95: bootCI(_gainAll, 4000, 12345) },
+  targeted_discriminating: { n: _disc.length, ids: _disc.map(r => r.id), mean_raw_gain_B_minus_A: mean(_gainDisc), ci95: bootCI(_gainDisc, 4000, 54321) },
+  note: "Same memory + same agent. 'broad' = raw gain over ALL items (what a null-result benchmark reports); 'targeted' = raw gain over items the model does not already know. The gap is why undifferentiated benchmarks measure ~0.",
+}
 const headline = {
   behavioral_items: behavioral.length,
   baseline_R_rate: mean(behavioral.map(r => r.a_R)),
@@ -186,7 +198,7 @@ const headline = {
 
 return {
   trials: TRIALS,
-  headline,
+  headline, dilution,
   behavioral, general_knowledge: genk, recall,
   note: "content_effect (B − B') is the memory-attributable number; raw_gain (B − A) includes any-authority effect. See authority_effect (B' − A).",
   raw: rows,
