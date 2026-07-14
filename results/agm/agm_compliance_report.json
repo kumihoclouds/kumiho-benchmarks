@@ -1,0 +1,1713 @@
+{
+  "timestamp": "2026-02-16T03:18:49.831121+00:00",
+  "project": "agm-test-4993dbb2",
+  "summary": {
+    "total_scenarios": 49,
+    "total_passed": 49,
+    "total_failed": 0,
+    "total_errors": 0,
+    "overall_pass_rate": 1.0
+  },
+  "per_postulate": {
+    "K*2": {
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "K*3": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "K*4": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "K*5": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "K*6": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "Relevance": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "Core-Retainment": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "pass_rate": 1.0
+    }
+  },
+  "per_category": {
+    "simple": {
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "multi_item": {
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "chain": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "temporal": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    "adversarial": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "pass_rate": 1.0
+    }
+  },
+  "compliance_matrix": {
+    "K*2": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "chain": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "K*3": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "chain": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "K*4": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "chain": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "K*5": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "chain": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "K*6": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "Relevance": {
+      "simple": "PASS",
+      "multi_item": "PASS",
+      "chain": "PASS",
+      "temporal": "PASS",
+      "adversarial": "PASS"
+    },
+    "Core-Retainment": {
+      "simple": "PASS",
+      "chain": "PASS",
+      "multi_item": "PASS",
+      "adversarial": "PASS"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "k2_simple_01",
+      "postulate": "K*2",
+      "category": "simple",
+      "description": "Revise favorite color — new value must be published",
+      "passed": true,
+      "latency_ms": 2537.088799999765,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(favorite_color)=='black'",
+          "passed": true,
+          "expected": "black",
+          "actual": "black",
+          "error": ""
+        },
+        {
+          "name": "revision_count(favorite_color)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_simple_02",
+      "postulate": "K*2",
+      "category": "simple",
+      "description": "Revise timezone — new value must be published",
+      "passed": true,
+      "latency_ms": 2287.6010999989376,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(timezone)=='Asia/Seoul'",
+          "passed": true,
+          "expected": "Asia/Seoul",
+          "actual": "Asia/Seoul",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_simple_03",
+      "postulate": "K*2",
+      "category": "simple",
+      "description": "Revise preferred editor — new value must be published",
+      "passed": true,
+      "latency_ms": 2333.8958000003913,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(editor)=='neovim'",
+          "passed": true,
+          "expected": "neovim",
+          "actual": "neovim",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_multi_01",
+      "postulate": "K*2",
+      "category": "multi_item",
+      "description": "Revise one belief among three — revised value must be published",
+      "passed": true,
+      "latency_ms": 4345.600900000136,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(color)=='red'",
+          "passed": true,
+          "expected": "red",
+          "actual": "red",
+          "error": ""
+        },
+        {
+          "name": "published_value(food)=='pizza'",
+          "passed": true,
+          "expected": "pizza",
+          "actual": "pizza",
+          "error": ""
+        },
+        {
+          "name": "published_value(city)=='Seoul'",
+          "passed": true,
+          "expected": "Seoul",
+          "actual": "Seoul",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_chain_01",
+      "postulate": "K*2",
+      "category": "chain",
+      "description": "Revise root of A->B chain — A' must be published",
+      "passed": true,
+      "latency_ms": 3551.5968999989127,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(project_lang)=='Rust'",
+          "passed": true,
+          "expected": "Rust",
+          "actual": "Rust",
+          "error": ""
+        },
+        {
+          "name": "revision_count(project_lang)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_temporal_01",
+      "postulate": "K*2",
+      "category": "temporal",
+      "description": "Double revision — final value must be published",
+      "passed": true,
+      "latency_ms": 4430.0216999999975,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(meeting_day)=='Friday'",
+          "passed": true,
+          "expected": "Friday",
+          "actual": "Friday",
+          "error": ""
+        },
+        {
+          "name": "revision_count(meeting_day)==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_temporal_02",
+      "postulate": "K*2",
+      "category": "temporal",
+      "description": "Five rapid revisions — only final value published",
+      "passed": true,
+      "latency_ms": 5173.738399998911,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(status)=='production'",
+          "passed": true,
+          "expected": "production",
+          "actual": "production",
+          "error": ""
+        },
+        {
+          "name": "revision_count(status)==5",
+          "passed": true,
+          "expected": "5",
+          "actual": "5",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_adversarial_01",
+      "postulate": "K*2",
+      "category": "adversarial",
+      "description": "Revise to case-variant value — new value must be published exactly",
+      "passed": true,
+      "latency_ms": 2297.644300000684,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(theme)=='Dark'",
+          "passed": true,
+          "expected": "Dark",
+          "actual": "Dark",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k2_adversarial_02",
+      "postulate": "K*2",
+      "category": "adversarial",
+      "description": "Revise to a long value — long value must be published",
+      "passed": true,
+      "latency_ms": 2324.7919999994338,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(bio)==\"A very long biography that spans multiple sentences and contains detailed information about the user's background, preferences, and professional experience in software engineering.\"",
+          "passed": true,
+          "expected": "A very long biography that spans multiple sentences and contains detailed information about the user's background, preferences, and professional experience in software engineering.",
+          "actual": "A very long biography that spans multiple sentences and contains detailed information about the user's background, preferences, and professional experience in software engineering.",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_simple_01",
+      "postulate": "K*3",
+      "category": "simple",
+      "description": "After revision, item count unchanged (no phantom items)",
+      "passed": true,
+      "latency_ms": 2538.341700001183,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(language)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_multi_01",
+      "postulate": "K*3",
+      "category": "multi_item",
+      "description": "Revise one of three — others unchanged at r=1",
+      "passed": true,
+      "latency_ms": 4538.795800001026,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        },
+        {
+          "name": "revision_count(db_engine)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(cache)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(queue)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_multi_02",
+      "postulate": "K*3",
+      "category": "multi_item",
+      "description": "Revise one of five — total item count still 5",
+      "passed": true,
+      "latency_ms": 6388.1350999999995,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==5",
+          "passed": true,
+          "expected": "5",
+          "actual": "5",
+          "error": ""
+        },
+        {
+          "name": "revision_count(a_val)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(b_val)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(c_val)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(d_val)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(e_val)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_chain_01",
+      "postulate": "K*3",
+      "category": "chain",
+      "description": "Revise root of chain — leaf item unchanged",
+      "passed": true,
+      "latency_ms": 3661.8448000008357,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(base_model)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(fine_tune)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_temporal_01",
+      "postulate": "K*3",
+      "category": "temporal",
+      "description": "Three revisions — still one item, four revisions total",
+      "passed": true,
+      "latency_ms": 4307.2291999997105,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(version)==4",
+          "passed": true,
+          "expected": "4",
+          "actual": "4",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k3_adversarial_01",
+      "postulate": "K*3",
+      "category": "adversarial",
+      "description": "Create and revise 5 items rapidly — exactly 5 items",
+      "passed": true,
+      "latency_ms": 9192.45249999949,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==5",
+          "passed": true,
+          "expected": "5",
+          "actual": "5",
+          "error": ""
+        },
+        {
+          "name": "revision_count(rapid_a)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(rapid_e)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_simple_01",
+      "postulate": "K*4",
+      "category": "simple",
+      "description": "Non-conflicting beliefs — both exist independently (expansion)",
+      "passed": true,
+      "latency_ms": 3271.147999999812,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "published_value(likes_python)=='true'",
+          "passed": true,
+          "expected": "true",
+          "actual": "true",
+          "error": ""
+        },
+        {
+          "name": "published_value(likes_rust)=='true'",
+          "passed": true,
+          "expected": "true",
+          "actual": "true",
+          "error": ""
+        },
+        {
+          "name": "no_edge(likes_rust->likes_python, DERIVED_FROM)",
+          "passed": true,
+          "expected": "no DERIVED_FROM edge to likes_python",
+          "actual": "edge not found",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_simple_02",
+      "postulate": "K*4",
+      "category": "simple",
+      "description": "Conflicting belief — revision with DERIVED_FROM edge",
+      "passed": true,
+      "latency_ms": 3310.2447999990545,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "published_value(preferred_lang)=='Rust'",
+          "passed": true,
+          "expected": "Rust",
+          "actual": "Rust",
+          "error": ""
+        },
+        {
+          "name": "has_edge(preferred_lang, DERIVED_FROM)",
+          "passed": true,
+          "expected": ">=1 DERIVED_FROM edge",
+          "actual": "1 edges",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_multi_01",
+      "postulate": "K*4",
+      "category": "multi_item",
+      "description": "Three non-conflicting expansions — all independent",
+      "passed": true,
+      "latency_ms": 7076.783900000009,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        },
+        {
+          "name": "published_value(skill_python)=='advanced'",
+          "passed": true,
+          "expected": "advanced",
+          "actual": "advanced",
+          "error": ""
+        },
+        {
+          "name": "published_value(skill_rust)=='intermediate'",
+          "passed": true,
+          "expected": "intermediate",
+          "actual": "intermediate",
+          "error": ""
+        },
+        {
+          "name": "published_value(skill_go)=='beginner'",
+          "passed": true,
+          "expected": "beginner",
+          "actual": "beginner",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_multi_02",
+      "postulate": "K*4",
+      "category": "multi_item",
+      "description": "Expand two, then revise one — only revised has edge",
+      "passed": true,
+      "latency_ms": 7035.804200000712,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "has_edge(db_choice, DERIVED_FROM)",
+          "passed": true,
+          "expected": ">=1 DERIVED_FROM edge",
+          "actual": "1 edges",
+          "error": ""
+        },
+        {
+          "name": "no_edge(cache_choice->db_choice, DERIVED_FROM)",
+          "passed": true,
+          "expected": "no DERIVED_FROM edge to db_choice",
+          "actual": "edge not found",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_chain_01",
+      "postulate": "K*4",
+      "category": "chain",
+      "description": "Expand into a chain — existing items undisturbed",
+      "passed": true,
+      "latency_ms": 4711.289200000465,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        },
+        {
+          "name": "revision_count(model_base)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(model_ft)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(model_eval)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_temporal_01",
+      "postulate": "K*4",
+      "category": "temporal",
+      "description": "Expand three times then revise one — only revision creates edge",
+      "passed": true,
+      "latency_ms": 5213.082800000848,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        },
+        {
+          "name": "revision_count(fact_a)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(fact_b)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "revision_count(fact_c)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "has_edge(fact_b, DERIVED_FROM)",
+          "passed": true,
+          "expected": ">=1 DERIVED_FROM edge",
+          "actual": "1 edges",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k4_adversarial_01",
+      "postulate": "K*4",
+      "category": "adversarial",
+      "description": "Similar keys (color vs colour) — treated as separate expansions",
+      "passed": true,
+      "latency_ms": 2691.137299998445,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_count==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        },
+        {
+          "name": "published_value(color)=='blue'",
+          "passed": true,
+          "expected": "blue",
+          "actual": "blue",
+          "error": ""
+        },
+        {
+          "name": "published_value(colour)=='red'",
+          "passed": true,
+          "expected": "red",
+          "actual": "red",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_simple_01",
+      "postulate": "K*5",
+      "category": "simple",
+      "description": "Revise meeting day — only new day published (no contradiction)",
+      "passed": true,
+      "latency_ms": 2586.775800000396,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(meeting_day)=='Tuesday'",
+          "passed": true,
+          "expected": "Tuesday",
+          "actual": "Tuesday",
+          "error": ""
+        },
+        {
+          "name": "published_value(meeting_day)!='Monday'",
+          "passed": true,
+          "expected": "not Monday",
+          "actual": "Tuesday",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_simple_02",
+      "postulate": "K*5",
+      "category": "simple",
+      "description": "Revise location — old location not in published state",
+      "passed": true,
+      "latency_ms": 2620.134599999801,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(office_location)=='Tokyo'",
+          "passed": true,
+          "expected": "Tokyo",
+          "actual": "Tokyo",
+          "error": ""
+        },
+        {
+          "name": "published_value(office_location)!='Seoul'",
+          "passed": true,
+          "expected": "not Seoul",
+          "actual": "Tokyo",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_multi_01",
+      "postulate": "K*5",
+      "category": "multi_item",
+      "description": "Revise A among {A,B,C} — no cross-contamination",
+      "passed": true,
+      "latency_ms": 4467.485099999976,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(os_choice)=='macOS'",
+          "passed": true,
+          "expected": "macOS",
+          "actual": "macOS",
+          "error": ""
+        },
+        {
+          "name": "published_value(shell_choice)=='zsh'",
+          "passed": true,
+          "expected": "zsh",
+          "actual": "zsh",
+          "error": ""
+        },
+        {
+          "name": "published_value(term_choice)=='kitty'",
+          "passed": true,
+          "expected": "kitty",
+          "actual": "kitty",
+          "error": ""
+        },
+        {
+          "name": "published_value(os_choice)!='Linux'",
+          "passed": true,
+          "expected": "not Linux",
+          "actual": "macOS",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_multi_02",
+      "postulate": "K*5",
+      "category": "multi_item",
+      "description": "Revise A and B independently — both updated, no stale values",
+      "passed": true,
+      "latency_ms": 4727.502599998843,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(frontend)=='Svelte'",
+          "passed": true,
+          "expected": "Svelte",
+          "actual": "Svelte",
+          "error": ""
+        },
+        {
+          "name": "published_value(backend)=='FastAPI'",
+          "passed": true,
+          "expected": "FastAPI",
+          "actual": "FastAPI",
+          "error": ""
+        },
+        {
+          "name": "published_value(frontend)!='React'",
+          "passed": true,
+          "expected": "not React",
+          "actual": "Svelte",
+          "error": ""
+        },
+        {
+          "name": "published_value(backend)!='Express'",
+          "passed": true,
+          "expected": "not Express",
+          "actual": "FastAPI",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_chain_01",
+      "postulate": "K*5",
+      "category": "chain",
+      "description": "Revise root of chain — no stale root value in published state",
+      "passed": true,
+      "latency_ms": 3883.050500000536,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(arch_pattern)=='microservices'",
+          "passed": true,
+          "expected": "microservices",
+          "actual": "microservices",
+          "error": ""
+        },
+        {
+          "name": "published_value(arch_pattern)!='monolith'",
+          "passed": true,
+          "expected": "not monolith",
+          "actual": "microservices",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_temporal_01",
+      "postulate": "K*5",
+      "category": "temporal",
+      "description": "Triple revision — only final value active, no predecessors",
+      "passed": true,
+      "latency_ms": 4870.056499999919,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(priority)=='critical'",
+          "passed": true,
+          "expected": "critical",
+          "actual": "critical",
+          "error": ""
+        },
+        {
+          "name": "published_value(priority)!='low'",
+          "passed": true,
+          "expected": "not low",
+          "actual": "critical",
+          "error": ""
+        },
+        {
+          "name": "published_value(priority)!='medium'",
+          "passed": true,
+          "expected": "not medium",
+          "actual": "critical",
+          "error": ""
+        },
+        {
+          "name": "published_value(priority)!='high'",
+          "passed": true,
+          "expected": "not high",
+          "actual": "critical",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_temporal_02",
+      "postulate": "K*5",
+      "category": "temporal",
+      "description": "Revise back to original value — no stale intermediate",
+      "passed": true,
+      "latency_ms": 3549.366100000043,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(theme_mode)=='dark'",
+          "passed": true,
+          "expected": "dark",
+          "actual": "dark",
+          "error": ""
+        },
+        {
+          "name": "revision_count(theme_mode)==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k5_adversarial_01",
+      "postulate": "K*5",
+      "category": "adversarial",
+      "description": "Ten rapid revisions — only final value active",
+      "passed": true,
+      "latency_ms": 12312.279699999635,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(counter)=='10'",
+          "passed": true,
+          "expected": "10",
+          "actual": "10",
+          "error": ""
+        },
+        {
+          "name": "published_value(counter)!='5'",
+          "passed": true,
+          "expected": "not 5",
+          "actual": "10",
+          "error": ""
+        },
+        {
+          "name": "revision_count(counter)==11",
+          "passed": true,
+          "expected": "11",
+          "actual": "11",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k6_structural_01",
+      "postulate": "K*6",
+      "category": "simple",
+      "description": "Same item revised with same value twice — state is equivalent",
+      "passed": true,
+      "latency_ms": 5823.745199999394,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(config_val)=='beta'",
+          "passed": true,
+          "expected": "beta",
+          "actual": "beta",
+          "error": ""
+        },
+        {
+          "name": "revision_count(config_val)==3",
+          "passed": true,
+          "expected": "3",
+          "actual": "3",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k6_structural_02",
+      "postulate": "K*6",
+      "category": "simple",
+      "description": "Revise A->B vs fresh store B — same published value",
+      "passed": true,
+      "latency_ms": 4170.07410000042,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(setting_x)=='new'",
+          "passed": true,
+          "expected": "new",
+          "actual": "new",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k6_multi_01",
+      "postulate": "K*6",
+      "category": "multi_item",
+      "description": "Two items revised to same value — both have same published value",
+      "passed": true,
+      "latency_ms": 4332.125400000223,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(param_a)=='z'",
+          "passed": true,
+          "expected": "z",
+          "actual": "z",
+          "error": ""
+        },
+        {
+          "name": "published_value(param_b)=='z'",
+          "passed": true,
+          "expected": "z",
+          "actual": "z",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k6_temporal_01",
+      "postulate": "K*6",
+      "category": "temporal",
+      "description": "A->B->A path vs fresh A — final state equivalent (value=A)",
+      "passed": true,
+      "latency_ms": 3173.9754999998695,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(flag)=='enabled'",
+          "passed": true,
+          "expected": "enabled",
+          "actual": "enabled",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "k6_adversarial_01",
+      "postulate": "K*6",
+      "category": "adversarial",
+      "description": "Idempotent revision — revising with current value still succeeds",
+      "passed": true,
+      "latency_ms": 2535.0553000007494,
+      "error": "",
+      "assertions": [
+        {
+          "name": "published_value(idempotent_val)=='stable'",
+          "passed": true,
+          "expected": "stable",
+          "actual": "stable",
+          "error": ""
+        },
+        {
+          "name": "revision_count(idempotent_val)==2",
+          "passed": true,
+          "expected": "2",
+          "actual": "2",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_simple_01",
+      "postulate": "Relevance",
+      "category": "simple",
+      "description": "Deprecate A — unrelated B remains active",
+      "passed": true,
+      "latency_ms": 3156.552599999486,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(belief_a)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(belief_b)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(belief_b)=='beta'",
+          "passed": true,
+          "expected": "beta",
+          "actual": "beta",
+          "error": ""
+        },
+        {
+          "name": "revision_count(belief_b)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_multi_01",
+      "postulate": "Relevance",
+      "category": "multi_item",
+      "description": "Deprecate 1 of 5 — other 4 completely unchanged",
+      "passed": true,
+      "latency_ms": 5957.173700000567,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(rel_c)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(rel_a)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(rel_b)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(rel_d)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(rel_e)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "revision_count(rel_a)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(rel_e)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_multi_02",
+      "postulate": "Relevance",
+      "category": "multi_item",
+      "description": "Deprecate and restore — restored item back in active state",
+      "passed": true,
+      "latency_ms": 3090.0630000014644,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_active(temp_belief)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(perm_belief)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(temp_belief)=='temporary'",
+          "passed": true,
+          "expected": "temporary",
+          "actual": "temporary",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_chain_01",
+      "postulate": "Relevance",
+      "category": "chain",
+      "description": "A->B chain, C independent. Deprecate A — C untouched",
+      "passed": true,
+      "latency_ms": 4167.5161000002845,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(chain_root)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(independent)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(independent)=='ind-val'",
+          "passed": true,
+          "expected": "ind-val",
+          "actual": "ind-val",
+          "error": ""
+        },
+        {
+          "name": "revision_count(independent)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_chain_02",
+      "postulate": "Relevance",
+      "category": "chain",
+      "description": "A->B, deprecate A — B's item NOT auto-deprecated",
+      "passed": true,
+      "latency_ms": 3514.4983000009233,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(parent_fact)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(child_fact)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_temporal_01",
+      "postulate": "Relevance",
+      "category": "temporal",
+      "description": "Revise A twice then deprecate — other items untouched",
+      "passed": true,
+      "latency_ms": 5121.677600000112,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(evolving)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(stable_peer)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "revision_count(stable_peer)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "published_value(stable_peer)=='unchanged'",
+          "passed": true,
+          "expected": "unchanged",
+          "actual": "unchanged",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_adversarial_01",
+      "postulate": "Relevance",
+      "category": "adversarial",
+      "description": "Beliefs with similar names — deprecating one doesn't touch the other",
+      "passed": true,
+      "latency_ms": 2949.460800000452,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(user_name)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(user_nickname)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(user_nickname)=='ally'",
+          "passed": true,
+          "expected": "ally",
+          "actual": "ally",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "rel_adversarial_02",
+      "postulate": "Relevance",
+      "category": "adversarial",
+      "description": "Deprecate all but one — surviving belief fully intact",
+      "passed": true,
+      "latency_ms": 4387.1293000011065,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(doomed_1)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_deprecated(doomed_2)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(survivor)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(survivor)=='z'",
+          "passed": true,
+          "expected": "z",
+          "actual": "z",
+          "error": ""
+        },
+        {
+          "name": "revision_count(survivor)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_simple_01",
+      "postulate": "Core-Retainment",
+      "category": "simple",
+      "description": "Standalone belief deprecated — no collateral damage",
+      "passed": true,
+      "latency_ms": 3424.539100000402,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(standalone)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(bystander)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_chain_01",
+      "postulate": "Core-Retainment",
+      "category": "chain",
+      "description": "A->B chain, deprecate A. B active (not auto-removed). Dependency detectable.",
+      "passed": true,
+      "latency_ms": 3558.1074000001536,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(source_fact)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(derived_fact)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "has_edge(derived_fact, DERIVED_FROM)",
+          "passed": true,
+          "expected": ">=1 DERIVED_FROM edge",
+          "actual": "1 edges",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_chain_02",
+      "postulate": "Core-Retainment",
+      "category": "chain",
+      "description": "A->B, C->D independent chains. Deprecate A — C,D untouched",
+      "passed": true,
+      "latency_ms": 5689.560799999526,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(chain1_root)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(chain2_root)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(chain2_leaf)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "revision_count(chain2_root)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        },
+        {
+          "name": "revision_count(chain2_leaf)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_independent_01",
+      "postulate": "Core-Retainment",
+      "category": "multi_item",
+      "description": "Three independent beliefs, deprecate one — others fully untouched",
+      "passed": true,
+      "latency_ms": 4313.313100001324,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(ind_b)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(ind_a)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(ind_c)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "published_value(ind_a)=='a'",
+          "passed": true,
+          "expected": "a",
+          "actual": "a",
+          "error": ""
+        },
+        {
+          "name": "published_value(ind_c)=='c'",
+          "passed": true,
+          "expected": "c",
+          "actual": "c",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_adversarial_01",
+      "postulate": "Core-Retainment",
+      "category": "adversarial",
+      "description": "Deep chain A->B->C->D. Deprecate A. Downstream items active, dependency detectable.",
+      "passed": true,
+      "latency_ms": 5417.209100000036,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(deep_a)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(deep_b)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(deep_c)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(deep_d)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "id": "cr_adversarial_02",
+      "postulate": "Core-Retainment",
+      "category": "adversarial",
+      "description": "Mixed edges: DERIVED_FROM and DEPENDS_ON. Deprecate root — only DERIVED chain affected concept",
+      "passed": true,
+      "latency_ms": 5424.3801000011445,
+      "error": "",
+      "assertions": [
+        {
+          "name": "item_deprecated(root_node)",
+          "passed": true,
+          "expected": "deprecated",
+          "actual": "deprecated",
+          "error": ""
+        },
+        {
+          "name": "item_active(derived_node)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(dependent_node)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "item_active(unrelated_node)",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "error": ""
+        },
+        {
+          "name": "revision_count(unrelated_node)==1",
+          "passed": true,
+          "expected": "1",
+          "actual": "1",
+          "error": ""
+        }
+      ]
+    }
+  ]
+}
