@@ -432,18 +432,30 @@ async def evaluate_locomo(
                                         context="personal",
                                         stack_revisions=config.stack_revisions,
                                     )
-                                    # Post-consolidation edge discovery
-                                    if config.graph_augmented and cons.get("success"):
+                                    # Post-consolidation write-side stages that
+                                    # both key off the consolidated summary + its
+                                    # revision kref.
+                                    if cons.get("success"):
                                         store_res = cons.get("store_result", {})
                                         rev_kref = store_res.get("revision_kref", "")
                                         summary = cons.get("summary", "")
-                                        if rev_kref and summary:
+                                        # Edge discovery (graph-augmented default)
+                                        if config.graph_augmented and rev_kref and summary:
                                             try:
                                                 await adapter.discover_and_link_edges(
                                                     rev_kref, summary,
                                                 )
                                             except Exception as e:
                                                 logger.debug("Edge discovery failed: %s", e)
+                                        # Opt-in relation decomposition: simulates
+                                        # the production in-loop decompose agent so a
+                                        # relation_traversal pair run has entity->
+                                        # entity edges to traverse. Best-effort
+                                        # (the adapter method swallows failures).
+                                        if config.decompose_relations and rev_kref and summary:
+                                            await adapter.decompose_and_link_relations(
+                                                rev_kref, summary,
+                                            )
                                 except Exception as e:
                                     logger.warning("Consolidation failed for session: %s", e)
                             return sid
@@ -644,6 +656,11 @@ async def evaluate_locomo(
     metrics["judge_enabled"] = judge
     metrics["backend_probe_seconds"] = backend_probe_s
     metrics["answer_only"] = config.answer_only
+    # Auditable in the run's config output: was the opt-in relation-
+    # decomposition write stage on? Must match across both arms of a
+    # relation_traversal pair run (writes are shared; only the read flag
+    # KUMIHO_MEMORY_RELATION_TRAVERSAL differs).
+    metrics["decompose_relations"] = config.decompose_relations
 
     # Also compute per-category metrics (LoCoMo standard)
     cat_metrics: dict[str, Any] = {}
@@ -829,6 +846,14 @@ def main():
                         help="Two-pass search: re-rank siblings with focused embeddings (title+summary only)")
     parser.add_argument("--score-fields", nargs="+", default=None,
                         help="Server-side focused scoring fields (e.g. --score-fields title summary)")
+    parser.add_argument("--decompose-relations", action="store_true",
+                        help="Opt-in: after each session consolidation, run one extra LLM call "
+                        "(the summarizer model) to extract a lean decomposition from the summary "
+                        "and write entity->entity relation edges via decompose_and_link_agent. "
+                        "OFF by default; also enabled by KUMIHO_EVAL_DECOMPOSE_RELATIONS=1. Turn "
+                        "this ON in BOTH arms of a relation_traversal pair run (writes are shared; "
+                        "only the read flag KUMIHO_MEMORY_RELATION_TRAVERSAL differs). Requires "
+                        "kumiho-memory>=0.18.0.")
     args = parser.parse_args()
     warn_if_alias(args.answer_model, role="answer")
     warn_if_alias(args.judge_model, role="judge")
@@ -854,6 +879,12 @@ def main():
         stack_revisions=not args.no_stack,  # Default: True (stacking + sibling top-k)
         two_pass_rerank=args.two_pass,
         sibling_score_fields=args.score_fields,
+        # Env var mirrors the summarizer-model pattern above: the CLI flag or
+        # KUMIHO_EVAL_DECOMPOSE_RELATIONS=1 enables the stage (default OFF).
+        decompose_relations=(
+            args.decompose_relations
+            or os.environ.get("KUMIHO_EVAL_DECOMPOSE_RELATIONS", "") == "1"
+        ),
     )
 
     asyncio.run(evaluate_locomo(

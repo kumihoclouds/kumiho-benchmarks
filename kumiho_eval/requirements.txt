@@ -3,7 +3,9 @@ kumiho[mcp]>=0.9.6
 # Benchmarks measure kumiho-memory itself — install it EDITABLE from the SDK
 # repo so runs exercise the branch under test (the manifest records which):
 #   pip install -e <path-to-kumiho-SDKs>/python/kumiho-memory
-kumiho-memory[all]>=0.8.2
+# >=0.18.0: the opt-in relation-decomposition stage (--decompose-relations)
+# calls kumiho_memory.ontology.decompose_and_link_agent, added in 0.18.0.
+kumiho-memory[all]>=0.18.0
 
 # LLM providers (for judge and answer generation)
 openai>=1.35.0

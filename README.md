@@ -374,6 +374,7 @@ python -m kumiho_eval.agm_compliance_eval [--max-scenarios N] [--output DIR]
 | `--project` | `benchmark-locomo` | Kumiho project name |
 | `--max-samples` | all | Limit conversations |
 | `--no-resume` | | Start fresh (ignore checkpoint) |
+| `--decompose-relations` | off | Opt-in relation-decomposition write stage (see [Relation Decomposition](#relation-decomposition-opt-in)); also set by `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`. Requires kumiho-memory>=0.18.0 |
 
 #### longmemeval_eval.py
 
@@ -450,6 +451,33 @@ The suite supports two recall modes that test different memory architectures:
 
 Use `--dual-mode` to run both and quantify the accuracy delta — this is a key
 result for the paper's BYO-storage contribution.
+
+### Relation Decomposition (opt-in)
+
+`--decompose-relations` (LoCoMo; or `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`, default
+**OFF**) adds one extra LLM call after each session consolidation that extracts a
+lean decomposition (up to ~10 entities / ~10 facts / ~10 relations, JSON-
+constrained) from the **consolidated summary** — never the raw transcript — and
+writes entity→entity relation edges through
+`kumiho_memory.ontology.decompose_and_link_agent`. It reuses the run's existing
+adapter and summarizer model (`KUMIHO_LLM_MODEL`, default `gpt-4o-mini`); its
+tokens are accounted under the `decompose_relations` phase in the manifest, and
+the flag is recorded in `metrics.json` (`decompose_relations`) and the run
+manifest so ON/OFF gate runs are auditable.
+
+**Why it exists.** The product's consolidation summarizer schema deliberately
+omits relations — measured, adding relation fields to the summary regressed
+`based_on` base recall. In production the relation edges are written by an
+in-loop agent that calls `decompose_and_link_agent` after consolidation, so this
+stage *simulates that in-loop agent* rather than changing the summarizer.
+
+**Pair-run usage (important).** The read-side flag under test is
+`KUMIHO_MEMORY_RELATION_TRAVERSAL` (`GraphAugmentationConfig.relation_traversal`,
+default OFF). For a valid `relation_traversal` OFF-vs-ON comparison, turn
+`--decompose-relations` **ON in BOTH arms** — the relation edges are shared
+write-side state; only the *read* flag should differ between the two arms.
+Enabling decomposition in just the ON arm would confound the write and read
+changes. Requires **kumiho-memory >= 0.18.0**.
 
 ## Architecture
 
