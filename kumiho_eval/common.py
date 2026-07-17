@@ -416,6 +416,96 @@ async def generate_answer(
 
 
 # ---------------------------------------------------------------------------
+# Relation decomposition (opt-in ingestion stage)
+# ---------------------------------------------------------------------------
+#
+# The product's consolidation summarizer schema deliberately OMITS relations
+# (measured: relations in the summary schema regressed based-on base recall).
+# In production, entity->entity relation edges are written by an in-loop agent
+# that calls ``kumiho_memory.ontology.decompose_and_link_agent`` AFTER
+# consolidation. This harness stage simulates that agent so a LoCoMo
+# relation_traversal pair run (read flag OFF vs ON) actually has edges to
+# traverse. One extra LLM call (the run's configured summarizer model) extracts
+# a lean decomposition from the CONSOLIDATED SUMMARY — never the raw transcript.
+
+_DECOMPOSE_SYSTEM = (
+    "You extract a knowledge-graph decomposition from a consolidated memory "
+    "summary. Return STRICT JSON only — no prose, no code fences."
+)
+
+_DECOMPOSE_TEMPLATE = """From the memory summary below, extract the salient entities, facts, and relations.
+
+Rules:
+- entities: the concrete people, places, organizations, products, or things the summary is about. Each: {{"name": str, "type": str, "aliases": [str]}}. Use a short lowercase type (e.g. "person", "place", "organization", "activity", "object"). aliases may be empty.
+- facts: standalone factual statements the summary asserts. Each: {{"statement": str, "about": [str]}} where "about" lists entity names the fact concerns.
+- relations: directed links BETWEEN two entities. Each: {{"subject": str, "predicate": str, "object": str}}. subject and object MUST be names from the entities list. predicate is a short verb phrase (e.g. "works at", "lives in", "owns", "married to", "part of").
+
+Extract at most 10 of each. Only include a relation when both endpoints are entities you listed. If a category has nothing, use an empty list.
+
+Summary:
+{summary}
+
+Return JSON exactly of the form:
+{{"entities": [...], "facts": [...], "relations": [...]}}
+"""
+
+# NOTE: the template is registered lazily (first use / manifest generation
+# when the flag is ON) rather than at import — an unconditional module-level
+# registration would add the hash to EVERY benchmark's manifest, even runs
+# where the stage is off, breaking manifest comparability with pre-stage runs.
+
+#: Client-side per-kind cap. The SDK's server-side OntologySchema cap is
+#: larger (20); the harness stage promises a LEAN decomposition (~10 each).
+_DECOMPOSE_MAX_PER_KIND = 10
+
+
+def _register_decompose_template() -> None:
+    register_prompt_template("decompose_relations", _DECOMPOSE_TEMPLATE)
+
+
+def _parse_decomposition(raw: str) -> dict[str, Any]:
+    """Parse an LLM decomposition response into a validated dict.
+
+    Tolerant by design: strips accidental markdown fences and returns ``{}``
+    on ANY malformation (bad JSON, wrong shape, no entities) rather than
+    raising, so a single bad response never fails the run. Each field must be
+    a list (any other type — string, number, bool, dict — is treated as
+    empty), only dict-shaped entries survive, each kind is capped at
+    ``_DECOMPOSE_MAX_PER_KIND``, and a decomposition with no entities is
+    dropped since relations have no anchors to link onto.
+    """
+    if not raw:
+        return {}
+    text = raw.strip()
+    # Tolerate accidental markdown fences around the JSON body.
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text[:4].lower() == "json":
+            text = text[4:]
+    try:
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+
+    def _dicts(key: str) -> list[dict]:
+        value = parsed.get(key)
+        if not isinstance(value, list):
+            return []  # truthy non-lists ("x", 5, true, {...}) count as empty
+        return [v for v in value if isinstance(v, dict)][:_DECOMPOSE_MAX_PER_KIND]
+
+    entities = _dicts("entities")
+    if not entities:
+        return {}
+    return {
+        "entities": entities,
+        "facts": _dicts("facts"),
+        "relations": _dicts("relations"),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Kumiho Memory Adapter
 # ---------------------------------------------------------------------------
 
@@ -451,6 +541,7 @@ class BenchmarkConfig:
     stack_revisions: bool = True  # True = stack similar sessions; False = one item per session
     two_pass_rerank: bool = False  # Re-rank siblings with focused embeddings (title+summary only)
     sibling_score_fields: list[str] | None = None  # Server-side focused scoring fields (e.g. ["title", "summary"])
+    decompose_relations: bool = False  # Opt-in: after each consolidation, one extra LLM call (llm_model) extracts a lean decomposition from the summary and writes entity->entity relation edges via kumiho_memory.ontology.decompose_and_link_agent. OFF by default. Must be ON in BOTH arms of a relation_traversal pair run (writes are shared; only the read flag KUMIHO_MEMORY_RELATION_TRAVERSAL differs). Requires kumiho-memory>=0.18.0.
 
 
 @dataclass
@@ -491,6 +582,12 @@ class KumihoMemoryAdapter:
         self._initialised = False
         self._embed_adapter: Any = None
         self._embed_adapter_failed = False
+        # Aggregate write stats for the opt-in relation-decomposition stage
+        # (see decompose_and_link_relations) — lets the run audit the total
+        # edges written and detect a zero-edge null gate run.
+        self.decompose_relations_stats: dict[str, int] = {
+            "calls": 0, "entities": 0, "facts": 0, "relations": 0, "edges": 0,
+        }
 
     async def initialise(self) -> None:
         """Lazily initialise the Kumiho client and memory manager."""
@@ -821,6 +918,98 @@ class KumihoMemoryAdapter:
             revision_kref, summary, **kwargs,
         )
 
+    # ------------------------------------------------------------------
+    # Opt-in relation decomposition (simulates the in-loop decompose agent)
+    # ------------------------------------------------------------------
+
+    async def decompose_and_link_relations(
+        self,
+        revision_kref: str,
+        summary: str,
+    ) -> dict[str, Any]:
+        """Extract a lean decomposition from *summary* and materialize
+        entity->entity relation edges via the SDK's agent-driven writer.
+
+        The production consolidation summary omits relations by design; in a
+        live loop an agent calls ``decompose_and_link_agent`` after
+        consolidation to write the relation edges. This mirrors that so a
+        ``relation_traversal`` pair run has edges to traverse. One LLM call
+        using the run's configured summarizer model (``config.llm_model``),
+        the same structured-JSON convention as the harness's other extraction
+        calls, over the CONSOLIDATED SUMMARY (not the raw transcript).
+
+        Best-effort: the ENTIRE body is fenced — any failure (client
+        construction, LLM error, malformed JSON, SDK write) is logged and
+        swallowed, so a single conversation never fails the run and the call
+        site never sees an exception. Token usage is recorded under the
+        ``decompose_relations`` phase; successful write stats accumulate in
+        ``self.decompose_relations_stats`` so the run can audit total edges
+        written (and warn on a zero-edge null gate run). Returns the SDK
+        write stats (``{entities, facts, relations, edges}``) or ``{}``.
+        Requires kumiho-memory>=0.18.0.
+        """
+        await self.initialise()
+        if not revision_kref or not summary or not summary.strip():
+            return {}
+
+        try:
+            _register_decompose_template()
+            from openai import AsyncOpenAI
+
+            # Same key-resolution chain as the summarizer (initialise()), so a
+            # run authenticated only via KUMIHO_LLM_API_KEY still writes edges
+            # instead of silently producing a zero-edge (null gate) corpus.
+            client = AsyncOpenAI(
+                api_key=(
+                    self.config.openai_api_key
+                    or self.config.anthropic_api_key
+                    or os.environ.get("KUMIHO_LLM_API_KEY")
+                    or os.environ.get("OPENAI_API_KEY")
+                ),
+            )
+            prompt = _DECOMPOSE_TEMPLATE.format(summary=summary[:6000])
+
+            @backoff.on_exception(backoff.expo, Exception, max_tries=3)
+            async def _call() -> str:
+                resp = await client.chat.completions.create(
+                    model=self.config.llm_model,
+                    messages=[
+                        {"role": "system", "content": _DECOMPOSE_SYSTEM},
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_tokens=800,
+                    temperature=0.0,
+                    response_format={"type": "json_object"},
+                )
+                token_tracker.record("decompose_relations", resp)
+                return (resp.choices[0].message.content or "").strip()
+
+            raw = await _call()
+            decomposition = _parse_decomposition(raw)
+            if not decomposition:
+                logger.debug(
+                    "Relation decomposition produced nothing usable for %s",
+                    revision_kref,
+                )
+                return {}
+
+            from kumiho_memory.ontology import decompose_and_link_agent
+
+            stats = await decompose_and_link_agent(
+                revision_kref, decomposition, project_name=self.config.project_name,
+            )
+            stats = stats or {}
+            self.decompose_relations_stats["calls"] += 1
+            for key in ("entities", "facts", "relations", "edges"):
+                self.decompose_relations_stats[key] += int(stats.get(key) or 0)
+            logger.debug("Relation decomposition linked %s: %s", revision_kref, stats)
+            return stats
+        except Exception as e:  # best-effort: log + continue, never fail the run
+            logger.warning(
+                "Relation decomposition failed (%s): %s", revision_kref, e,
+            )
+            return {}
+
     async def cleanup(self) -> None:
         """Close connections."""
         if self._manager:
@@ -1034,6 +1223,13 @@ def generate_run_manifest(
     if repo_root is None:
         repo_root = Path(__file__).resolve().parent.parent
 
+    # The relation-decomposition template is registered lazily so OFF runs
+    # keep byte-identical prompt_template_hashes with pre-stage manifests;
+    # register it here for ON runs (the manifest is generated before the
+    # stage's first LLM call).
+    if config.decompose_relations:
+        _register_decompose_template()
+
     # Collect all registered prompt template hashes
     template_hashes = {}
     for name, template in sorted(_PROMPT_TEMPLATE_REGISTRY.items()):
@@ -1070,6 +1266,7 @@ def generate_run_manifest(
             "recall_candidate_multiplier": config.recall_candidate_multiplier,
             "recall_mode": config.recall_mode,
             "graph_augmented": config.graph_augmented,
+            "decompose_relations": config.decompose_relations,
             "sibling_similarity_threshold": config.sibling_similarity_threshold,
             "consolidation_threshold": config.consolidation_threshold,
             "max_samples": config.max_samples,

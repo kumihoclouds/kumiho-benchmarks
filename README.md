@@ -305,6 +305,7 @@ python -m kumiho_eval.run_benchmarks --all --agm
 | `--recall-mode` | `full` | `full` (artifact content) or `summarized` (title+summary) |
 | `--dual-mode` | | Run both full and summarized, then compare |
 | `--no-graph-augmented` | | Disable graph-augmented recall (on by default) |
+| `--decompose-relations` | off | Opt-in relation-decomposition write stage (LoCoMo only; see [Relation Decomposition](#relation-decomposition-opt-in)) |
 | `--project` | `benchmark-eval` | Kumiho project name prefix |
 | `-v` | | Verbose logging |
 
@@ -374,6 +375,7 @@ python -m kumiho_eval.agm_compliance_eval [--max-scenarios N] [--output DIR]
 | `--project` | `benchmark-locomo` | Kumiho project name |
 | `--max-samples` | all | Limit conversations |
 | `--no-resume` | | Start fresh (ignore checkpoint) |
+| `--decompose-relations` | off | Opt-in relation-decomposition write stage (see [Relation Decomposition](#relation-decomposition-opt-in)); also set by `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`. Requires kumiho-memory>=0.18.0 |
 
 #### longmemeval_eval.py
 
@@ -450,6 +452,39 @@ The suite supports two recall modes that test different memory architectures:
 
 Use `--dual-mode` to run both and quantify the accuracy delta — this is a key
 result for the paper's BYO-storage contribution.
+
+### Relation Decomposition (opt-in)
+
+`--decompose-relations` (on `locomo_eval` and `run_benchmarks`; or
+`KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`, default **OFF**) adds one extra LLM call
+after each session consolidation that extracts a lean decomposition (up to
+10 entities / 10 facts / 10 relations, JSON-constrained) from the
+**consolidated summary** — never the raw transcript — and writes entity→entity
+relation edges through `kumiho_memory.ontology.decompose_and_link_agent`. The
+stage builds its own OpenAI-compatible client (it honors `OPENAI_BASE_URL`)
+with the run's configured summarizer model (`KUMIHO_LLM_MODEL`, default
+`gpt-4o-mini`) and the summarizer's key-resolution chain
+(`openai_api_key` → `anthropic_api_key` → `KUMIHO_LLM_API_KEY` →
+`OPENAI_API_KEY`). Its tokens are accounted under the `decompose_relations`
+phase; the flag is recorded in the run manifest, and standalone `locomo_eval`
+runs are self-auditing — `metrics.json` carries `decompose_relations`,
+`decompose_relations_token_usage`, and `decompose_relations_write_stats`
+(edges actually written; a run that wrote zero relation edges logs a loud
+null-gate warning).
+
+**Why it exists.** The product's consolidation summarizer schema deliberately
+omits relations — measured, adding relation fields to the summary regressed
+`based_on` base recall. In production the relation edges are written by an
+in-loop agent that calls `decompose_and_link_agent` after consolidation, so this
+stage *simulates that in-loop agent* rather than changing the summarizer.
+
+**Pair-run usage (important).** The read-side flag under test is
+`KUMIHO_MEMORY_RELATION_TRAVERSAL` (`GraphAugmentationConfig.relation_traversal`,
+default OFF). For a valid `relation_traversal` OFF-vs-ON comparison, turn
+`--decompose-relations` **ON in BOTH arms** — the relation edges are shared
+write-side state; only the *read* flag should differ between the two arms.
+Enabling decomposition in just the ON arm would confound the write and read
+changes. Requires **kumiho-memory >= 0.18.0**.
 
 ## Architecture
 
