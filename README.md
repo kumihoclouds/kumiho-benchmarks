@@ -485,8 +485,12 @@ decomposition dict:
 
 The model only sees THIS session's summary, so it is instructed to emit a
 belief change only when the summary itself signals one ("no longer", "used
-to", "now", "instead of", "changed to"); the `replaces`/`conflicts_with`
-target is the implied prior statement phrased as a standalone fact. Referential
+to", "now", "instead of", "changed to") **and** the prior fact's content is
+recoverable from the summary's own text — stated or directly paraphrasable
+("left her job at the bakery to join Google" yields both facts). When the
+summary signals a change but never states the prior ("now works at Google",
+prior employer unstated), the model emits only the NEW fact and skips the
+belief entry — it must never invent the prior's specifics. Referential
 integrity, like relations: **both** the new statement and its target must also
 appear in `facts` (the SDK resolves each to a fact in the same call and drops
 any belief change it can't anchor). The SDK lands these as `SUPERSEDES` /
@@ -494,8 +498,15 @@ any belief change it can't anchor). The SDK lands these as `SUPERSEDES` /
 `SUPERSEDES` still runs as a fallback and yields to agent declarations. On an
 older kumiho-memory (< 0.19.0) the extra keys are simply ignored server-side,
 so the stage degrades gracefully — relation edges still land and the
-belief-change counts stay 0. Belief-change edges are what make the final
-`0.19.0` LoCoMo run actually exercise kumiho-memory's `CONTRADICTS` read path.
+belief-change counts stay 0. Two honest caveats on that degradation: on
+0.18.0 only the belief *keys* are ignored — the `facts` list is still
+affected (a prior fact restated under the recoverability rule above becomes a
+plain fact node with no belief edge), so a 0.18.0 ON-arm corpus is not
+byte-identical to a pre-belief-change corpus. The no-invention rule bounds
+that surface to priors the summary itself states, and the SDK-side referential
+drop of unresolvable sources/targets is the final guard. Belief-change edges
+are what make the final `0.19.0` LoCoMo run actually exercise kumiho-memory's
+`CONTRADICTS` read path.
 
 **Why it exists.** The product's consolidation summarizer schema deliberately
 omits relations — measured, adding relation fields to the summary regressed

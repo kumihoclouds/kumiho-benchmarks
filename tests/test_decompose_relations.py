@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from kumiho_eval.common import (  # noqa: E402
+    _DECOMPOSE_TEMPLATE,
     _PROMPT_TEMPLATE_REGISTRY,
     BenchmarkConfig,
     KumihoMemoryAdapter,
@@ -403,6 +404,20 @@ def test_parse_caps_each_kind_at_ten():
 # ---------------------------------------------------------------------------
 # 5. Belief-change extraction (supersedes / contradicts, kumiho-memory>=0.19.0)
 # ---------------------------------------------------------------------------
+
+
+def test_prompt_forbids_inventing_prior_facts():
+    # Adversarial-review Finding C: instructing the model to add a prior fact
+    # "even if the summary only implies it" is a hallucination surface — an
+    # invented prior materializes as a REAL fact node (and on 0.19.0 anchors a
+    # belief edge). The template must instead carry an explicit no-invention
+    # rule: emit a belief entry ONLY when the prior's content is recoverable
+    # from the summary's own text, otherwise skip the entry.
+    assert "even if the summary only implies it" not in _DECOMPOSE_TEMPLATE
+    assert "NEVER invent the prior fact's specifics" in _DECOMPOSE_TEMPLATE
+    assert "recoverable from this summary's own text" in _DECOMPOSE_TEMPLATE
+    assert "SKIP the belief entry" in _DECOMPOSE_TEMPLATE
+
 
 # entities + facts (incl. the prior facts a belief change points back at) +
 # one supersedes and one contradicts, each targeting a fact listed above.
