@@ -16,6 +16,7 @@ pytest-asyncio plugin is required.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import sys
 import types
@@ -29,6 +30,7 @@ from kumiho_eval.common import (  # noqa: E402
     BenchmarkConfig,
     KumihoMemoryAdapter,
     _parse_decomposition,
+    decompose_relations_null_gate_warnings,
     generate_run_manifest,
     token_tracker,
 )
@@ -87,9 +89,12 @@ class _FakeAsyncOpenAI:
 
 
 # Log of decompose_and_link_agent invocations + a raise toggle for testing the
-# swallow-all posture on SDK write failures.
+# swallow-all posture on SDK write failures. ``_LINK_OMIT_BELIEF_KEYS``
+# simulates a pre-0.19.0 SDK whose stats dict has no supersedes/contradicts
+# keys (graceful-degradation path).
 _LINK_CALLS: list[dict] = []
 _LINK_RAISES = {"value": False}
+_LINK_OMIT_BELIEF_KEYS = {"value": False}
 
 
 async def _fake_decompose_and_link_agent(
@@ -105,12 +110,19 @@ async def _fake_decompose_and_link_agent(
         }
     )
     rels = decomposition.get("relations", [])
-    return {
+    sup = decomposition.get("supersedes", [])
+    con = decomposition.get("contradicts", [])
+    stats = {
         "entities": len(decomposition.get("entities", [])),
         "facts": len(decomposition.get("facts", [])),
         "relations": len(rels),
-        "edges": len(rels),
+        "edges": len(rels) + len(sup) + len(con),
     }
+    # 0.19.0 stats carry belief-change counts; a 0.18.0 SDK omits these keys.
+    if not _LINK_OMIT_BELIEF_KEYS["value"]:
+        stats["supersedes"] = len(sup)
+        stats["contradicts"] = len(con)
+    return stats
 
 
 class _Patched:
@@ -135,6 +147,7 @@ class _Patched:
         _CLIENT_KWARGS.clear()
         _LINK_CALLS.clear()
         _LINK_RAISES["value"] = False
+        _LINK_OMIT_BELIEF_KEYS["value"] = False
         return self
 
     def __exit__(self, *exc):
@@ -289,6 +302,7 @@ def test_truthy_noniterable_fields_do_not_raise_through_method():
     assert len(_LINK_CALLS) == 1
     assert _LINK_CALLS[0]["decomposition"] == {
         "entities": [{"name": "A"}], "facts": [], "relations": [],
+        "supersedes": [], "contradicts": [],
     }
     assert stats["entities"] == 1 and stats["relations"] == 0
 
@@ -339,34 +353,40 @@ def test_parse_decomposition_variants():
     assert _parse_decomposition("[1, 2, 3]") == {}
     # No entities -> dropped (relations would have no anchors).
     assert _parse_decomposition('{"entities": [], "relations": []}') == {}
-    # Non-dict entries are filtered out.
+    # Non-dict entries are filtered out. Belief-change keys always present
+    # (empty here) since parse now returns them alongside relations.
     d2 = _parse_decomposition(
         '{"entities": [{"name": "A"}, "junk"], "facts": null, "relations": []}'
     )
-    assert d2 == {"entities": [{"name": "A"}], "facts": [], "relations": []}
+    assert d2 == {
+        "entities": [{"name": "A"}], "facts": [], "relations": [],
+        "supersedes": [], "contradicts": [],
+    }
 
 
 def test_parse_truthy_noniterable_fields_never_raise():
     # F1 repro: truthy non-list fields must parse as empty, not raise.
+    _EMPTY = {
+        "entities": [{"name": "A"}], "facts": [], "relations": [],
+        "supersedes": [], "contradicts": [],
+    }
     d = _parse_decomposition(
         '{"entities":[{"name":"A"}],"facts":"x","relations":5}'
     )
-    assert d == {"entities": [{"name": "A"}], "facts": [], "relations": []}
+    assert d == _EMPTY
     # Every non-list type in every field position.
     for bad in ('"x"', "5", "true", '{"name": "A"}'):
         assert _parse_decomposition(f'{{"entities": {bad}}}') == {}
         d = _parse_decomposition(
             f'{{"entities": [{{"name": "A"}}], "facts": {bad}, "relations": {bad}}}'
         )
-        assert d == {"entities": [{"name": "A"}], "facts": [], "relations": []}
+        assert d == _EMPTY
 
 
 def test_parse_caps_each_kind_at_ten():
     # F6: the stage promises a LEAN decomposition (~10/kind); the server-side
     # schema cap is larger (20), so enforce the cap client-side.
-    import json as _json
-
-    payload = _json.dumps({
+    payload = json.dumps({
         "entities": [{"name": f"E{i}"} for i in range(15)],
         "facts": [{"statement": f"fact {i}"} for i in range(15)],
         "relations": [
@@ -378,6 +398,157 @@ def test_parse_caps_each_kind_at_ten():
     assert len(d["entities"]) == 10
     assert len(d["facts"]) == 10
     assert len(d["relations"]) == 10
+
+
+# ---------------------------------------------------------------------------
+# 5. Belief-change extraction (supersedes / contradicts, kumiho-memory>=0.19.0)
+# ---------------------------------------------------------------------------
+
+# entities + facts (incl. the prior facts a belief change points back at) +
+# one supersedes and one contradicts, each targeting a fact listed above.
+_VALID_BELIEF_JSON = json.dumps({
+    "entities": [{"name": "Caroline", "type": "person", "aliases": []}],
+    "facts": [
+        {"statement": "Caroline works at Google", "about": ["Caroline"]},
+        {"statement": "Caroline works at a startup", "about": ["Caroline"]},
+        {"statement": "Caroline lives in Seattle", "about": ["Caroline"]},
+        {"statement": "Caroline lives in Portland", "about": ["Caroline"]},
+    ],
+    "relations": [],
+    "supersedes": [
+        {"statement": "Caroline works at Google",
+         "replaces": "Caroline works at a startup"},
+    ],
+    "contradicts": [
+        {"statement": "Caroline lives in Seattle",
+         "conflicts_with": "Caroline lives in Portland"},
+    ],
+})
+
+
+def test_valid_belief_changes_pass_through_and_aggregate():
+    # Well-formed supersedes/contradicts reach the SDK verbatim and their
+    # counts accumulate on the adapter (belief-gate audit).
+    token_tracker.reset()
+    adapter = _make_adapter()
+    with _Patched():
+        _FAKE_CONTENT["value"] = _VALID_BELIEF_JSON
+        stats = asyncio.run(
+            adapter.decompose_and_link_relations("kref://x?r=1", "summary")
+        )
+    assert len(_LINK_CALLS) == 1
+    decomp = _LINK_CALLS[0]["decomposition"]
+    assert decomp["supersedes"] == [
+        {"statement": "Caroline works at Google",
+         "replaces": "Caroline works at a startup"},
+    ]
+    assert decomp["contradicts"] == [
+        {"statement": "Caroline lives in Seattle",
+         "conflicts_with": "Caroline lives in Portland"},
+    ]
+    assert stats["supersedes"] == 1 and stats["contradicts"] == 1
+    assert adapter.decompose_relations_stats["supersedes"] == 1
+    assert adapter.decompose_relations_stats["contradicts"] == 1
+
+
+def test_malformed_belief_entries_dropped():
+    # Only entries with BOTH a non-empty statement AND a non-empty target
+    # string (replaces / conflicts_with) survive; everything else drops.
+    adapter = _make_adapter()
+    malformed = json.dumps({
+        "entities": [{"name": "A"}],
+        "facts": [{"statement": "A is here"}],
+        "supersedes": [
+            {"statement": "A is here", "replaces": "A was there"},  # valid
+            {"statement": "A is here"},                             # missing target
+            {"replaces": "A was there"},                            # missing statement
+            {"statement": "", "replaces": "x"},                     # blank statement
+            {"statement": "y", "replaces": "   "},                  # blank target
+            {"statement": 5, "replaces": "x"},                      # non-string statement
+            "not a dict",                                           # non-dict entry
+        ],
+        "contradicts": [
+            {"statement": "A is here", "conflicts_with": 7},        # non-string target
+            {"statement": "A is here", "wrong_key": "x"},           # wrong target key
+        ],
+    })
+    with _Patched():
+        _FAKE_CONTENT["value"] = malformed
+        asyncio.run(adapter.decompose_and_link_relations("kref://x?r=1", "s"))
+    decomp = _LINK_CALLS[0]["decomposition"]
+    assert decomp["supersedes"] == [
+        {"statement": "A is here", "replaces": "A was there"},
+    ]
+    assert decomp["contradicts"] == []
+
+
+def test_parse_caps_belief_kinds_at_ten():
+    # Belief kinds obey the same ~10/kind lean cap as entities/facts/relations.
+    payload = json.dumps({
+        "entities": [{"name": "E0"}],
+        "facts": [{"statement": f"f{i}"} for i in range(15)],
+        "supersedes": [
+            {"statement": f"s{i}", "replaces": f"r{i}"} for i in range(15)
+        ],
+        "contradicts": [
+            {"statement": f"c{i}", "conflicts_with": f"w{i}"} for i in range(15)
+        ],
+    })
+    d = _parse_decomposition(payload)
+    assert len(d["supersedes"]) == 10
+    assert len(d["contradicts"]) == 10
+
+
+def test_belief_null_gate_warning_fires_on_zero_belief_edges():
+    # Relations landed but zero belief edges -> ONLY the belief warning, on its
+    # own line (a relation-only corpus is legitimate, never conflated).
+    msgs = decompose_relations_null_gate_warnings(
+        {"relations": 5, "supersedes": 0, "contradicts": 0}, answer_only=False,
+    )
+    assert len(msgs) == 1
+    assert "belief-change" in msgs[0].lower()
+    assert "CONTRADICTS" in msgs[0]
+
+
+def test_null_gate_warnings_both_none_and_answer_only():
+    # Zero of everything -> both warnings, as two separate lines.
+    both = decompose_relations_null_gate_warnings(
+        {"relations": 0, "supersedes": 0, "contradicts": 0}, answer_only=False,
+    )
+    assert len(both) == 2
+    # A healthy corpus -> no warnings at all.
+    assert decompose_relations_null_gate_warnings(
+        {"relations": 3, "supersedes": 1, "contradicts": 2}, answer_only=False,
+    ) == []
+    # Belief edges but no relations -> only the relation warning.
+    rel_only = decompose_relations_null_gate_warnings(
+        {"relations": 0, "supersedes": 1, "contradicts": 0}, answer_only=False,
+    )
+    assert len(rel_only) == 1 and "relation edges" in rel_only[0]
+    # answer_only skips both gates (a resumed run wrote nothing this pass).
+    assert decompose_relations_null_gate_warnings(
+        {"relations": 0, "supersedes": 0, "contradicts": 0}, answer_only=True,
+    ) == []
+
+
+def test_belief_changes_degrade_gracefully_on_pre_0190_sdk():
+    # Graceful degradation on a kumiho-memory<0.19.0: the belief lists still
+    # ride through the decomposition dict (the older SDK simply ignores them),
+    # and its stats dict — which omits supersedes/contradicts — must not raise
+    # a KeyError through the aggregation; the belief counts just stay 0.
+    adapter = _make_adapter()
+    with _Patched():
+        _LINK_OMIT_BELIEF_KEYS["value"] = True  # simulate pre-0.19.0 stats shape
+        _FAKE_CONTENT["value"] = _VALID_BELIEF_JSON
+        stats = asyncio.run(
+            adapter.decompose_and_link_relations("kref://x?r=1", "summary")
+        )
+    decomp = _LINK_CALLS[0]["decomposition"]
+    assert len(decomp["supersedes"]) == 1 and len(decomp["contradicts"]) == 1
+    assert "supersedes" not in stats and "contradicts" not in stats
+    assert adapter.decompose_relations_stats["calls"] == 1
+    assert adapter.decompose_relations_stats["supersedes"] == 0
+    assert adapter.decompose_relations_stats["contradicts"] == 0
 
 
 # ---------------------------------------------------------------------------

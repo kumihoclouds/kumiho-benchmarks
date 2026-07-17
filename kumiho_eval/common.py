@@ -433,20 +433,22 @@ _DECOMPOSE_SYSTEM = (
     "summary. Return STRICT JSON only — no prose, no code fences."
 )
 
-_DECOMPOSE_TEMPLATE = """From the memory summary below, extract the salient entities, facts, and relations.
+_DECOMPOSE_TEMPLATE = """From the memory summary below, extract the salient entities, facts, relations, and belief changes.
 
 Rules:
 - entities: the concrete people, places, organizations, products, or things the summary is about. Each: {{"name": str, "type": str, "aliases": [str]}}. Use a short lowercase type (e.g. "person", "place", "organization", "activity", "object"). aliases may be empty.
 - facts: standalone factual statements the summary asserts. Each: {{"statement": str, "about": [str]}} where "about" lists entity names the fact concerns.
 - relations: directed links BETWEEN two entities. Each: {{"subject": str, "predicate": str, "object": str}}. subject and object MUST be names from the entities list. predicate is a short verb phrase (e.g. "works at", "lives in", "owns", "married to", "part of").
+- supersedes: belief updates where a NEW fact REPLACES a prior one — the speaker's job, home, plan, or status CHANGED. Emit one whenever the summary itself signals a change ("no longer", "used to", "now", "instead of", "changed to", "moved from ... to"). Each: {{"statement": str, "replaces": str}} where "statement" is the CURRENT fact and "replaces" is the PRIOR fact it overrides, phrased as a standalone statement.
+- contradicts: belief conflicts where a NEW fact CONFLICTS with an earlier stated one without cleanly replacing it (a correction, a reversal, a disagreement). Each: {{"statement": str, "conflicts_with": str}} where "statement" is the current fact and "conflicts_with" is the earlier conflicting fact, phrased as a standalone statement.
 
-Extract at most 10 of each. Only include a relation when both endpoints are entities you listed. If a category has nothing, use an empty list.
+Extract at most 10 of each. Only include a relation when both endpoints are entities you listed. For supersedes/contradicts, BOTH the "statement" and its "replaces"/"conflicts_with" target MUST ALSO appear as separate entries in the facts list (add the prior fact to facts even if the summary only implies it) — a belief change whose two statements are not both in facts will be dropped. If a category has nothing, use an empty list.
 
 Summary:
 {summary}
 
 Return JSON exactly of the form:
-{{"entities": [...], "facts": [...], "relations": [...]}}
+{{"entities": [...], "facts": [...], "relations": [...], "supersedes": [...], "contradicts": [...]}}
 """
 
 # NOTE: the template is registered lazily (first use / manifest generation
@@ -473,6 +475,13 @@ def _parse_decomposition(raw: str) -> dict[str, Any]:
     empty), only dict-shaped entries survive, each kind is capped at
     ``_DECOMPOSE_MAX_PER_KIND``, and a decomposition with no entities is
     dropped since relations have no anchors to link onto.
+
+    Belief-change kinds (``supersedes``/``contradicts``, kumiho-memory
+    >=0.19.0) ride through the same guards but carry a stricter shape: an
+    entry survives only if it has BOTH a non-empty ``statement`` string and a
+    non-empty target string (``replaces`` / ``conflicts_with``). Malformed
+    entries drop silently; on an older SDK these keys are ignored server-side,
+    so passing them through is always safe.
     """
     if not raw:
         return {}
@@ -495,6 +504,23 @@ def _parse_decomposition(raw: str) -> dict[str, Any]:
             return []  # truthy non-lists ("x", 5, true, {...}) count as empty
         return [v for v in value if isinstance(v, dict)][:_DECOMPOSE_MAX_PER_KIND]
 
+    def _beliefs(key: str, target_key: str) -> list[dict]:
+        # Same list-guard + per-kind cap as ``_dicts``, plus a shape filter:
+        # a belief change is only actionable if BOTH its source ``statement``
+        # and its ``replaces``/``conflicts_with`` target are non-empty strings
+        # (the SDK resolves both to facts in this same call). Anything else —
+        # missing key, non-string, blank — is dropped, never guessed.
+        value = parsed.get(key)
+        if not isinstance(value, list):
+            return []
+        valid = [
+            v for v in value
+            if isinstance(v, dict)
+            and isinstance(v.get("statement"), str) and v["statement"].strip()
+            and isinstance(v.get(target_key), str) and v[target_key].strip()
+        ]
+        return valid[:_DECOMPOSE_MAX_PER_KIND]
+
     entities = _dicts("entities")
     if not entities:
         return {}
@@ -502,7 +528,53 @@ def _parse_decomposition(raw: str) -> dict[str, Any]:
         "entities": entities,
         "facts": _dicts("facts"),
         "relations": _dicts("relations"),
+        "supersedes": _beliefs("supersedes", "replaces"),
+        "contradicts": _beliefs("contradicts", "conflicts_with"),
     }
+
+
+def decompose_relations_null_gate_warnings(
+    stats: dict[str, int], *, answer_only: bool,
+) -> list[str]:
+    """Return the null-gate warning message(s) for an ON decomposition run.
+
+    Two INDEPENDENT gates over the aggregate write stats — kept separate
+    because a relation-only corpus with no belief updates is legitimate and
+    must not be conflated with the belief gate:
+
+    * zero relation edges → the whole traversal corpus is empty (the read-side
+      A/B has nothing to traverse).
+    * zero belief-change edges (SUPERSEDES + CONTRADICTS) → the run won't
+      exercise kumiho-memory's CONTRADICTS/SUPERSEDES read machinery.
+
+    A resumed-from-checkpoint (``answer_only``) run writes nothing this pass,
+    so both gates are skipped — a zero here just means "no ingest happened",
+    not a null gate. Returns an ordered list of messages (empty = healthy) so
+    the caller logs each at WARNING; pure + return-based so it is unit-testable
+    without capturing logs.
+    """
+    if answer_only:
+        return []
+    warnings: list[str] = []
+    if stats.get("relations", 0) == 0:
+        warnings.append(
+            "--decompose-relations was ON but ZERO relation edges were "
+            "written this run (either a null gate run — check the "
+            "summarizer key chain / model output — or every conversation "
+            "was resumed from checkpoint). A relation_traversal pair over "
+            "a zero-edge corpus measures nothing.",
+        )
+    if (stats.get("supersedes", 0) + stats.get("contradicts", 0)) == 0:
+        warnings.append(
+            "--decompose-relations was ON but ZERO belief-change edges "
+            "(SUPERSEDES/CONTRADICTS) were written this run — the benchmark "
+            "won't exercise kumiho-memory's CONTRADICTS read machinery. A "
+            "relation-only corpus is possible, but a multi-session LoCoMo run "
+            "should surface job/preference/plan changes; check the summarizer "
+            "output and that kumiho-memory>=0.19.0 (belief-change decompose "
+            "API) is installed.",
+        )
+    return warnings
 
 
 # ---------------------------------------------------------------------------
@@ -586,7 +658,8 @@ class KumihoMemoryAdapter:
         # (see decompose_and_link_relations) — lets the run audit the total
         # edges written and detect a zero-edge null gate run.
         self.decompose_relations_stats: dict[str, int] = {
-            "calls": 0, "entities": 0, "facts": 0, "relations": 0, "edges": 0,
+            "calls": 0, "entities": 0, "facts": 0, "relations": 0,
+            "supersedes": 0, "contradicts": 0, "edges": 0,
         }
 
     async def initialise(self) -> None:
@@ -945,8 +1018,11 @@ class KumihoMemoryAdapter:
         ``decompose_relations`` phase; successful write stats accumulate in
         ``self.decompose_relations_stats`` so the run can audit total edges
         written (and warn on a zero-edge null gate run). Returns the SDK
-        write stats (``{entities, facts, relations, edges}``) or ``{}``.
-        Requires kumiho-memory>=0.18.0.
+        write stats (``{entities, facts, relations, supersedes, contradicts,
+        edges}``) or ``{}``. The belief-change counts (supersedes/contradicts)
+        require kumiho-memory>=0.19.0; on 0.18.0 the extra decomposition keys
+        are ignored and those counts stay 0 (graceful degradation). Relation
+        extraction requires kumiho-memory>=0.18.0.
         """
         await self.initialise()
         if not revision_kref or not summary or not summary.strip():
@@ -1000,7 +1076,13 @@ class KumihoMemoryAdapter:
             )
             stats = stats or {}
             self.decompose_relations_stats["calls"] += 1
-            for key in ("entities", "facts", "relations", "edges"):
+            # supersedes/contradicts land in the SDK's stats dict from
+            # kumiho-memory>=0.19.0; on 0.18.0 they're simply absent and
+            # ``.get(...) or 0`` folds them to 0 (graceful degradation, no
+            # feature detection needed — the belief-change keys ride inside the
+            # decomposition dict the older SDK just ignores).
+            for key in ("entities", "facts", "relations",
+                        "supersedes", "contradicts", "edges"):
                 self.decompose_relations_stats[key] += int(stats.get(key) or 0)
             logger.debug("Relation decomposition linked %s: %s", revision_kref, stats)
             return stats

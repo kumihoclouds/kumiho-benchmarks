@@ -305,7 +305,7 @@ python -m kumiho_eval.run_benchmarks --all --agm
 | `--recall-mode` | `full` | `full` (artifact content) or `summarized` (title+summary) |
 | `--dual-mode` | | Run both full and summarized, then compare |
 | `--no-graph-augmented` | | Disable graph-augmented recall (on by default) |
-| `--decompose-relations` | off | Opt-in relation-decomposition write stage (LoCoMo only; see [Relation Decomposition](#relation-decomposition-opt-in)) |
+| `--decompose-relations` | off | Opt-in relation- + belief-change decomposition write stage (LoCoMo only; see [Relation Decomposition](#relation-decomposition-opt-in)) |
 | `--project` | `benchmark-eval` | Kumiho project name prefix |
 | `-v` | | Verbose logging |
 
@@ -375,7 +375,7 @@ python -m kumiho_eval.agm_compliance_eval [--max-scenarios N] [--output DIR]
 | `--project` | `benchmark-locomo` | Kumiho project name |
 | `--max-samples` | all | Limit conversations |
 | `--no-resume` | | Start fresh (ignore checkpoint) |
-| `--decompose-relations` | off | Opt-in relation-decomposition write stage (see [Relation Decomposition](#relation-decomposition-opt-in)); also set by `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`. Requires kumiho-memory>=0.18.0 |
+| `--decompose-relations` | off | Opt-in relation- + belief-change decomposition write stage (see [Relation Decomposition](#relation-decomposition-opt-in)); also set by `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`. Relation edges need kumiho-memory>=0.18.0; belief-change (SUPERSEDES/CONTRADICTS) edges need >=0.19.0 (older SDKs ignore them gracefully) |
 
 #### longmemeval_eval.py
 
@@ -458,9 +458,10 @@ result for the paper's BYO-storage contribution.
 `--decompose-relations` (on `locomo_eval` and `run_benchmarks`; or
 `KUMIHO_EVAL_DECOMPOSE_RELATIONS=1`, default **OFF**) adds one extra LLM call
 after each session consolidation that extracts a lean decomposition (up to
-10 entities / 10 facts / 10 relations, JSON-constrained) from the
-**consolidated summary** — never the raw transcript — and writes entity→entity
-relation edges through `kumiho_memory.ontology.decompose_and_link_agent`. The
+10 entities / 10 facts / 10 relations / 10 supersedes / 10 contradicts,
+JSON-constrained) from the **consolidated summary** — never the raw
+transcript — and writes entity→entity relation edges through
+`kumiho_memory.ontology.decompose_and_link_agent`. The
 stage builds its own OpenAI-compatible client (it honors `OPENAI_BASE_URL`)
 with the run's configured summarizer model (`KUMIHO_LLM_MODEL`, default
 `gpt-4o-mini`) and the summarizer's key-resolution chain
@@ -469,8 +470,32 @@ with the run's configured summarizer model (`KUMIHO_LLM_MODEL`, default
 phase; the flag is recorded in the run manifest, and standalone `locomo_eval`
 runs are self-auditing — `metrics.json` carries `decompose_relations`,
 `decompose_relations_token_usage`, and `decompose_relations_write_stats`
-(edges actually written; a run that wrote zero relation edges logs a loud
-null-gate warning).
+(edges actually written; a run that wrote zero relation edges — or zero
+belief-change edges — logs a loud null-gate warning, one line each).
+
+**Belief-change extraction (kumiho-memory ≥ 0.19.0).** The same call also asks
+the model for two belief-update lists and passes them through the *same*
+decomposition dict:
+
+- `supersedes`: a NEW fact REPLACES a prior one (job / home / plan / status
+  changed) — `{"statement": <current fact>, "replaces": <prior fact>}`.
+- `contradicts`: a NEW fact CONFLICTS with an earlier one without cleanly
+  replacing it (a correction or reversal) —
+  `{"statement": <current fact>, "conflicts_with": <earlier fact>}`.
+
+The model only sees THIS session's summary, so it is instructed to emit a
+belief change only when the summary itself signals one ("no longer", "used
+to", "now", "instead of", "changed to"); the `replaces`/`conflicts_with`
+target is the implied prior statement phrased as a standalone fact. Referential
+integrity, like relations: **both** the new statement and its target must also
+appear in `facts` (the SDK resolves each to a fact in the same call and drops
+any belief change it can't anchor). The SDK lands these as `SUPERSEDES` /
+`CONTRADICTS` edges with `basis=agent`; the heuristic lexical-overlap
+`SUPERSEDES` still runs as a fallback and yields to agent declarations. On an
+older kumiho-memory (< 0.19.0) the extra keys are simply ignored server-side,
+so the stage degrades gracefully — relation edges still land and the
+belief-change counts stay 0. Belief-change edges are what make the final
+`0.19.0` LoCoMo run actually exercise kumiho-memory's `CONTRADICTS` read path.
 
 **Why it exists.** The product's consolidation summarizer schema deliberately
 omits relations — measured, adding relation fields to the summary regressed
@@ -484,7 +509,9 @@ default OFF). For a valid `relation_traversal` OFF-vs-ON comparison, turn
 `--decompose-relations` **ON in BOTH arms** — the relation edges are shared
 write-side state; only the *read* flag should differ between the two arms.
 Enabling decomposition in just the ON arm would confound the write and read
-changes. Requires **kumiho-memory >= 0.18.0**.
+changes. This ON-in-both-arms rule is unchanged for belief-change edges — they
+are shared write-side state too. Relation edges require **kumiho-memory >=
+0.18.0**; belief-change (SUPERSEDES/CONTRADICTS) edges require **>= 0.19.0**.
 
 ## Architecture
 
