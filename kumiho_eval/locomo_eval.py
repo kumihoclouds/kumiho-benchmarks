@@ -43,6 +43,7 @@ from .common import (
     print_metrics_table,
     save_results,
     token_f1,
+    token_tracker,
 )
 
 _RETRYABLE_ERRORS = (OSError, RequestsConnectionError, ConnectionError, TimeoutError)
@@ -450,12 +451,19 @@ async def evaluate_locomo(
                                         # Opt-in relation decomposition: simulates
                                         # the production in-loop decompose agent so a
                                         # relation_traversal pair run has entity->
-                                        # entity edges to traverse. Best-effort
-                                        # (the adapter method swallows failures).
+                                        # entity edges to traverse. The adapter
+                                        # method swallows failures itself; this
+                                        # local fence (mirroring edge discovery
+                                        # above) keeps any escape from being
+                                        # mislogged as a consolidation failure
+                                        # by the outer handler.
                                         if config.decompose_relations and rev_kref and summary:
-                                            await adapter.decompose_and_link_relations(
-                                                rev_kref, summary,
-                                            )
+                                            try:
+                                                await adapter.decompose_and_link_relations(
+                                                    rev_kref, summary,
+                                                )
+                                            except Exception as e:
+                                                logger.debug("Relation decomposition failed: %s", e)
                                 except Exception as e:
                                     logger.warning("Consolidation failed for session: %s", e)
                             return sid
@@ -661,6 +669,26 @@ async def evaluate_locomo(
     # relation_traversal pair run (writes are shared; only the read flag
     # KUMIHO_MEMORY_RELATION_TRAVERSAL differs).
     metrics["decompose_relations"] = config.decompose_relations
+    if config.decompose_relations:
+        # Self-auditing standalone runs: this entry point writes no manifest,
+        # so surface the stage's token spend and write totals in metrics.json.
+        metrics["decompose_relations_token_usage"] = (
+            token_tracker.summary()["by_phase"].get("decompose_relations")
+            or {"prompt_tokens": 0, "completion_tokens": 0,
+                "total_tokens": 0, "calls": 0}
+        )
+        metrics["decompose_relations_write_stats"] = dict(
+            adapter.decompose_relations_stats,
+        )
+        if (not config.answer_only
+                and adapter.decompose_relations_stats["relations"] == 0):
+            logger.warning(
+                "--decompose-relations was ON but ZERO relation edges were "
+                "written this run (either a null gate run — check the "
+                "summarizer key chain / model output — or every conversation "
+                "was resumed from checkpoint). A relation_traversal pair over "
+                "a zero-edge corpus measures nothing.",
+            )
 
     # Also compute per-category metrics (LoCoMo standard)
     cat_metrics: dict[str, Any] = {}

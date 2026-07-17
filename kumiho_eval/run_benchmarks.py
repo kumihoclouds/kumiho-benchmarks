@@ -34,6 +34,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -425,6 +426,11 @@ Examples:
     parser.add_argument("--project", type=str, default="benchmark-eval", help="Kumiho project prefix")
     parser.add_argument("--graph-augmented", action="store_true",
                         help="Enable graph-augmented recall for LoCoMo-Plus (follow edges)")
+    parser.add_argument("--decompose-relations", action="store_true",
+                        help="Opt-in relation-decomposition write stage after each LoCoMo "
+                        "session consolidation (LoCoMo only; also enabled by "
+                        "KUMIHO_EVAL_DECOMPOSE_RELATIONS=1). Turn ON in BOTH arms of a "
+                        "relation_traversal pair run. Requires kumiho-memory>=0.18.0.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
@@ -477,6 +483,10 @@ Examples:
             recall_limit=args.recall_limit,
             recall_mode=mode,
             graph_augmented=not getattr(args, "no_graph_augmented", False),
+            decompose_relations=(
+                args.decompose_relations
+                or os.environ.get("KUMIHO_EVAL_DECOMPOSE_RELATIONS", "") == "1"
+            ),
         )
 
         logger.info("=" * 70)
