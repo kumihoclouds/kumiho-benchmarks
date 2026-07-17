@@ -5,6 +5,16 @@ kumiho[mcp]>=0.9.6
 #   pip install -e <path-to-kumiho-SDKs>/python/kumiho-memory
 # >=0.18.0: the opt-in relation-decomposition stage (--decompose-relations)
 # calls kumiho_memory.ontology.decompose_and_link_agent, added in 0.18.0.
+# 0.19.0 extends that same agent's decomposition dict with belief-change
+# lists (supersedes/contradicts) so the stage also writes SUPERSEDES/
+# CONTRADICTS edges. The floor stays at 0.18.0 ON PURPOSE: this repo's
+# documented install is `pip install -r requirements.txt` (README), which
+# resolves kumiho-memory from PyPI, and 0.19.0 is not on PyPI yet — a hard
+# >=0.19.0 floor would break fresh installs before release. The belief-change
+# keys ride inside the existing decomposition dict (no new call kwargs), so an
+# 0.18.0 SDK ignores them and the stage degrades gracefully (belief counts
+# stay 0). TODO(belief-change): bump this floor to >=0.19.0 once 0.19.0 ships
+# to PyPI, so a run that expects belief edges fails fast on a too-old SDK.
 kumiho-memory[all]>=0.18.0
 
 # LLM providers (for judge and answer generation)

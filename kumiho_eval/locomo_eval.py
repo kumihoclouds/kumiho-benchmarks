@@ -33,6 +33,7 @@ from .common import (
     EvalResult,
     KumihoMemoryAdapter,
     compute_aggregate_metrics,
+    decompose_relations_null_gate_warnings,
     DEFAULT_ANSWER_MODEL,
     exact_match,
     generate_answer,
@@ -680,15 +681,13 @@ async def evaluate_locomo(
         metrics["decompose_relations_write_stats"] = dict(
             adapter.decompose_relations_stats,
         )
-        if (not config.answer_only
-                and adapter.decompose_relations_stats["relations"] == 0):
-            logger.warning(
-                "--decompose-relations was ON but ZERO relation edges were "
-                "written this run (either a null gate run — check the "
-                "summarizer key chain / model output — or every conversation "
-                "was resumed from checkpoint). A relation_traversal pair over "
-                "a zero-edge corpus measures nothing.",
-            )
+        # Two independent null gates (relation edges; belief-change edges) —
+        # each is its own WARNING line so a relation-only corpus isn't
+        # conflated with a corpus that also carries no SUPERSEDES/CONTRADICTS.
+        for msg in decompose_relations_null_gate_warnings(
+            adapter.decompose_relations_stats, answer_only=config.answer_only,
+        ):
+            logger.warning(msg)
 
     # Also compute per-category metrics (LoCoMo standard)
     cat_metrics: dict[str, Any] = {}
