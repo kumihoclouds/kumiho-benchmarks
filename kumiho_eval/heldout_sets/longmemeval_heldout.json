@@ -1,0 +1,11 @@
+{
+  "benchmark": "longmemeval",
+  "variant": "s",
+  "size": 100,
+  "rule": "sha256-lex-v1",
+  "materialized": false,
+  "count": 0,
+  "never_tune_on_this": true,
+  "description": "Validation-only held-out slice of LongMemEval-s for guarding LoCoMo-tuned constants (issue #109). The subset is defined by the deterministic sha256-lex-v1 rule (see kumiho_eval/heldout.py): rank every question_id by its hex sha256 digest and take the first `size`, sorted lexicographically. Because LongMemEval-s is a fixed published dataset this rule yields the same 100 ids every time, so the rule itself is the authoritative definition. `materialized` is false here because CI has no vendored LongMemEval data; the loader computes the identical ids from the rule at run time. Run `python -m kumiho_eval.heldout freeze` on a checkout that has the vendored data to materialize `question_ids` and set `materialized` true, after which the list is treated as immutable and verified on load. HARD RULE: NEVER tune, fit, or select constants against these question ids.",
+  "question_ids": []
+}

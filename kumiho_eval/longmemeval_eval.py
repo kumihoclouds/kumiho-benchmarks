@@ -530,6 +530,8 @@ async def evaluate_longmemeval(
     variant: str = "s",
     data_dir: str | Path | None = None,
     resume: bool = True,
+    heldout: bool = False,
+    heldout_manifest: str | Path | None = None,
 ) -> dict[str, Any]:
     """
     Run the full LongMemEval evaluation.
@@ -544,14 +546,32 @@ async def evaluate_longmemeval(
       MAX_QUESTION_RETRIES times before skipping the question.
     - Error isolation: a single question's failure doesn't crash the run.
 
+    When `heldout` is True the dataset is restricted to the deterministic
+    held-out slice (see `kumiho_eval.heldout`) before evaluation, and results
+    are written under a separate `longmemeval_heldout/` output dir so the
+    held-out run never clobbers a full LongMemEval run. This slice is
+    validation-only for the pair gate (`kumiho_eval.pair_gate`) — never tune on
+    it.
+
     Returns dict with results, metrics, and per-type breakdown.
     """
     dataset = load_longmemeval(variant=variant, data_dir=data_dir)
+    heldout_info: dict[str, Any] | None = None
+    if heldout:
+        from .heldout import apply_heldout
+
+        dataset, heldout_info = apply_heldout(dataset, manifest_path=heldout_manifest)
+        logger.info(
+            "Held-out slice: %d questions (materialized=%s, rule=%s)",
+            heldout_info["selected_count"], heldout_info["materialized"],
+            heldout_info["rule"],
+        )
     if config.max_samples:
         dataset = dataset[: config.max_samples]
 
     adapter = KumihoMemoryAdapter(config)
-    output_dir = Path(config.output_dir) / "longmemeval"
+    subdir = "longmemeval_heldout" if heldout else "longmemeval"
+    output_dir = Path(config.output_dir) / subdir
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load checkpoint for resume
@@ -681,6 +701,9 @@ async def evaluate_longmemeval(
         "per_ability": ability_metrics,
     }
 
+    if heldout_info is not None:
+        metrics["heldout"] = heldout_info
+
     with open(output_dir / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
 
@@ -729,6 +752,13 @@ def main():
     parser.add_argument("--project", type=str, default="benchmark-longmemeval")
     parser.add_argument("--no-resume", action="store_true",
                         help="Start fresh instead of resuming from checkpoint")
+    parser.add_argument("--heldout", action="store_true",
+                        help="Restrict to the deterministic held-out slice (issue #109) "
+                        "and write under longmemeval_heldout/. Validation-only for the "
+                        "pair gate — never tune on this subset.")
+    parser.add_argument("--heldout-manifest", type=str, default=None,
+                        help="Held-out manifest path override (default: committed "
+                        "kumiho_eval/heldout_sets/longmemeval_heldout.json)")
     parser.add_argument("--no-graph-augmented", action="store_true",
                         help="Disable graph-augmented recall (fall back to vector-only search)")
     parser.add_argument("--sibling-threshold", type=float, default=0.10,
@@ -766,6 +796,8 @@ def main():
     asyncio.run(evaluate_longmemeval(
         config, variant=args.variant, data_dir=args.data_dir,
         resume=not args.no_resume,
+        heldout=args.heldout,
+        heldout_manifest=args.heldout_manifest,
     ))
 
 

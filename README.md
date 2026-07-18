@@ -524,6 +524,71 @@ changes. This ON-in-both-arms rule is unchanged for belief-change edges — they
 are shared write-side state too. Relation edges require **kumiho-memory >=
 0.18.0**; belief-change (SUPERSEDES/CONTRADICTS) edges require **>= 0.19.0**.
 
+### Held-out validation gate (pair gate)
+
+The rerank / prior constants (evidence delta 0.15, recency 0.12, MMR lambda
+0.72, half-life 45d, ...) are tuned against LoCoMo / LoCoMo-Plus. LoCoMo going
+up therefore proves nothing on its own — the constants are fit to it. The
+**pair gate** guards against overfitting by pairing every LoCoMo number with a
+**held-out** slice that is *never* tuned on.
+
+**The held-out subset.** `kumiho_eval/heldout_sets/longmemeval_heldout.json`
+pins a deterministic 100-question slice of LongMemEval-s. Selection rule
+(`sha256-lex-v1`, in `kumiho_eval/heldout.py`): rank every `question_id` by its
+hex `sha256` digest and take the first 100, sorted lexicographically. Because
+LongMemEval-s is a fixed published dataset the rule yields the same 100 ids
+every time — no RNG seed, order-independent, so the rule itself is the
+authoritative definition. The manifest ships unmaterialized (CI has no vendored
+data) and the loader computes the identical ids from the rule at run time; run
+`python -m kumiho_eval.heldout freeze` on a checkout that has the vendored
+LongMemEval data to materialize the concrete id list, after which it is treated
+as immutable and drift-checked on load. **HARD RULE: never tune, fit, or select
+constants against this subset — that would defeat the entire point of holding
+it out.**
+
+**Producing the two metrics** (both need a real run; no numbers are fabricated):
+
+```bash
+# LoCoMo (the tuned corpus)
+python -m kumiho_eval.locomo_eval ...              # -> results/locomo/metrics.json
+# Held-out slice (validation-only)
+python -m kumiho_eval.longmemeval_eval --heldout   # -> results/longmemeval_heldout/metrics.json
+```
+
+`--heldout` restricts the run to the frozen slice and writes under
+`longmemeval_heldout/` so it never clobbers a full LongMemEval run; the resolved
+slice, rule, and materialization state are recorded in that run's `metrics.json`
+under the `heldout` key.
+
+**The pair gate** consumes the two already-produced `metrics.json` files
+(offline, exactly like `scripts/release_gate.py`):
+
+```bash
+python -m kumiho_eval.pair_gate \
+  --locomo-candidate  results/locomo/metrics.json \
+  --heldout-candidate results/longmemeval_heldout/metrics.json \
+  --locomo-baseline   prev/locomo/metrics.json \
+  --heldout-baseline  prev/longmemeval_heldout/metrics.json \
+  --out results/pair_gate.json
+```
+
+It prints a side-by-side LoCoMo + held-out table with a PASS/FAIL verdict and
+writes the same report as JSON.
+
+> **Pair-gate definition for a tuned-constant change:** LoCoMo F1 must improve
+> **while held-out F1 regresses by no more than 0.01** (the `--heldout-tolerance`
+> default). A held-out drop beyond that tolerance fails the gate even when
+> LoCoMo went up — that is the overfitting signal.
+
+Levers: `--heldout-tolerance` (default 0.01; the boundary is inclusive and
+float-safe), `--locomo-min-delta` (minimum LoCoMo gain required; default 0.0 =
+must-not-regress, set e.g. `0.005` to demand a real margin),
+`--locomo-metric {4cat,5cat,overall}` (default `4cat`, adversarial-stripped, the
+field-comparable aggregate), and `--heldout-metric {f1,accuracy}` (default
+`f1` — the tolerance is stated in F1). Exit codes: `0` pass, `1` regression,
+`2` bad input. The LoCoMo baseline also accepts `feb` for the documented Feb
+2026 cosine reference (shared with `scripts/release_gate.py`).
+
 ## Architecture
 
 ```text
@@ -532,9 +597,13 @@ kumiho_eval/
 ├── common.py                  # KumihoMemoryAdapter, BenchmarkConfig, metrics
 ├── locomo_eval.py             # LoCoMo benchmark (Tier 1)
 ├── locomo_plus_eval.py        # LoCoMo-Plus cognitive memory benchmark
-├── longmemeval_eval.py        # LongMemEval benchmark (Tier 1)
+├── longmemeval_eval.py        # LongMemEval benchmark (Tier 1; --heldout slice)
 ├── memoryagentbench_eval.py   # MemoryAgentBench benchmark (Tier 1)
 ├── agm_compliance_eval.py     # AGM belief revision compliance (Tier 3)
+├── heldout.py                 # Deterministic held-out subset (#109)
+├── pair_gate.py               # LoCoMo + held-out side-by-side gate (#109)
+├── heldout_sets/
+│   └── longmemeval_heldout.json   # Committed held-out subset manifest
 └── requirements.txt
 
 locomo/                        # LoCoMo + LoCoMo-Plus dataset (submodule)
