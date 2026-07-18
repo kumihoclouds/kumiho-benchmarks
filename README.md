@@ -569,6 +569,7 @@ python -m kumiho_eval.pair_gate \
   --heldout-candidate results/longmemeval_heldout/metrics.json \
   --locomo-baseline   prev/locomo/metrics.json \
   --heldout-baseline  prev/longmemeval_heldout/metrics.json \
+  --locomo-min-delta  0.005 \
   --out results/pair_gate.json
 ```
 
@@ -576,9 +577,14 @@ It prints a side-by-side LoCoMo + held-out table with a PASS/FAIL verdict and
 writes the same report as JSON.
 
 > **Pair-gate definition for a tuned-constant change:** LoCoMo F1 must improve
-> **while held-out F1 regresses by no more than 0.01** (the `--heldout-tolerance`
-> default). A held-out drop beyond that tolerance fails the gate even when
-> LoCoMo went up — that is the overfitting signal.
+> **without the held-out F1 regressing by more than 0.01** (the
+> `--heldout-tolerance` default). A held-out drop beyond that tolerance fails
+> the gate even when LoCoMo went up — that is the overfitting signal. The
+> *"must improve"* half is enforced by `--locomo-min-delta`: pass a positive
+> margin (e.g. `0.005`, as in the command above) for a tuned-constant PR. The
+> bare default is `0.0` (must-**not**-regress), so a flat LoCoMo delta passes
+> unless you set a positive `--locomo-min-delta` — a tuned-constant gate run
+> must set one.
 
 Levers: `--heldout-tolerance` (default 0.01; the boundary is inclusive and
 float-safe), `--locomo-min-delta` (minimum LoCoMo gain required; default 0.0 =

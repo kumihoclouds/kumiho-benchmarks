@@ -663,5 +663,188 @@ def test_run_missing_metric_returns_two(tmp_path):
     assert pair_gate.run(argv) == 2
 
 
+# ===========================================================================
+# pair_gate cp949 console safety (adversarial review finding 1)
+# ===========================================================================
+
+
+def test_render_table_is_console_encodable_no_cp949_crash():
+    """Regression lock for the cp949 UnicodeEncodeError.
+
+    render_table's header previously used an em-dash (U+2014), which a Korean
+    Windows console (cp949) cannot encode: `print(render_table(...))` aborted
+    with UnicodeEncodeError before the `--out` report was written. The rendered
+    table must be pure ASCII (a strict subset of cp949), so both encodings are
+    safe. Pre-fix, the `.encode("ascii")` line raises.
+    """
+    for rep in (
+        pair_gate.build_report(_locomo(0.42), _heldout(0.41), _locomo(0.40), _heldout(0.42)),
+        pair_gate.build_report(_locomo(0.30), _heldout(0.20), _locomo(0.40), _heldout(0.42)),
+    ):
+        table = pair_gate.render_table(rep)
+        table.encode("ascii")  # raises pre-fix (em-dash U+2014)
+        table.encode("cp949")  # the exact codec from the traced crash
+
+
+def test_run_writes_report_and_prints_without_encode_error(tmp_path, capsys):
+    """The gate's stdout table must not carry a character that would abort the
+    run on a cp949 console (which would also skip the --out JSON write)."""
+    argv = _cli_files(tmp_path, _locomo(0.42), _heldout(0.42), _locomo(0.40), _heldout(0.42))
+    out = tmp_path / "report.json"
+    argv += ["--out", str(out)]
+    rc = pair_gate.run(argv)
+    assert rc == 0
+    printed = capsys.readouterr().out
+    printed.encode("cp949")  # would raise pre-fix
+    assert out.exists()
+
+
+# ===========================================================================
+# pair_gate null-nested-metric robustness (adversarial review findings 6 & 8)
+# ===========================================================================
+
+
+def test_extract_locomo_null_nested_returns_none_not_attributeerror():
+    # An explicit JSON null at a nested field must map to the clean "missing"
+    # path (None), never raise AttributeError from a chained `.get`.
+    assert pair_gate.extract_locomo_f1({"locomo_field_report": None}, "4cat") is None
+    assert pair_gate.extract_locomo_f1({"locomo_field_report": None}, "5cat") is None
+    assert (
+        pair_gate.extract_locomo_f1({"locomo_field_report": {"token_f1": None}}, "5cat")
+        is None
+    )
+    assert pair_gate.extract_locomo_f1({"locomo_categories": None}, "4cat") is None
+    assert (
+        pair_gate.extract_locomo_f1({"locomo_categories": {"multi-hop": None}}, "4cat")
+        is None
+    )
+
+
+def test_extract_heldout_null_longmemeval_returns_none():
+    assert pair_gate.extract_heldout_f1({"longmemeval": None}, "accuracy") is None
+
+
+def test_run_null_nested_metric_returns_two_not_traceback(tmp_path):
+    # End-to-end: a metrics.json with a null nested dict must exit 2 (documented
+    # bad-input), not die with an uncaught AttributeError / default exit 1.
+    argv = _cli_files(
+        tmp_path,
+        {"locomo_field_report": None},  # null nested -> no readable LoCoMo metric
+        _heldout(0.42),
+        _locomo(0.40),
+        _heldout(0.42),
+    )
+    assert pair_gate.run(argv) == 2
+
+
+# ===========================================================================
+# longmemeval_eval.evaluate_longmemeval held-out wiring (finding 5 + 7/9)
+#
+# The heldout=True integration branch (apply_heldout call, longmemeval_heldout
+# output subdir, metrics['heldout'] population) had zero coverage. These drive
+# it fully offline: load_longmemeval, KumihoMemoryAdapter, and the per-question
+# processor are faked, so no dataset, no SDK, and no LLM calls are involved.
+# ===========================================================================
+
+
+def _lme_entries(n: int) -> list[dict]:
+    return [
+        {
+            "question_id": f"lme_q{i:03d}",
+            "question": f"q{i}?",
+            "answer": str(i),
+            "question_type": "single-session-user",
+        }
+        for i in range(n)
+    ]
+
+
+def _run_offline_eval(tmp_path, monkeypatch, *, heldout: bool, max_samples=None, n: int = 12):
+    """Run evaluate_longmemeval with every network/LLM/SDK seam faked out."""
+    import asyncio
+    import contextlib
+    import io
+
+    from kumiho_eval import common, longmemeval_eval
+
+    entries = _lme_entries(n)
+
+    monkeypatch.setattr(
+        longmemeval_eval, "load_longmemeval", lambda variant="s", data_dir=None: entries
+    )
+
+    class _FakeAdapter:
+        def __init__(self, config):
+            self.config = config
+
+        async def cleanup(self):
+            return None
+
+    monkeypatch.setattr(longmemeval_eval, "KumihoMemoryAdapter", _FakeAdapter)
+
+    async def _fake_process(adapter, entry, qi, config):
+        return common.EvalResult(
+            question_id=entry["question_id"],
+            question=entry["question"],
+            question_type=entry.get("question_type", "unknown"),
+            ground_truth=entry["answer"],
+            prediction=entry["answer"],
+            f1_score=0.5,
+            judge_score=True,
+            metadata={"is_abstention": False},
+        )
+
+    monkeypatch.setattr(longmemeval_eval, "_process_single_question", _fake_process)
+
+    config = common.BenchmarkConfig(output_dir=str(tmp_path), max_samples=max_samples)
+
+    # redirect_stdout guards against print_metrics_table's own em-dash aborting
+    # the test on a cp949 console (that print lives in common.py, out of scope).
+    with contextlib.redirect_stdout(io.StringIO()):
+        asyncio.run(
+            longmemeval_eval.evaluate_longmemeval(config, heldout=heldout, resume=False)
+        )
+
+    subdir = "longmemeval_heldout" if heldout else "longmemeval"
+    out_dir = tmp_path / subdir
+    metrics = json.loads((out_dir / "metrics.json").read_text(encoding="utf-8"))
+    return out_dir, metrics
+
+
+def test_evaluate_longmemeval_heldout_wiring(tmp_path, monkeypatch):
+    out_dir, metrics = _run_offline_eval(tmp_path, monkeypatch, heldout=True, n=12)
+    # writes under the held-out subdir, never clobbering a full-run subdir
+    assert out_dir.name == "longmemeval_heldout"
+    assert not (tmp_path / "longmemeval" / "metrics.json").exists()
+    # self-describing held-out block is populated
+    assert "heldout" in metrics
+    hd = metrics["heldout"]
+    assert hd["benchmark"] == "longmemeval"
+    assert hd["rule"] == "sha256-lex-v1"
+    assert hd["materialized"] is False
+    # 12 entries < size 100 -> the whole set is the slice
+    assert hd["selected_count"] == 12
+    assert len(hd["question_ids"]) == 12
+    assert "truncated_by_max_samples" not in hd
+    # the pair gate reads overall_f1 from exactly this file
+    assert metrics["overall_f1"] == pytest.approx(0.5)
+
+
+def test_evaluate_longmemeval_full_run_has_no_heldout_block(tmp_path, monkeypatch):
+    out_dir, metrics = _run_offline_eval(tmp_path, monkeypatch, heldout=False, n=6)
+    assert out_dir.name == "longmemeval"
+    assert "heldout" not in metrics
+
+
+def test_evaluate_longmemeval_heldout_max_samples_records_truncation(tmp_path, monkeypatch):
+    # findings 7/9: --max-samples truncates the slice after selection; the
+    # recorded selected_count / question_ids must reflect what actually ran.
+    _, metrics = _run_offline_eval(tmp_path, monkeypatch, heldout=True, max_samples=5, n=12)
+    hd = metrics["heldout"]
+    assert hd["selected_count"] == 5
+    assert len(hd["question_ids"]) == 5
+    assert hd["truncated_by_max_samples"] is True
+
+
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__, "-v"]))

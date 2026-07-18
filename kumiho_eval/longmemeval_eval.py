@@ -568,6 +568,16 @@ async def evaluate_longmemeval(
         )
     if config.max_samples:
         dataset = dataset[: config.max_samples]
+        if heldout_info is not None and len(dataset) < heldout_info["selected_count"]:
+            # --max-samples (a debug limiter) truncated the held-out slice after
+            # selection. Keep the run's self-describing record honest: otherwise
+            # selected_count/question_ids still advertise the full slice while
+            # only `len(dataset)` questions were actually scored.
+            heldout_info["question_ids"] = [
+                e.get("question_id") for e in dataset
+            ]
+            heldout_info["selected_count"] = len(dataset)
+            heldout_info["truncated_by_max_samples"] = True
 
     adapter = KumihoMemoryAdapter(config)
     subdir = "longmemeval_heldout" if heldout else "longmemeval"

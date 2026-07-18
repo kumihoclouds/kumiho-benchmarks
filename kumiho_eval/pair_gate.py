@@ -97,12 +97,31 @@ def load_metrics(path: str | Path) -> dict[str, Any]:
     return data
 
 
+def _get_dict(d: Any, key: str) -> dict[str, Any]:
+    """Nested-dict accessor tolerant of missing/null/non-dict values.
+
+    A metrics.json can legitimately carry an explicit ``null`` (JSON null) at a
+    nested field, e.g. ``{"locomo_field_report": null}``. Plain
+    ``d.get(key, {})`` returns ``None`` for that, and a chained ``.get`` then
+    raises ``AttributeError`` — which escapes ``run()``'s handler (only
+    ``GateInputError`` maps to exit 2) and dies with a traceback. Coercing any
+    non-dict (including ``None``) to ``{}`` keeps a null nested field on the
+    clean "missing metric" path (extractor returns ``None`` ->
+    ``GateInputError`` -> exit 2, the documented bad-input contract).
+    """
+    if not isinstance(d, dict):
+        return {}
+    v = d.get(key)
+    return v if isinstance(v, dict) else {}
+
+
 def _four_cat_f1(metrics: dict[str, Any]) -> float | None:
-    report = metrics.get("locomo_field_report", {}).get("token_f1", {})
+    report = _get_dict(_get_dict(metrics, "locomo_field_report"), "token_f1")
     if report.get("overall_4cat") is not None:
         return float(report["overall_4cat"])
+    cats = _get_dict(metrics, "locomo_categories")
     vals = [
-        metrics.get("locomo_categories", {}).get(cat, {}).get("f1")
+        _get_dict(cats, cat).get("f1")
         for cat in CATEGORY_NAMES
         if cat != ADVERSARIAL_CATEGORY
     ]
@@ -111,7 +130,7 @@ def _four_cat_f1(metrics: dict[str, Any]) -> float | None:
 
 
 def _five_cat_f1(metrics: dict[str, Any]) -> float | None:
-    report = metrics.get("locomo_field_report", {}).get("token_f1", {})
+    report = _get_dict(_get_dict(metrics, "locomo_field_report"), "token_f1")
     if report.get("overall_5cat") is not None:
         return float(report["overall_5cat"])
     v = metrics.get("overall_f1")
@@ -151,7 +170,7 @@ def extract_heldout_f1(metrics: dict[str, Any], which: str = "f1") -> float | No
         v = metrics.get("overall_f1")
         return float(v) if v is not None else None
     if which == "accuracy":
-        lme = metrics.get("longmemeval", {})
+        lme = _get_dict(metrics, "longmemeval")
         v = lme.get("overall_accuracy")
         if v is None:
             v = metrics.get("overall_judge_accuracy")
@@ -305,7 +324,7 @@ def render_table(report: dict[str, Any]) -> str:
     verdict = report["verdict"]
     lines: list[str] = []
     lines.append("=" * 72)
-    lines.append("  Pair Gate — LoCoMo (tuned) vs held-out (LongMemEval, never tuned)")
+    lines.append("  Pair Gate - LoCoMo (tuned) vs held-out (LongMemEval, never tuned)")
     lines.append("=" * 72)
     lines.append(f"  {'Track':<22} {'candidate':>10} {'baseline':>10} {'delta':>10}")
     lines.append(f"  {'-' * 54}")
